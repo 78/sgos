@@ -3,14 +3,15 @@
 
 #include <sgos.h>
 #include <multiboot.h>
+#include <debug.h>
 
-char ss[3453];
+extern void kinit();
 
 void multiboot_init( uint magic, uint addr )
 {
-	ushort* t = (ushort*)0xC00B8000;
-	*t++ = 0xAAAA;
-	*t++ = 0x1111;
-	*t++ = 0x2222;
+	//init i386
+	//
+	//call kinit, no return
+	kinit();
 }
 
