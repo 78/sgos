@@ -1,4 +1,4 @@
-#Windows上如何配置SGOS2开发环境
+#comment Windows上如何配置SGOS2开发环境
 
 = 准备 =
 
