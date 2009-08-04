@@ -27,6 +27,7 @@ static void next_line()
 	}
 }
 
+// move the cursor to a position
 static int gotoxy( int x, int y)
 {
 	if( x * _w + y > _w*_h)
@@ -36,6 +37,7 @@ static int gotoxy( int x, int y)
 	return 0;
 }
 
+// move the cursor as you input a character
 static void move_cursor()
 {
 	//设置光标位置
@@ -48,7 +50,7 @@ static void move_cursor()
 	out_byte( 0x3D5, offset&0xFF );
 }
 
-
+// clear the screen
 void clrscr()
 {
 	memsetw((char*)buffer, style, _w*_h );
@@ -58,7 +60,7 @@ void clrscr()
 	move_cursor();
 }
 
-
+// print a character
 void putchar(char ch)
 {
 	out_byte(0xE9,ch);	//for bochs
@@ -87,6 +89,7 @@ void putchar(char ch)
 	move_cursor();
 }
 
+// scroll up the screen
 static void scroll_up()
 {
 	memcpy((char*)buffer,(char*)(buffer+_w),_w*(_h-1)*2);
