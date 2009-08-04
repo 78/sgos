@@ -4,7 +4,7 @@
 ARCH = i386
 
 ASFLAGS = -g
-CCFLAGS = -g -Wall -Iinclude -fno-builtin
+CCFLAGS = -g -Werror -Iinclude -fno-builtin
 LDFLAGS = -Ttext=0xC0100000 -e_start
 
 AS = as $(ASFLAGS)
@@ -18,7 +18,12 @@ LD2 = ld2
 include arch/$(ARCH)/Makefile
 
 # Kernel objects
-OBJECTS += 
+OBJECTS += lib/ctype.o \
+	lib/string.o \
+	lib/vsprintf.o \
+	debug/debug.o \
+	debug/format.o \
+	init/kinit.o \
 
 # Target
 

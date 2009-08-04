@@ -4,7 +4,8 @@ all:
 	make -C kernel
 	make -C services
 #	make -C tools/wf
-	tools/wf/wf sgos2.img -src kernel/kernel.bin -dest sgos2/kernel.bin 
+	tools/wf/wf sgos2.img -src kernel/kernel.bin -dest sgos2/kernel.bin
+	@echo OK!
 run:
 
 bochsdbg:
