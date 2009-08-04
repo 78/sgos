@@ -1,0 +1,16 @@
+#Windows上如何配置SGOS2开发环境
+
+= 准备 =
+
+需要准备的工具有：
+  * SGOS2最新的源代码
+  * sgos2_bin GCC 编译器集合（包含GDB、QEMU虚拟机）
+  * SGOS2开发使用的硬盘镜像文件
+
+= 步骤 =
+  # 首先在[http://code.google.com/p/sgos/downloads/list]下载sgos2_bin和sgos2硬盘镜像文件。
+  # 把sgos2_bin解压至任意一个目录中。
+  # 在本地建立一个开发目录，打开命令提示符切换至当前目录。使用“svn checkout https://sgos.googlecode.com/svn/trunk/ sgos --username 用户名”下载源代码（必须要安装svn工具）。
+  # 在命令提示符中使用“path sgos_bin的路径”设置编译器目录。
+  # 转至sgos2目录，把sgos2硬盘镜像文件也复制到这个地方。输入make命令，即可编译。
+  # 编译完成后，输入make windbg来调试内核。
