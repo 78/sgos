@@ -10,4 +10,4 @@ LDSCRIPT = arch/i386/kernel.ld
 OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/init/init.o \
 	arch/i386/io/port.o \
-
+	arch/i386/io/terminal.o \
