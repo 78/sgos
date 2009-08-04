@@ -9,11 +9,19 @@
 #include <terminal.h>
 
 static int putstr(const char* str);
-
 static char printbuf[1024];
 
 static int (*printer)(const char*);
 
+// this should be called as early as possible..
+void debug_init()
+{
+	printer = putstr;
+	clrscr();
+	printer("System Debugger( 2009-08-04 ) for SGOS2.\n");
+}
+
+// generally use PERROR instead of kprintf
 void kprintf(const char *fmt, ...)
 {
 	va_list args;
@@ -27,13 +35,6 @@ void kprintf(const char *fmt, ...)
 void die(const char *s )
 {
 	KERROR( s );
-}
-
-void debug_init()
-{
-	printer = putstr;
-	clrscr();
-	printer("System Debugger( 2009-08-04 ) for SGOS2.\n");
 }
 
 int debug_print( char *buf )
