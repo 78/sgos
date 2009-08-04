@@ -10,7 +10,7 @@ run:
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc
 
-windgb:
+windbg:
 	start qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &
 	gdb --command scripts/gdb kernel/kernel
 
