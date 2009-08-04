@@ -66,7 +66,9 @@ void putchar(char ch)
 	out_byte(0xE9,ch);	//for bochs
 	if(ch=='\t')
 	{
-		putchar(' ');
+		do{
+			putchar(' ');
+		}while( (_x-1)%4 );
 		return;
 	}
 	if(ch=='\n')
