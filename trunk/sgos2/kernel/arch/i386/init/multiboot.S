@@ -16,30 +16,36 @@ P_WRITE=				0x02
 PDE_ADDR=				0x10000
 
 ;//multiboot defines
-MULTIBOOT_PAGE_ALIGN=	(1 << 0)
+MULTIBOOT_PAGE_ALIGN=	(1 << 0)	;//modules are page aligned
 MULTIBOOT_MEMORY_INFO=	(1 << 1)
+MULTIBOOT_VIDEO_INFO=	(1 << 2)
 MULTIBOOT_AOUT_KLUDGE=  (1 << 16)
 
 MULTIBOOT_HEADER_MAGIC=	(0x1BADB002)
-MULTIBOOT_HEADER_FLAGS=	(MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_AOUT_KLUDGE)
+MULTIBOOT_HEADER_FLAGS=	(MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_AOUT_KLUDGE | MULTIBOOT_VIDEO_INFO)
 MULTIBOOT_CHECKSUM=		-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
 
 .global		_start
+.global		_multiboot_header
 .extern		K_STACK_ADDR
 .extern		_multiboot_init
 _start:
 	jmp		multiboot_entry
 .align 4
-multiboot_header:
+_multiboot_header:
 	.long 	MULTIBOOT_HEADER_MAGIC
 	.long	MULTIBOOT_HEADER_FLAGS
 	.long	MULTIBOOT_CHECKSUM
-	.long	multiboot_header -K_VIR_ADDR	/* header addr */
+	.long	_multiboot_header -K_VIR_ADDR	/* header addr */
 	.long	(_start - K_VIR_ADDR)
 	.long	0
 	.long	0
 	.long	(multiboot_entry - K_VIR_ADDR)
+	.long	0	;// video mode type
+	.long	0	;// width
+	.long	0	;// height
+	.long	0	;// depth
 meminfo_addr:
 	.long	0
 

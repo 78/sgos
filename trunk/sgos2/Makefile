@@ -15,13 +15,14 @@ bochs:
 	bochs -q -f scripts/bochsrc.bxrc
 
 windbg:
-	start qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &
+	start qemu -no-kqemu -m 512 -s -S -L ./qemu sgos2.img &
 	gdb --command scripts/gdb kernel/kernel
 
 debug:
 	qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &
 	gdb --command scripts/gdb kernel/kernel
 
+.PHONY: clean
 clean:
 	make -C kernel clean
 	make -C services clean

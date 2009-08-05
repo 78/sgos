@@ -6,6 +6,8 @@
 
 #define SYSTEM_INTERRUPT 0xA0
 
+#define PAGE_SIZE 4096
+
 // gdt 
 // segment
 typedef struct SEGMENT_DESC
@@ -69,6 +71,23 @@ typedef struct I386_REGISTERS
 	t_32	eip, cs, eflags, esp, ss;
 }I386_REGISTERS;	//19*4=76 Bytes
 
+//paging
+typedef union PAGE_TABLE{
+	t_32	v;
+	struct{
+		unsigned present:1;
+		unsigned write:1;
+		unsigned user:1;
+		unsigned unused1:2;
+		unsigned access:1;
+		unsigned unused2:2;
+		unsigned global:1;
+		unsigned share:1;
+		unsigned allocated:1;
+		unsigned copy_on_write:1;
+		unsigned phys_addr:20;
+	}a;
+}PAGE_TABLE, PAGE_DIR ;
 
 // (端口, 数据)
 #define out_byte_wait(port,data) \
@@ -103,5 +122,9 @@ void irq_uninstall( int irq );
 int irq_install( int irq, void (*handler)() );
 //syscall
 int syscall_interrupt();
+//init
+int machine_init();
+//page
+int page_init( uint size );
 
 #endif

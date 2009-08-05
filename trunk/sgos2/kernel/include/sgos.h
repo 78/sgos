@@ -13,6 +13,8 @@ typedef unsigned short		ushort;
 typedef unsigned int		uint;
 typedef unsigned char		byte;
 
+typedef unsigned int		size_t;
+
 typedef unsigned char		t_8;
 typedef unsigned short		t_16;
 typedef unsigned			t_32;
