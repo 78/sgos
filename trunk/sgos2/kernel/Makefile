@@ -7,7 +7,11 @@ ASFLAGS = -g
 CCFLAGS = -g -Werror -Iinclude -fno-builtin -ffreestanding -fleading-underscore
 LDFLAGS = 
 
-ifeq ($(findstring /sh.exe, $(SHELL)), /sh.exe)
+ifndef OSTYPE
+OSTYPE := $(shell uname)
+endif
+
+ifeq ($(OSTYPE), Linux)
 # linux env
 CCFLAGS += -fno-stack-protector
 LDFLAGS += -T$(LDSCRIPT) 
