@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "buffer.h"
 
 static FILE* fp;
@@ -18,8 +19,8 @@ typedef struct PARTITION
 }__attribute__((packed)) PARTITION;
 
 typedef struct HD_DRIVE{
-	unsigned long start;	//其实扇区
-	unsigned long sectors;	//扇区数
+	unsigned int start;	//其实扇区
+	unsigned int sectors;	//扇区数
 }HD_DRIVE;
 
 static HD_DRIVE drives[5*2];

@@ -4,6 +4,8 @@
 //gdxxhg@gmail.com
 
 #include <stdio.h>
+#include <stdlib.h>
+#include "unicode.h"
 
 #define UNICODE_DATABASE "unicode.db"
 static char* unicodeDB;

@@ -10,6 +10,9 @@ run:
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc
+	
+bochs:
+	bochs -q -f scripts/bochsrc.bxrc
 
 windbg:
 	start qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &

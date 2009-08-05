@@ -2,7 +2,7 @@
 
 ENTRY(_start)
 
-K_VIR_ADDR = 0xC0000000;
+K_VIR_ADDR = 0xC0100000;
 K_PHY_ADDR = 0x100000;
 PAGE_SIZE    = 0x1000;
 /* 8KB stack size */

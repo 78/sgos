@@ -60,7 +60,7 @@ static int writefile( char* fname, char* src, char* dest )
 	}
 	fp = fopen( src, "rb" );
 	if( fp==NULL ){
-		printf("open src file failed.\n");
+		printf("open src file failed %s.\n", src );
 		return -1;
 	}
 	fseek( fp, 0, SEEK_END );

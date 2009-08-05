@@ -353,20 +353,6 @@ __asm__("cld\n\t"
 return __res;
 }
 
-void * memchr(const void * cs,char c,int count)
-{
-register void * __res __asm__("di");
-if (!count)
-	return NULL;
-__asm__("cld\n\t"
-	"repne\n\t"
-	"scasb\n\t"
-	"je 1f\n\t"
-	"movl $1,%0\n"
-	"1:\tdecl %0"
-	:"=D" (__res):"a" (c),"D" (cs),"c" (count));
-return __res;
-}
 
 void * memset(void * s,char c,int count)
 {

@@ -1,7 +1,9 @@
 #ifndef _UNICODE_H_
 #define _UNICODE_H_
 
+#ifdef __WIN32__
 typedef unsigned short wchar_t;
+#endif
 
 int unicode_init();
 int unicode_decode( wchar_t* input, int inputLen, char* output, int outputLen );

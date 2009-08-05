@@ -4,8 +4,17 @@
 ARCH = i386
 
 ASFLAGS = -g
-CCFLAGS = -g -Werror -Iinclude -fno-builtin
-LDFLAGS = -Ttext=0xC0100000 -e_start
+CCFLAGS = -g -Werror -Iinclude -fno-builtin -ffreestanding -fleading-underscore
+LDFLAGS = 
+
+ifeq ($(findstring /sh.exe, $(SHELL)), /sh.exe)
+# linux env
+CCFLAGS += -fno-stack-protector
+LDFLAGS += -T$(LDSCRIPT) 
+else
+# windows env
+LDFLAGS += -Ttext=0xC0100000 -e_start
+endif
 
 AS = as $(ASFLAGS)
 CC = gcc $(CCFLAGS)
@@ -23,7 +32,7 @@ OBJECTS += lib/ctype.o \
 	lib/vsprintf.o \
 	debug/debug.o \
 	debug/format.o \
-	init/kinit.o \
+	init/kinit.o
 
 # Target
 
