@@ -40,7 +40,7 @@ multiboot_header:
 	.long	0
 	.long	0
 	.long	(multiboot_entry - K_VIR_ADDR)
-_meminfo_addr:
+meminfo_addr:
 	.long	0
 
 multiboot_info:
@@ -86,7 +86,7 @@ MAP_PTE:
 	movw	%ax, %gs
 	movw	%ax, %ss
 	;//设置内核堆栈
-	movl	0x10000, %esp
+	movl	$0x10000, %esp
 	movl	multiboot_info, %ebx
 	pushl	%ebx
 	call	_multiboot_init

@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "fat32.h"
 #include "unicode.h"
 
 #define TRUE 1
 #define FALSE 0
+
+#ifndef __WIN32__
+#define strnicmp strncasecmp
+#endif
 
 typedef int(*fat32_enumerator) ( char* fname, int size, TIME* ctime, TIME* mtime, 
 	int attr, int cluster, FILE_DESC* fNew, char* comp_name );
@@ -548,7 +553,7 @@ static int remove_enumerator( char* fname, int size, TIME* ctime,
     TIME* mtime, int attr, int cluster, FILE_DESC* f_new, char* comp_name )
 {
     //printf("Comparing %s & %s\n", fname, comp_name );
-    if( stricmp( fname, comp_name )==0 )
+    if( strnicmp( fname, comp_name, FILENAME_LEN )==0 )
     {
         return 2; //delete this file
     }
@@ -680,7 +685,7 @@ static int open_enumerator( char* fname, int size, TIME* ctime,
     TIME* mtime, int attr, int cluster, FILE_DESC* f_new, char* comp_name )
 {
     //printf("Comparing %s & %s\n", fname, comp_name );
-    if( stricmp( fname, comp_name )==0 )
+    if( strnicmp( fname, comp_name, FILENAME_LEN )==0 )
     {
         f_new->pos = 0;
         f_new->size = size;
@@ -901,7 +906,7 @@ static int saveinfo_enumerator( char* fname, int size, TIME* ctime,
     TIME* mtime, int attr, int cluster, FILE_DESC* f_new, char* comp_name )
 {
     //printf("Comparing %s & %s\n", fname, comp_name );
-    if( stricmp( fname, comp_name )==0 )
+    if( strnicmp( fname, comp_name, FILENAME_LEN )==0 )
     {
         return 3; //save this file information
     }
