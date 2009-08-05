@@ -36,7 +36,9 @@ OBJECTS += lib/ctype.o \
 	lib/vsprintf.o \
 	debug/debug.o \
 	debug/format.o \
-	init/kinit.o
+	init/kinit.o \
+	mm/allocator.o \
+	mm/kmalloc.o
 
 # Target
 
