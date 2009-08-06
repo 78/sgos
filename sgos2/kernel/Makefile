@@ -23,21 +23,43 @@ OC = objcopy $(OCFLAGS)
 OD = objdump $(ODFLAGS)
 LD2 = ld2
 
-# Include Target Platform Makefile
+# Kernel dir
+DIR_ARCH	= arch
+DIR_IPC		= ipc
+DIR_LOADER	= loader
+DIR_MM		= mm
+DIR_DEBUG	= debug
+DIR_INIT	= init
+DIR_LIB		= lib
+DIR_PROC	= proc
+
+# Sub objs
+OBJ_ARCH	= $(patsubst %.c,%.o,  $(wildcard $(DIR_ARCH)/*.c))
+OBJ_IPC		= $(patsubst %.c,%.o,  $(wildcard $(DIR_IPC)/*.c))
+OBJ_LOADER	= $(patsubst %.c,%.o,  $(wildcard $(DIR_LOADER)/*.c))
+OBJ_MM		= $(patsubst %.c,%.o,  $(wildcard $(DIR_MM)/*.c))
+OBJ_DEBUG	= $(patsubst %.c,%.o,  $(wildcard $(DIR_DEBUG)/*.c))
+OBJ_INIT	= $(patsubst %.c,%.o,  $(wildcard $(DIR_INIT)/*.c))
+OBJ_LIB		= $(patsubst %.c,%.o,  $(wildcard $(DIR_LIB)/*.c))
+OBJ_PROC	= $(patsubst %.c,%.o,  $(wildcard $(DIR_PROC)/*.c))
+
+# All objects, here can be set the first link obj for your kernel
+OBJECTS     =
+
+# Platform objects
 include arch/$(ARCH)/Makefile
 
 # Kernel objects
-OBJECTS += lib/ctype.o \
-	lib/string.o \
-	lib/vsprintf.o \
-	debug/debug.o \
-	debug/format.o \
-	init/kinit.o \
-	mm/allocator.o \
-	mm/kmalloc.o
+OBJECTS	   += $(OBJ_ARCH) \
+			  $(OBJ_IPC) \
+			  $(OBJ_LOADER) \
+			  $(OBJ_MM) \
+			  $(OBJ_DEBUG) \
+			  $(OBJ_INIT) \
+			  $(OBJ_LIB) \
+			  $(OBJ_PROC)
 
 # Target
-
 all: kernel
 
 kernel: $(OBJECTS)
