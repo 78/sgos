@@ -57,9 +57,9 @@ multiboot_entry:
 	movl	%ebx, (multiboot_info - K_VIR_ADDR)
 	
 	;//借助物理地址 [0x10000,0x13000) 来做一个临时分页表，当内存模块初始化之后，这里作废。
-	;//填充2个页表，映射物理内存前8MB
+	;//填充1个页表，映射物理内存前4MB
 	movl	$0x3, %eax		;//P_PRESENT | P_WRITE
-	movl	$(1024 * 2), %ecx
+	movl	$(1024 * 1), %ecx
 	movl	$0x11000, %edi
 MAP_PTE:
 	stosl
@@ -78,7 +78,7 @@ MAP_PTE:
 
 	;//开启分页
 	movl	%cr0, %eax
-	orl		$0x80010000, %eax ;//PG|WP
+	orl		$0x80000000, %eax ;//PG|WP
 	movl	%eax, %cr0
 	
 	;//加载gdt

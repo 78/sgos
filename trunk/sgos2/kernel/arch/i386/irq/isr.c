@@ -166,7 +166,7 @@ void isr_handler(const I386_REGISTERS *r)
 		{
 			handler(r->err_code, r);
 		}else{
-			kprintf("###### Exception #######\nDescription: %s    Error Code: %d\n", exception_msg[ r->int_no ], r->err_code );
+			kprintf("###### Unhandled Exception #######\nDescription: %s    Error Code: %d\n", exception_msg[ r->int_no ], r->err_code );
 			isr_dumpcpu( r );
 			KERROR("System Halted!\n");
 		}
