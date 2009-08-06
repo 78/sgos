@@ -46,7 +46,7 @@ kernel: $(OBJECTS)
 	$(OC) -Obinary $@ $@.bin 
 
 clean:
-	rm -f $(OBJECTS) \
+	$(DEL) $(OBJECTS) \
 		kernel.dmp \
 		kernel \
 		kernel.bin

@@ -2,7 +2,16 @@
 
 # Export var for all subdir.
 ifndef OSTYPE
-export OSTYPE := $(shell uname)
+	export OSTYPE := $(shell uname)
+endif
+
+# Tool set
+ifeq ($(OSTYPE), Linux)
+	export DEL := rm -f
+	export EXT :=
+else
+	export DEL := del
+	export EXT := .exe
 endif
 
 # Check the build tool
@@ -20,11 +29,7 @@ all: check
 	@echo OK!
 
 check:
-ifeq ($(OSTYPE), Linux)
-	$(call wf-if-not-exist, tools/wf/wf)
-else
-	$(call wf-if-not-exist, tools/wf/wf.exe)
-endif
+	$(call wf-if-not-exist, tools/wf/wf$(EXT))
 
 run:
 	@echo just a joke, nothing to do!
