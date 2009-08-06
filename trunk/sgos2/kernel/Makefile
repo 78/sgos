@@ -51,13 +51,13 @@ include arch/$(ARCH)/Makefile
 
 # Kernel objects
 OBJECTS	   += $(OBJ_ARCH) \
-			  $(OBJ_IPC) \
-			  $(OBJ_LOADER) \
-			  $(OBJ_MM) \
-			  $(OBJ_DEBUG) \
-			  $(OBJ_INIT) \
-			  $(OBJ_LIB) \
-			  $(OBJ_PROC)
+	      $(OBJ_IPC) \
+	      $(OBJ_LOADER) \
+	      $(OBJ_MM) \
+	      $(OBJ_DEBUG) \
+	      $(OBJ_INIT) \
+	      $(OBJ_LIB) \
+	      $(OBJ_PROC)
 
 # Target
 all: kernel
@@ -68,7 +68,7 @@ kernel: $(OBJECTS)
 	$(OC) -Obinary $@ $@.bin 
 
 clean:
-	$(DEL) $(OBJECTS) \
+	$(RM) $(OBJECTS) \
 		kernel.dmp \
 		kernel \
 		kernel.bin
