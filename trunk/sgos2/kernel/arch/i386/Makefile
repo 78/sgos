@@ -16,3 +16,6 @@ OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/irq/irq.o \
 	arch/i386/irq/isr.o \
 	arch/i386/irq/interrupt.o
+
+
+
