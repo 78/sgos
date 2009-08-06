@@ -14,6 +14,7 @@ typedef unsigned int		uint;
 typedef unsigned char		byte;
 
 typedef unsigned int		size_t;
+typedef unsigned int		time_t;
 
 typedef unsigned char		t_8;
 typedef unsigned short		t_16;
@@ -29,6 +30,8 @@ typedef unsigned			uint32_t;
 typedef long long			int64_t;
 typedef unsigned long long	uint64_t;
 
+
+#define RTC_FREQUENCY 100	//100Hz
 #define NULL	((void*)0)
 
 #endif //__SGOS__H__

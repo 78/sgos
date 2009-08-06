@@ -13,6 +13,10 @@ OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/io/terminal.o \
 	arch/i386/mmu/gdt.o \
 	arch/i386/mmu/page.o \
+	arch/i386/mmu/dir.o \
+	arch/i386/mmu/map.o \
+	arch/i386/mmu/fault.o \
+	arch/i386/clock/rtc.o \
 	arch/i386/irq/irq.o \
 	arch/i386/irq/isr.o \
 	arch/i386/irq/interrupt.o

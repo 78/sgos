@@ -23,6 +23,6 @@ int machine_init()
     irq_init();
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
 	kprintf("Protect mode was controled successfully.\n");
-	
+	rtc_init();
 	return 0;
 }

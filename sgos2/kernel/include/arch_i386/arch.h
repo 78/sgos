@@ -5,8 +5,13 @@
 #include <gdt_const.h>
 
 #define SYSTEM_INTERRUPT 0xA0
+#define PAGEFAULT_INTERRUPT 14
 
-#define PAGE_SIZE 4096
+#define PAGE_SIZE	4096
+#define PAGE_SIZE_BITS 12
+#define KERNEL_BASE	0xC0000000
+#define PROC_PAGE_DIR_BASE	0xE0000000
+#define PROC_PAGE_TABLE_MAP	0xBFC00000
 
 // gdt 
 // segment
@@ -88,6 +93,10 @@ typedef union PAGE_TABLE{
 		unsigned phys_addr:20;
 	}a;
 }PAGE_TABLE, PAGE_DIR ;
+#define P_PRESENT	(1<<0)	//页面存在
+#define P_WRITE		(1<<1)	//页面可写
+#define P_USER		(1<<2)	//页面为用户级
+#define P_ACCESS	(1<<5)	//页面被访问过
 
 // (端口, 数据)
 #define out_byte_wait(port,data) \
@@ -126,5 +135,19 @@ int syscall_interrupt();
 int machine_init();
 //page
 int page_init( uint size );
+void load_page_dir(uint phys_addr);
+void dump_phys_pages();
+void free_phys_page( uint addr );
+uint get_phys_page();
+void reflush_pages();
+void load_page_dir(uint phys_addr);
+//map
+void map_pages( uint vir_addr, uint phys_addr, uint size, uint attr );
+void unmap_pages( uint vir_addr, uint size );
+//dir
+uint get_page_dir();
+void free_page_dir(uint addr);
+//rtc
+void rtc_init();
 
 #endif

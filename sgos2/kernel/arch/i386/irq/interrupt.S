@@ -164,7 +164,7 @@ do_irq:
 	pop		%es
 	pop		%ds
 	popa
-	addl	%esp, 8
+	addl	$8, %esp 
 	iret
 
 
@@ -450,6 +450,6 @@ do_isr:
 	pop		%es
 	pop		%ds
 	popa
-	addl	%esp, 8
+	addl	$8, %esp
 	iret
 

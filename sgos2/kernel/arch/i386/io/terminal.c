@@ -12,7 +12,7 @@ static int _w=80,_h=25;
 static int _x=0, _y=0;	//光标位置
 static short *video = (short*)0xC00B8000;	//显存地址
 static short buffer[80*25*2];	//字符缓冲
-static const unsigned short style = 0x0700;
+static unsigned short style = 0x0700;
 
 static void scroll_up(); //向上卷屏
 static void next_line();	//下一行
@@ -71,6 +71,14 @@ void putchar(char ch)
 		}while( (_x-1)%4 );
 		return;
 	}
+	switch( ch ){
+	case '#':
+		style = 0x0C00;
+		break;
+	case '[':
+		style = 0x0200;
+		break;
+	}
 	if(ch=='\n')
 	{
 		next_line();
@@ -84,6 +92,9 @@ void putchar(char ch)
 			buffer[_y*_w+_x++] = style | ch;
 	}
 
+	if( ch== ']'||ch=='\n' )	
+		style = 0x0700;
+		
 	if(_x>=_w)
 	{
 		next_line();

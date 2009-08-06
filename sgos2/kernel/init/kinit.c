@@ -55,7 +55,7 @@ void kinit( uint boot_info )
 	//page management
 	page_init( mem_size );
 	//init kmalloc
-//	kmalloc_init();
+	kmalloc_init();
 	
 	KERROR("##Warning: kernel not ready.");
 }
