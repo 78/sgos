@@ -1,35 +1,34 @@
 #Makefile for SGOS2
 
-# Export var for all subdir.
+# OS type.
 ifndef OSTYPE
-	export OSTYPE := $(shell uname)
+export OSTYPE := $(shell uname)
 endif
 
 # Tool set
 ifeq ($(OSTYPE), Linux)
-	export DEL := rm -f
-	export EXT :=
+export RM 	  	  := rm -f
+export EXE_SUFFIX := 
 else
-	export DEL := del
-	export EXT := .exe
+export RM	  	  := rm -f
+export EXE_SUFFIX := .exe
 endif
 
 # Check the build tool
 define wf-if-not-exist
-	$(if $(wildcard $1), @echo $1 is not exist!,@make -C tools/wf)
+	$(if $(wildcard $1),,@make -C tools/wf)
 endef
 
-.PHONY : all run bochsdbg bochs windbg debug clean
+.PHONY : all check run bochsdbg bochs windbg debug clean
 # Target
 all: check
 	make -C kernel
 	make -C services
-#	make -C tools/wf
 	tools/wf/wf sgos2.img -src kernel/kernel.bin -dest sgos2/kernel.bin
 	@echo OK!
 
 check:
-	$(call wf-if-not-exist, tools/wf/wf$(EXT))
+	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
 	@echo just a joke, nothing to do!
