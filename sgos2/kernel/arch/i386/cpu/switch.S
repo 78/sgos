@@ -1,6 +1,6 @@
-.global _enter_user_mode
+.global _enter_threading_mode
 
-_enter_user_mode:
+_enter_threading_mode:
 	pushl	$0x14	;//$0x17	;//用户堆栈段
 	pushl	%esp	;//用户堆栈指针
 	pushl	$0x202	;//flag寄存器

@@ -6,18 +6,8 @@
 #include <process.h>
 #include <debug.h>
 
-//these threads on the same state are linked by schedule link
-typedef struct THREAD_BOX{
-	THREAD*			running;
-	THREAD*			ready;
-	THREAD*			sleep;
-	THREAD*			paused;
-	THREAD*			dead;
-	THREAD*			wait;
-	mutex_t			mutex;
-}THREAD_BOX;
-
-static THREAD_BOX tbox = {NULL, };
+THREAD_BOX tbox = {NULL, };
+static const unsigned ms = 1000/RTC_FREQUENCY;
 
 
 THREAD* current_thread()
@@ -119,10 +109,16 @@ void sched_clock()
 {
 	THREAD* thr;
 	SCHEDULE_INFO* info;
+	
+	for( thr=tbox.wait; thr; thr=thr->sched_info.next ){
+		thr->sched_info.clock -= ms;
+		if( thr->sched_info.clock<=0 ){
+			sched_set_state( thr, TS_READY );
+		}
+	}
 	local_irq_enable();
 	thr = current_thread();
     info = &thr->sched_info;
-//	kprintf(".");  
 	--info->clock;
 	if( info->clock <= 0 ){	//need scheduling
 		schedule();
@@ -147,7 +143,7 @@ void schedule()
 	if( thr ){
 		if( thr != cur ){
 			tbox.running = thr;
-			thr->sched_info.clock = 1;
+			thr->sched_info.clock = 2;
 			switch_to( cur, thr );
 		}
 	}
