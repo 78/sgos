@@ -5,12 +5,12 @@ ARCH = i386
 
 ASFLAGS = -g
 CCFLAGS = -g -Werror -Iinclude -fno-builtin -ffreestanding -fleading-underscore
-LDFLAGS = 
+LDFLAGS =
 
 ifeq ($(OSTYPE), Linux)
 # linux env
 CCFLAGS += -fno-stack-protector
-LDFLAGS += -T$(LDSCRIPT) 
+LDFLAGS += -T$(LDSCRIPT)
 else
 # windows env
 LDFLAGS += -Ttext=0xC0100000 -e_start
@@ -33,31 +33,21 @@ DIR_INIT	= init
 DIR_LIB		= lib
 DIR_PROC	= proc
 
-# Sub objs
-OBJ_ARCH	= $(patsubst %.c,%.o,  $(wildcard $(DIR_ARCH)/*.c))
-OBJ_IPC		= $(patsubst %.c,%.o,  $(wildcard $(DIR_IPC)/*.c))
-OBJ_LOADER	= $(patsubst %.c,%.o,  $(wildcard $(DIR_LOADER)/*.c))
-OBJ_MM		= $(patsubst %.c,%.o,  $(wildcard $(DIR_MM)/*.c))
-OBJ_DEBUG	= $(patsubst %.c,%.o,  $(wildcard $(DIR_DEBUG)/*.c))
-OBJ_INIT	= $(patsubst %.c,%.o,  $(wildcard $(DIR_INIT)/*.c))
-OBJ_LIB		= $(patsubst %.c,%.o,  $(wildcard $(DIR_LIB)/*.c))
-OBJ_PROC	= $(patsubst %.c,%.o,  $(wildcard $(DIR_PROC)/*.c))
-
 # All objects, here can be set the first link obj for your kernel
-OBJECTS     =
+OBJECTS :=
 
 # Platform objects
 include arch/$(ARCH)/Makefile
 
 # Kernel objects
-OBJECTS	   += $(OBJ_ARCH) \
-	      $(OBJ_IPC) \
-	      $(OBJ_LOADER) \
-	      $(OBJ_MM) \
-	      $(OBJ_DEBUG) \
-	      $(OBJ_INIT) \
-	      $(OBJ_LIB) \
-	      $(OBJ_PROC)
+OBJECTS += $(patsubst %.c,%.o,  $(wildcard $(DIR_ARCH)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_IPC)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_LOADER)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_MM)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_DEBUG)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_INIT)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_LIB)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_PROC)/*.c))
 
 # Target
 all: kernel
@@ -65,7 +55,7 @@ all: kernel
 kernel: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$@
 	$(OD) -S $@ > $@.dmp
-	$(OC) -Obinary $@ $@.bin 
+	$(OC) -Obinary $@ $@.bin
 
 clean:
 	$(RM) $(OBJECTS) \
