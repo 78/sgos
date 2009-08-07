@@ -30,12 +30,13 @@ static void test3()
 {
 	int i;
 	mutex_init(&mut);
-	for(i=0;i<15; i++ ){
+	for(i=0;i<100; i++ ){
 		THREAD* thr;
 		thr = thread_create( current_proc(), (uint)test4 );
 		sched_set_state( thr, TS_READY );
 	}
 	PERROR("halt init thread.\n");
+	
 	while(1)
 		__asm__("hlt");
 }
