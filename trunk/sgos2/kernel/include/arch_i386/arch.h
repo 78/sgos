@@ -3,9 +3,11 @@
 
 #include <sgos.h>
 #include <gdt_const.h>
+#include <lock.h>
 
 #define SYSTEM_INTERRUPT 0xA0
 #define PAGEFAULT_INTERRUPT 14
+#define RTC_INTERRUPT		0
 
 #define PAGE_SIZE	4096
 #define PAGE_SIZE_BITS 12
@@ -13,6 +15,7 @@
 #define PROC_PAGE_DIR_BASE	0xE0000000
 #define PROC_PAGE_TABLE_MAP	0xBFC00000
 
+struct THREAD;
 // gdt 
 // segment
 typedef struct SEGMENT_DESC
@@ -51,22 +54,28 @@ typedef struct TSS {
 	t_32	eip;
 	t_32	flags;
 	t_32	eax, ecx ,edx, ebx;
-	t_32	esp;
-	t_32	ebp;
-	t_32	esi;
-	t_32	edi;
-	t_32	es;
-	t_32	cs;
-	t_32	ss;
-	t_32	ds;
-	t_32	fs;
-	t_32	gs;
+	t_32	esp, ebp, esi, edi;
+	t_32	es, cs, ss, ds, fs, gs;
 	t_32	ldt;
 	t_16	trap;
 	t_16	iobase;	
 	/* I/O位图基址大于或等于TSS段界限，就表示没有I/O许可位图 */
 	/*t_8	iomap[2];*/
 }TSS;
+
+/*数学协处理器寄存器*/
+typedef struct I387_REGISTERS
+{
+	t_32 cwd;
+	t_32 swd;
+	t_32 twd;
+	t_32 fip;
+	t_32 fcs;
+	t_32 foo;
+	t_32 fos;
+	t_32 st[20];
+}I387_REGISTERS;
+
 
 typedef struct I386_REGISTERS
 {
@@ -75,6 +84,17 @@ typedef struct I386_REGISTERS
 	t_32	int_no, err_code;
 	t_32	eip, cs, eflags, esp, ss;
 }I386_REGISTERS;	//19*4=76 Bytes
+
+typedef struct I386_CONTEXT{
+	t_32	gs, fs, es, ds, ss;
+	t_32	edi, esi, ebp, esp, ebx, edx, ecx, eax;
+	t_32	eflags, cs, eip;
+}I386_CONTEXT;
+
+typedef struct ARCH_THREAD{
+//	TSS				tss;
+	I387_REGISTERS	i387;
+}ARCH_THREAD;
 
 //paging
 typedef union PAGE_TABLE{
@@ -107,11 +127,11 @@ __asm__ __volatile__ ( "out %%ax , %%dx\n\tjmp 1f\n1:\tjmp 1f\n1:" : : "a"( data
 __asm__ __volatile__ ( "out %%al , %%dx" : : "a"( data ) , "d"( port ) );
 #define out_word(port,data) \
 __asm__ __volatile__ ( "out %%ax , %%dx" : : "a"( data ) , "d"( port ) );
-#define out_dword(port,data) \
+#define out_t_32(port,data) \
 __asm__ __volatile__ ( "out %%eax , %%dx" : : "a"( data ) , "d"( port ) );
 // port.c
 t_16 in_word( t_16 port );
-t_32 in_dword( t_16 port );
+t_32 in_t_32( t_16 port );
 t_8 in_byte( t_16 port );
 
 //gdt
@@ -149,5 +169,10 @@ uint get_page_dir();
 void free_page_dir(uint addr);
 //rtc
 void rtc_init();
+//cpu
+void init_thread_regs( struct THREAD* thr, struct THREAD* parent,
+	void* context, uint entry_addr, uint stack_addr );
+void switch_to( struct THREAD* cur, struct THREAD* thr );
+void start_threading();
 
 #endif

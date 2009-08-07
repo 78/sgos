@@ -32,8 +32,8 @@ void kinit( uint boot_info )
 		kprintf ("mmap_addr = 0x%x, mmap_length = 0x%x\n", 
 			mbi->mmap_addr, mbi->mmap_length); 
 		for ( mmap = (memory_map_t *) mbi->mmap_addr; 
-				(uint) mmap < mbi->mmap_addr + mbi->mmap_length; 
-				mmap = (memory_map_t *) ((uint) mmap + mmap->size + sizeof (mmap->size))
+			(uint) mmap < mbi->mmap_addr + mbi->mmap_length; 
+			mmap = (memory_map_t *) ((uint) mmap + mmap->size + sizeof (mmap->size))
 		){
 			kprintf ("size = 0x%x, base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x\n", 
 				mmap->size, 
@@ -56,7 +56,11 @@ void kinit( uint boot_info )
 	page_init( mem_size );
 	//init kmalloc
 	kmalloc_init();
-	
+	//
+	process_init();
+	//
+	start_threading();
+	//never return here
 	KERROR("##Warning: kernel not ready.");
 }
 

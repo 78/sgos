@@ -33,8 +33,6 @@ void unmap_pages( uint vir_addr, uint size )
 	table_entry = (PAGE_DIR*)PROC_PAGE_TABLE_MAP + (vir_addr>>PAGE_SIZE_BITS) ;
 	count = size >> PAGE_SIZE_BITS;
 	for( ; count; count--, table_entry++ ){
-		if( table_entry->v )
-			free_phys_page( table_entry->a.phys_addr<<PAGE_SIZE_BITS );
 		table_entry->v = 0;
 	}
 	reflush_pages();

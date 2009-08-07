@@ -7,9 +7,9 @@
 #include <stdarg.h>
 #include <arch.h>
 #include <terminal.h>
+#include <mutex.h>
 
 static int putstr(const char* str);
-static char printbuf[1024];
 
 static int (*printer)(const char*);
 
@@ -24,8 +24,10 @@ void debug_init()
 // generally use PERROR instead of kprintf
 void kprintf(const char *fmt, ...)
 {
+	char printbuf[256];
 	va_list args;
 	int i;
+	uint eflags;
 	va_start(args, fmt);
 	i=vsprintf( printbuf, fmt, args );
 	printer( printbuf );
@@ -34,6 +36,7 @@ void kprintf(const char *fmt, ...)
 
 void die(const char *s )
 {
+	local_irq_disable();
 	KERROR( s );
 }
 

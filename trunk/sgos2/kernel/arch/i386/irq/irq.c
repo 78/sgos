@@ -144,11 +144,11 @@ void irq_mask( int irq, int enabled )
 
 void irq_handler(const I386_REGISTERS *r)
 {
-	void (*handler)(void);
+	void (*handler)(const I386_REGISTERS *r);
 
 	handler = irq_routines[r->int_no - 32];
 	if( handler ){
-		handler();
+		handler(r);
 	}
 	if( r->int_no >= 40 )
 	{
