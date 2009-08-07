@@ -47,6 +47,8 @@ int page_init(uint mem_size)
 	kprintf("Allocating tables for kernel space.\n");
 	dir_entry = (PAGE_DIR*)0x00010000;
 	// 0xC0000000 - 0xC0400000 已分配，所以 +1
+//	dir_entry[0].a.user = 1;
+//	dir_entry[768].a.user = 1;
 	for( i=768+1; i<1024; i++ ){
 		dir_entry[i].v = get_phys_page();
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
@@ -82,16 +84,19 @@ uint get_phys_page()
 {
 	static uint it = 0;	//for fast allocation
 	register uint i;
+	uint eflags;
 	if( page_used == total_pages ){
 		PERROR("## no pages for allocation.");
 		return 0;
 	}
+	local_irq_save(eflags);
 	if( it < page_front )
 		it = page_front;
 	for( i=it; i<total_pages; i++ ){
 		if( !page_ref[i] ){
 			page_ref[i]++;
 			it = i+1;
+			local_irq_restore(eflags);
 			return PAGE_INDEX_TO_PHYS_ADDR(it);
 		}
 	}
@@ -99,10 +104,12 @@ uint get_phys_page()
 		if( !page_ref[i] ){
 			page_ref[i]++;
 			it = i+1;
+			local_irq_restore(eflags);
 			return PAGE_INDEX_TO_PHYS_ADDR(it);
 		}
 	}
 	PERROR("## no pages for allocation.");
+	local_irq_restore(eflags);
 	return 0;
 }
 

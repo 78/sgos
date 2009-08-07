@@ -12,6 +12,7 @@ PAGE_SIZE=				(1<<12) ;//4KB
 
 P_PRESENT=				0x01
 P_WRITE=				0x02
+P_USER=					0x04
 
 PDE_ADDR=				0x10000
 

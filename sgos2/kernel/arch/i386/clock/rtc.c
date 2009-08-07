@@ -3,6 +3,7 @@
 #include <arch.h>
 #include <time.h>
 #include <debug.h>
+#include <thread.h>
 
 #define BCD_TO_HEX(bcd)	(bcd&0xf)+((bcd>>4)&0xf)*10
 
@@ -19,13 +20,13 @@ void rtc_set_freq(unsigned freq)
 	out_byte(0x40, div>>8);
 }
 
-void rtc_interrupt()
+void rtc_interrupt(const I386_REGISTERS* r)
 {
 	rtc_time ++;
 	if( !(rtc_time % RTC_FREQUENCY) ){
-        kprintf(".");  //Let's see how long dose a minute last?
         rtc_second ++;
 	}
+	sched_clock();
 }
 
 void rtc_init()
@@ -35,7 +36,8 @@ void rtc_init()
 
 	/* initialize RTC */
 	rtc_set_freq( RTC_FREQUENCY );
-	irq_install(0, rtc_interrupt);
+	irq_install( RTC_INTERRUPT, rtc_interrupt);
+	irq_mask( RTC_INTERRUPT, 1 );
 
 	/* initialize system time */
 	out_byte(0x70, 0);	/* seconds */

@@ -12,12 +12,15 @@ static proc_dir_bitmap[MAX_PROCESS_NUM/32] = {0,};
 uint get_page_dir()
 {
 	register int i;
+	uint eflags;
+	local_irq_save( eflags );
 	for( i=0; i<(MAX_PROCESS_NUM>>5); i++ ){
 		if( proc_dir_bitmap[i]!=0xFFFFFFFF ){
 			register int j;
 			for( j=0; j<32; j++ ){
 				if( !(proc_dir_bitmap[i]&(1<<j)) ){
 					proc_dir_bitmap[i] |= (1<<j);
+					local_irq_restore( eflags );
 					return PROC_PAGE_DIR_BASE+ (((i<<5)+j)<<PAGE_SIZE_BITS);
 				}
 			}

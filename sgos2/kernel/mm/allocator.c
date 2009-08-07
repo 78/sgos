@@ -12,8 +12,10 @@
  */
 
 #include <sgos.h>
+#include <arch.h>
 #include <debug.h>
 #include <string.h>
+#include <mutex.h>
 #include <allocator.h>
 
 #define HASH_APPEND( i, l ) { \
@@ -57,10 +59,12 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 {
 	size_t m, k, i, j;
 	node_t* nod;
+	uint eflags;
 	if(!siz) return NULL;
 	m = siz + sizeof(node_t);
 	i = calc_hash_index( m );
 	//进入临界区
+	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
@@ -87,11 +91,13 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 				MAKE_FREE( nod2 );
 			}
 			//离开临界区
+			local_irq_restore(eflags);
 			return (void*)((size_t)nod + sizeof(node_t));
 		}
 		//没有可用块
 	}
 	//离开临界区
+	local_irq_restore(eflags);
 	return NULL;
 }
 
@@ -117,14 +123,17 @@ void	mm_free(allocator_t* who, void* p)
 {
 	int k;
 	node_t* nod;
+	uint eflags;
 	if( !p ) return;
 	nod = (node_t*)((size_t)p - sizeof(node_t));
+	//进入临界区
+	local_irq_save(eflags);
 	if( IS_FREE_NODE(nod) ){
 		kprintf("Error: cannot free free node.\n");
+		local_irq_restore(eflags);
 		return;
 	}
 	MAKE_FREE(nod);
-	//进入临界区
 	if( nod->pre && IS_FREE_NODE(nod->pre) ){
 		//和前面一块空闲块合并，
 		nod = merge(who, nod->pre, nod, nod->pre);
@@ -136,6 +145,7 @@ void	mm_free(allocator_t* who, void* p)
 	k = calc_hash_index( nod->size+sizeof(node_t) );
 	HASH_APPEND(nod, who->free_table[k]);
 	//离开临界区
+	local_irq_restore(eflags);
 }
 
 void*	mm_calloc(allocator_t* who, size_t c, size_t n)
@@ -170,9 +180,11 @@ void	mm_print_block(allocator_t* who)
 	int i;
 	size_t used_size, free_size;
 	node_t * nod;
+	uint eflags;
 	kprintf("Search the link table:\n");
 	nod = who->first_node;
 	used_size=free_size=0;
+	local_irq_save(eflags);
 	while( nod ){
 		if( IS_FREE_NODE(nod) ){
 			kprintf("[Free:%u]", nod->size+sizeof(node_t) );
@@ -194,6 +206,7 @@ void	mm_print_block(allocator_t* who)
 		}
 		kprintf("\n");
 	}
+	local_irq_restore(eflags);
 }
 
 void	mm_free_all(allocator_t * who)

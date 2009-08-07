@@ -64,6 +64,7 @@ void clrscr()
 void putchar(char ch)
 {
 	out_byte(0xE9,ch);	//for bochs
+	uint eflags;
 	if(ch=='\t')
 	{
 		do{
@@ -79,6 +80,7 @@ void putchar(char ch)
 		style = 0x0200;
 		break;
 	}
+	local_irq_save( eflags );
 	if(ch=='\n')
 	{
 		next_line();
@@ -100,6 +102,7 @@ void putchar(char ch)
 		next_line();
 	}
 	move_cursor();
+	local_irq_restore( eflags );
 }
 
 // scroll up the screen
