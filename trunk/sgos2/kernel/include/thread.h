@@ -43,6 +43,17 @@ typedef struct THREAD{
 	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];
 }THREAD;
 
+//these threads on the same state are linked by schedule link
+typedef struct THREAD_BOX{
+	THREAD*			running;
+	THREAD*			ready;
+	THREAD*			sleep;
+	THREAD*			paused;
+	THREAD*			dead;
+	THREAD*			wait;
+	mutex_t			mutex;
+}THREAD_BOX;
+
 THREAD* current_thread();
 THREAD* thread_create( struct PROCESS* proc, uint entry_addr );
 int thread_terminate( THREAD* thr );

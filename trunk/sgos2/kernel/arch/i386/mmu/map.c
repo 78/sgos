@@ -14,7 +14,7 @@ void map_pages( uint vir_addr, uint phys_addr, uint size, uint attr )
 	uint count;
 	table_entry = (PAGE_DIR*)PROC_PAGE_TABLE_MAP + (vir_addr>>PAGE_SIZE_BITS) ;
 	count = size >> PAGE_SIZE_BITS;
-	kprintf("map vir:0x%X to phy:0x%X  size:0x%X\n", vir_addr, phys_addr, size );
+//	kprintf("map vir:0x%X to phy:0x%X  size:0x%X\n", vir_addr, phys_addr, size );
 	for( ; count; count--, table_entry++, phys_addr+=PAGE_SIZE ){
 		table_entry->v = phys_addr;
 		//设置该PDE的属性

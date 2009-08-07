@@ -15,11 +15,13 @@ void print_id()
 {
 //	mutex_lock(&mut);
 	kprintf("{%d}",current_thread()->id);
+	thread_wait( 1000 );
 //	mutex_unlock(&mut);
 }
 
 static void test4()
 {
+	thread_wait( 5000 );
 	while(1)
 		print_id();
 }
@@ -33,20 +35,13 @@ static void test3()
 		thr = thread_create( current_proc(), (uint)test4 );
 		sched_set_state( thr, TS_READY );
 	}
+	PERROR("halt init thread.\n");
 	while(1)
-		kprintf("{1}");
-}
-
-static void test2()
-{
-	THREAD* thr;
-	thr = thread_create( current_proc(), (uint)test3 );
-	sched_set_state( thr, TS_READY );
-	while(1)
-		kprintf("{0}");
+		__asm__("hlt");
 }
 
 extern void enter_user_mode();
+extern THREAD_BOX tbox;
 void start_threading()
 {
 	//初始化2个局部描述符, LDT
@@ -68,9 +63,10 @@ void start_threading()
 		"ltr %bx\n\t"
 		"mov $0x30, %bx\n\t"
 		"lldt %bx\n" );
-	enter_user_mode();
+	enter_threading_mode();
+	tbox.running = current_proc()->thread;
 	//back here
-	test2();
+	test3();
 }
 
 void i386_switch( THREAD*, uint*, uint* );
@@ -79,6 +75,7 @@ void switch_to( THREAD* cur, THREAD* thr )
 	//let clock work
 	out_byte(0x20, 0x20);
 	I386_REGISTERS *r = GET_THREAD_REGS(thr);
+//	isr_dumpcpu( r );
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
 }
 
@@ -97,5 +94,5 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 	r->kesp = 0x10000000+thr->id*0x40000;
 	r->eip = entry_addr;
 	thr->stack_pointer = (t_32)r;
-	PERROR("ok init:%d  pointer:0x%X", thr->id, thr->stack_pointer );
+//	PERROR("ok init:%d  pointer:0x%X", thr->id, thr->stack_pointer );
 }

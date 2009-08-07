@@ -13,7 +13,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 {
 	uint addr;	//被访问或修改的内存地址
 	__asm__("movl %%cr2, %0" : "=r"( addr ) );
-	kprintf("page fault at 0x%X\n", addr );
+//	kprintf("page fault at 0x%X\n", addr );
 	if( !(err_code&P_PRESENT ) ){	//not present this page
 		if( IS_KERNEL_MEMORY( addr ) ){
 			uint phys_addr = get_phys_page();

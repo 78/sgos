@@ -31,9 +31,9 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	if( proc->thread )
 		proc->thread->pre = thr;
 	proc->thread = thr;
-	//插队，添加到thread_box
-	sched_set_state( thr, TS_PAUSED );
 	local_irq_restore( eflags );
+	//添加到thread_box
+	sched_set_state( thr, TS_PAUSED );
 	//
 	return thr;
 }
@@ -73,6 +73,17 @@ int thread_sleep()
 
 int thread_wait( uint ms )
 {
+	THREAD* cur = current_thread();
+	uint flags;
+	local_irq_save( flags );
+	cur->sched_info.clock = ms;
+	//如果此时被切换了线程，则clock被更改了。。。
+	sched_set_state( cur, TS_WAIT );
+	local_irq_restore( flags );
+	schedule();
+	if( cur->state == TS_WAIT )
+		KERROR("##impossible.");
+	return 0;
 }
 
 int thread_wakeup( THREAD* thr )
