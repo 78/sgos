@@ -31,7 +31,7 @@ check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
-	@echo just a joke, nothing to do!
+	qemu -no-kqemu -m 512 -L ./qemu sgos2.img
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc

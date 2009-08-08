@@ -31,7 +31,7 @@ typedef long long			int64_t;
 typedef unsigned long long	uint64_t;
 
 
-#define RTC_FREQUENCY 100	//100Hz
+#define RTC_FREQUENCY 1000	//100Hz
 #define NULL	((void*)0)
 
 #endif //__SGOS__H__

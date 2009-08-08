@@ -174,6 +174,27 @@ void	mm_init_block(allocator_t* who, size_t addr, size_t size)
 	who->first_node = nod;
 }
 
+//添加可用内存空间
+void	mm_insert_block(allocator_t* who, size_t addr, size_t size)
+{
+	//make a node
+	uint eflags;
+	node_t* nod = (node_t*)addr;
+	nod->pre = NULL;
+	nod->size = size - sizeof(node_t);
+	local_irq_save(eflags);
+	//insert
+	if( who->first_node )
+		who->first_node->pre = nod;
+	nod->next = who->first_node;
+	//attach it to free table
+	HASH_APPEND( nod, who->free_table[MAX_HASH_ENTRY-1] );
+	MAKE_FREE( nod );
+	who->first_node = nod;
+	//ok
+	local_irq_restore(eflags);
+}
+
 /***************** 以下为测试用代码 ******************/
 void	mm_print_block(allocator_t* who)
 {

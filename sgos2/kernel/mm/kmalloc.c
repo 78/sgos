@@ -7,7 +7,7 @@
 #include <debug.h>
 #include <mm.h>
 
-static allocator_t km_block;
+allocator_t km_block;
 
 void kmalloc_init()
 {
@@ -15,6 +15,7 @@ void kmalloc_init()
 		0xC0400000,				//address
 		0xE0000000-0xC0400000	//size
 		);
+	//
 	PERROR("ok");
 }
 

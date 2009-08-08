@@ -5,6 +5,8 @@
 #include <sgos.h>
 #include <arch.h>
 #include <debug.h>
+#include <string.h>
+#include <mm.h>
 
 #define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_BASE )
 
