@@ -7,7 +7,12 @@
 // currently we support no more than 1024 processes
 // running at the same time
 #define MAX_PROCESS_NUM 1024
-static proc_dir_bitmap[MAX_PROCESS_NUM/32] = {0,};
+static uint proc_dir_bitmap[MAX_PROCESS_NUM/32] = {0,};
+
+void dir_init()
+{
+	memset( proc_dir_bitmap, 0, sizeof(uint)*MAX_PROCESS_NUM/32 );
+}
 
 uint get_page_dir()
 {
@@ -34,5 +39,9 @@ void free_page_dir(uint addr)
 {
 	addr -= PROC_PAGE_DIR_BASE;
 	addr >>= PAGE_SIZE_BITS;
-	proc_dir_bitmap[ (addr>>5) + addr&31 ] = 0;
+	proc_dir_bitmap[addr>>5] &= ~(1<<(addr&31));
 }
+
+
+
+

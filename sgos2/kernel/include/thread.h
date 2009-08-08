@@ -60,6 +60,7 @@ int thread_terminate( THREAD* thr );
 int thread_wakeup( THREAD* thr );
 int thread_wait( uint ms );
 int thread_sleep();
+void thread_init();
 //sched.c
 void schedule();
 void sched_clock();

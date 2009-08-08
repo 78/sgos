@@ -17,62 +17,63 @@
 // 那么剩下2MB，可以使用了。。。
 // 要用空间换取效率的话，这里还是使用链表好。。。。
 // 0xE0000000 - 0xE0400000 4MB来映射各个进程的页目录，每个进程占用4KB
-// 0xBFC00000 - 0xC0000000 4MB用来映射“当前”进程的各个页表
+// 0xE0400000 - 0xE0800000 4MB用来映射内核各个页表
 
 #define PAGE_INDEX_TO_PHYS_ADDR( i ) ( (uint)(i<<PAGE_SIZE_BITS) )
 #define PHYS_ADDR_TO_PAGE_INDEX(addr) ((uint)addr>>PAGE_SIZE_BITS)
 
-uint	total_pages;
-ushort*	page_ref;	//page reference count
-uint	page_used;	//used page count
-uint	page_front;	//
-uint	kernel_page_dir;	//page dir for kernel
+static uint	total_pages;
+static ushort*	page_ref;	//page reference count
+static uint	page_used;	//used page count
+static uint	page_front;	//
+uint		kernel_page_dir;	//page dir for kernel
+static uint	page_it = 0;	//for fast allocation
 
 extern int pagefault_handler( int err_code, I386_REGISTERS* r );
 int page_init(uint mem_size)
 {
 	int i;
-	PAGE_DIR* dir_entry;
+	PAGE_DIR* dir_entry, *table_entry;
 	if( mem_size == 0 ){
 		KERROR("Sorry, no memory detected on this machine.");
 	}
 	//we initialized it in multiboot.S
-    page_ref = (ushort*) (KERNEL_BASE+0x00200000);
+	page_ref = (ushort*) (KERNEL_BASE+0x00200000);
 	memset( page_ref, 0, 2<<20 );
 	total_pages = mem_size / PAGE_SIZE;
 	page_front = PHYS_ADDR_TO_PAGE_INDEX(0x00400000);
 	page_used = page_front;
+	page_it = page_front;
 	isr_install( PAGEFAULT_INTERRUPT, (void*)pagefault_handler );
 	//分配所有的共享页表 3G-4G  大概需要2MB
 	kprintf("Allocating tables for kernel space.\n");
-	dir_entry = (PAGE_DIR*)0x00010000;
+	dir_entry = (PAGE_DIR*)0xC0010000;
+	//内核进程页目录
+	kernel_page_dir = get_page_dir();
+	//临时使用一下0-4KB的空间
+	table_entry = (PAGE_TABLE*)0xC0011000;
 	// 0xC0000000 - 0xC0400000 已分配，所以 +1
-//	dir_entry[0].a.user = 1;
-//	dir_entry[768].a.user = 1;
 	for( i=768+1; i<1024; i++ ){
 		dir_entry[i].v = get_phys_page();
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
+		table_entry[0].v = dir_entry[i].v;
+		reflush_pages();
+		//在内核空间映射内核进程页目录
+		if(i==896){
+			PAGE_TABLE* te = NULL;
+			te[0].v = 0x00010000|P_WRITE|P_PRESENT;
+		}else{
+			memset( NULL, 0, PAGE_SIZE );
+		}
 	}
-	//映射内核进程的页目录的各页表，这样以后我们就可以修改页表内容
+	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	kprintf("Mapping tables for kernel process\n");
-	i = PROC_PAGE_TABLE_MAP>>22;
-	dir_entry[i].v = 0x00013000;
-	dir_entry[i].a.write = dir_entry[i].a.present = 1;
-	//把内核进程的页表都填到这个页目录去。
-	PAGE_TABLE* table_entry = (PAGE_TABLE*)0x00013000;
-	//0-4MB
-	table_entry[0].v = 0x00011000|P_PRESENT|P_WRITE;
-	table_entry[768].v = 0x00011000|P_PRESENT|P_WRITE;
-	//kernel proc table map
-	table_entry[767].v = 0x00013000|P_PRESENT|P_WRITE;
-	for( i=768; i<1024; i++ ){
-		table_entry[i].v = dir_entry[i].v;
-	}
+	i = 0xE0400000>>22;
+	dir_entry[i].v = 0x00010000|P_PRESENT|P_WRITE;
+	//恢复该页
+	table_entry[0].v = 0|P_WRITE|P_PRESENT;
 	//修改页表后更新cr3
 	reflush_pages();
-	kernel_page_dir = get_page_dir();
-	//在内核空间映射内核进程页目录
-	map_pages( kernel_page_dir, (uint)dir_entry, PAGE_SIZE, P_WRITE );
 	
 	PERROR("ok");
 	return 0;
@@ -82,7 +83,6 @@ int page_init(uint mem_size)
 //## be careful multi-threading
 uint get_phys_page()
 {
-	static uint it = 0;	//for fast allocation
 	register uint i;
 	uint eflags;
 	if( page_used == total_pages ){
@@ -90,22 +90,22 @@ uint get_phys_page()
 		return 0;
 	}
 	local_irq_save(eflags);
-	if( it < page_front )
-		it = page_front;
-	for( i=it; i<total_pages; i++ ){
+	if( page_it < page_front )
+		page_it = page_front;
+	for( i=page_it; i<total_pages; i++ ){
 		if( !page_ref[i] ){
 			page_ref[i]++;
-			it = i+1;
+			page_it = i+1;
 			local_irq_restore(eflags);
-			return PAGE_INDEX_TO_PHYS_ADDR(it);
+			return PAGE_INDEX_TO_PHYS_ADDR(i);
 		}
 	}
-	for( i=0; i<it; i++ ){
+	for( i=page_front; i<page_it; i++ ){
 		if( !page_ref[i] ){
 			page_ref[i]++;
-			it = i+1;
+			page_it = i+1;
 			local_irq_restore(eflags);
-			return PAGE_INDEX_TO_PHYS_ADDR(it);
+			return PAGE_INDEX_TO_PHYS_ADDR(i);
 		}
 	}
 	PERROR("## no pages for allocation.");

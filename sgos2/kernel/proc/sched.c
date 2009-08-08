@@ -9,6 +9,11 @@
 THREAD_BOX tbox = {NULL, };
 static const unsigned ms = 1000/RTC_FREQUENCY;
 
+void sched_init()
+{
+	memset( &tbox, 0, sizeof(THREAD_BOX) );
+//	tbox.running = current_proc()->thread;
+}
 
 THREAD* current_thread()
 {
@@ -129,7 +134,7 @@ void sched_clock()
 	}
 	local_irq_enable();
 	thr = current_thread();
-    info = &thr->sched_info;
+	info = &thr->sched_info;
 	--info->clock;
 	if( info->clock <= 0 ){	//need scheduling
 		schedule();

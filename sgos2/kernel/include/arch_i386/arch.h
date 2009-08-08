@@ -154,6 +154,7 @@ int syscall_interrupt();
 //init
 int machine_init();
 //page
+extern uint kernel_page_dir;	//page dir for kernel
 int page_init( uint size );
 void load_page_dir(uint phys_addr);
 void dump_phys_pages();
@@ -162,8 +163,12 @@ uint get_phys_page();
 void reflush_pages();
 void load_page_dir(uint phys_addr);
 //map
-void map_pages( uint vir_addr, uint phys_addr, uint size, uint attr );
-void unmap_pages( uint vir_addr, uint size );
+uint map_temp_page( uint phys_addr );
+void unmap_temp_page( uint vir_addr );
+void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr );
+void unmap_one_page( uint dir, uint vir_addr );
+void map_pages( uint dir, uint vir_addr, uint phys_addr, uint size, uint attr );
+void unmap_pages( uint dir, uint vir_addr, uint size );
 //dir
 uint get_page_dir();
 void free_page_dir(uint addr);
