@@ -80,7 +80,7 @@ void putchar(char ch)
 		style = 0x0200;
 		break;
 	}
-//	local_irq_save( eflags );
+	local_irq_save( eflags );
 	if(ch=='\n')
 	{
 		next_line();
@@ -102,7 +102,7 @@ void putchar(char ch)
 		next_line();
 	}
 	move_cursor();
-//	local_irq_restore( eflags );
+	local_irq_restore( eflags );
 }
 
 // scroll up the screen

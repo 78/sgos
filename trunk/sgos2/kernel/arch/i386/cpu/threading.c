@@ -3,35 +3,44 @@
 #include <debug.h>
 #include <thread.h>
 #include <process.h>
+#include <string.h>
+#include <mm.h>
 
 static TSS g_tss;
 static SEGMENT_DESC g_ldt[3];	//局部描述符 0x7  0xF  0x17
 
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
-static mutex_t mut;
 
 void print_id()
 {
-//	mutex_lock(&mut);
 	kprintf("{%d}",current_thread()->id);
 	thread_wait( 1000 );
-//	mutex_unlock(&mut);
 }
 
 static void test4()
 {
-	thread_wait( 5000 );
+	thread_wait( 2000 );
 	while(1)
 		print_id();
+}
+
+int km_block;
+static void dump()
+{
+	while(1){
+		thread_wait( 5000 );
+		dump_link();
+	}
 }
 
 static void test3()
 {
 	int i;
-	mutex_init(&mut);
-	for(i=0;i<100; i++ ){
-		THREAD* thr;
+	THREAD* thr;
+	thr = thread_create( current_proc(), (uint)dump );
+	sched_set_state( thr, TS_READY );
+	for(i=0;i<20; i++ ){
 		thr = thread_create( current_proc(), (uint)test4 );
 		sched_set_state( thr, TS_READY );
 	}
@@ -76,7 +85,6 @@ void switch_to( THREAD* cur, THREAD* thr )
 	//let clock work
 	out_byte(0x20, 0x20);
 	I386_REGISTERS *r = GET_THREAD_REGS(thr);
-//	isr_dumpcpu( r );
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
 }
 

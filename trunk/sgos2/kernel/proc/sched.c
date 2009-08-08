@@ -41,16 +41,28 @@ THREAD** get_thread_link( enum THREAD_STATE st )
 void dump_link()
 {
 	uint eflags;
+	int i;
 	local_irq_save(eflags);
 	THREAD* thr;
-	kprintf("ready list: ");
-	for( thr=tbox.ready; thr; thr=thr->sched_info.next )	
+	thr=current_proc()->thread;
+	for( i=0; thr; thr=thr->next, i++ )
+		;
+	kprintf("(%d) ready list: ", i);
+	for( i=0, thr=tbox.ready; thr; i++, thr=thr->sched_info.next )	
 		kprintf("[%d]", thr->id );
-	kprintf("\n");
+	kprintf("(%d)\n", i);
 	kprintf("sleep list: ");
-	for( thr=tbox.sleep; thr; thr=thr->sched_info.next )	
+	for( i=0, thr=tbox.sleep; thr; i++, thr=thr->sched_info.next )	
 		kprintf("[%d]", thr->id );
-	kprintf("\n");
+	kprintf("(%d)\n", i);
+	kprintf("wait list: ");
+	for( i=0, thr=tbox.wait; thr; i++, thr=thr->sched_info.next )	
+		kprintf("[%d]", thr->id );
+	kprintf("(%d)\n", i);
+	kprintf("paused list: ");
+	for( i=0, thr=tbox.paused; thr; i++, thr=thr->sched_info.next )	
+		kprintf("[%d]", thr->id );
+	kprintf("(%d)\n", i);
 	local_irq_restore(eflags);
 }
 
@@ -78,7 +90,6 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 	//put to link
 	link = get_thread_link( st );
 	if(link){
-/*
 		//先来先占
 		if( *link ){
 			THREAD* t2;
@@ -91,12 +102,12 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 			*link = thr;
 		}
 		info->next = NULL;
-*/
+/*
 //		抢占式。。。。
 		info->next = *link;
 		if( *link )
 			(*link)->sched_info.pre = thr;
-		*link = thr;
+		*link = thr;*/
 	}
 	thr->state = st;
 //	kprintf("set state %d to %d\n", (*link)->id, st );
@@ -143,7 +154,7 @@ void schedule()
 	if( thr ){
 		if( thr != cur ){
 			tbox.running = thr;
-			thr->sched_info.clock = 2;
+			thr->sched_info.clock = 1;
 			switch_to( cur, thr );
 		}
 	}
