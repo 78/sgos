@@ -20,6 +20,9 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	SCHEDULE_INFO* sched;
 	uint eflags;
 	thr = (THREAD*)kmalloc( sizeof(THREAD) );
+	if( thr == NULL ){
+		die("## kernel memory used out!!");
+	}
 	memset( thr, 0, sizeof(THREAD) );
 	mutex_init( &thr->mutex );
 	sched = &thr->sched_info;
@@ -27,7 +30,7 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	thr->process = proc;
 	thr->state = TS_INIT;
 	thr->entry_address = entry_addr;
-	thr->stack_pointer = (uint)kmalloc(1*1024*1024);	//test
+	thr->stack_pointer = (uint)kmalloc(1024*1024);	//test
 	init_thread_regs( thr, current_thread(), NULL, entry_addr, thr->stack_pointer );
 	//进行链表操作
 	local_irq_save( eflags );

@@ -11,44 +11,6 @@ static SEGMENT_DESC g_ldt[3];	//局部描述符 0x7  0xF  0x17
 
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
-
-void print_id()
-{
-	kprintf("{%d}",current_thread()->id);
-	thread_wait( 1000 );
-}
-
-static void test4()
-{
-	thread_wait( 2000 );
-	while(1)
-		print_id();
-}
-
-static void dump()
-{
-	while(1){
-		thread_wait( 5000 );
-		dump_link();
-	}
-}
-
-static void test3()
-{
-	int i;
-	THREAD* thr;
-	thr = thread_create( current_proc(), (uint)dump );
-	sched_set_state( thr, TS_READY );
-	for(i=0;i<5; i++ ){
-		thr = thread_create( current_proc(), (uint)test4 );
-		sched_set_state( thr, TS_READY );
-	}
-	PERROR("halt init thread.\n");
-	
-	while(1)
-		__asm__("hlt");
-}
-
 extern void enter_user_mode();
 extern THREAD_BOX tbox;
 void start_threading()
@@ -76,7 +38,7 @@ void start_threading()
 	enter_threading_mode();
 	tbox.running = current_proc()->thread;
 	//back here
-	test3();
+	kinit_resume();
 }
 
 void i386_switch( THREAD*, uint*, uint* );
@@ -84,11 +46,10 @@ void switch_to( THREAD* cur, THREAD* thr )
 {
 	//let clock work
 	out_byte(0x20, 0x20);
-	I386_REGISTERS *r = GET_THREAD_REGS(thr);
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
 }
 
-
+//初始化线程的寄存器信息。
 void init_thread_regs( THREAD* thr, THREAD* parent,
 	void* context, uint entry_addr, uint stack_addr )
 {
@@ -100,7 +61,7 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 	r->cs = 0x0C;
 	r->eflags = 0x203;
 	r->esp = stack_addr;
-	r->kesp = 0x10000000+thr->id*0x40000;
+	r->kesp = 0;
 	r->eip = entry_addr;
 	thr->stack_pointer = (t_32)r;
 //	PERROR("ok init:%d  pointer:0x%X", thr->id, thr->stack_pointer );
