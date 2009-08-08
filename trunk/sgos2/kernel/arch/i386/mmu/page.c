@@ -59,11 +59,10 @@ int page_init(uint mem_size)
 		table_entry[0].v = dir_entry[i].v;
 		reflush_pages();
 		//在内核空间映射内核进程页目录
+		memset( NULL, 0, PAGE_SIZE );
 		if(i==896){
 			PAGE_TABLE* te = NULL;
 			te[0].v = 0x00010000|P_WRITE|P_PRESENT;
-		}else{
-			memset( NULL, 0, PAGE_SIZE );
 		}
 	}
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
