@@ -66,8 +66,8 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	if( newpage ){
 		reflush_pages();
-		memset( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>12)&1023),
-			 0, PAGE_SIZE );
+		memsetd( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>12)&1023),
+			 0, PAGE_SIZE>>2 );
 	}
 	if( te->v )	//remap??
 		free_phys_page( (uint)(te->a.phys_addr<<12) );

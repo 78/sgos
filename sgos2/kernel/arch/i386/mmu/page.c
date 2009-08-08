@@ -33,13 +33,13 @@ extern int pagefault_handler( int err_code, I386_REGISTERS* r );
 int page_init(uint mem_size)
 {
 	int i;
-	PAGE_DIR* dir_entry, *table_entry;
+	PAGE_DIR* dir_entry, *table_entry, *te;
 	if( mem_size == 0 ){
 		KERROR("Sorry, no memory detected on this machine.");
 	}
 	//we initialized it in multiboot.S
 	page_ref = (ushort*) (KERNEL_BASE+0x00200000);
-	memset( page_ref, 0, 2<<20 );
+	memsetd( page_ref, 0, (2<<20)>>2 );
 	total_pages = mem_size / PAGE_SIZE;
 	page_front = PHYS_ADDR_TO_PAGE_INDEX(0x00400000);
 	page_used = page_front;
@@ -52,29 +52,26 @@ int page_init(uint mem_size)
 	kernel_page_dir = get_page_dir();
 	//临时使用一下0-4KB的空间
 	table_entry = (PAGE_TABLE*)0xC0011000;
-	// 0xC0000000 - 0xC0400000 已分配，所以 +1
+	// 分配内核3G-4G的页表，0xC0000000 - 0xC0400000 已分配，所以 +1
 	for( i=768+1; i<1024; i++ ){
 		dir_entry[i].v = get_phys_page();
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
 		table_entry[0].v = dir_entry[i].v;
-		reflush_pages();
-		//在内核空间映射内核进程页目录
-		memset( NULL, 0, PAGE_SIZE );
-		if(i==896){
-			PAGE_TABLE* te = NULL;
-			te[0].v = 0x00010000|P_WRITE|P_PRESENT;
-		}
 	}
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	kprintf("Mapping tables for kernel process\n");
-	i = PROC_PAGE_TABLE_MAP>>22;
+	i = PROC_PAGE_TABLE_MAP>>22;	//767
 	dir_entry[i].v = 0x00010000|P_PRESENT|P_WRITE;
-	//恢复该页
+	reflush_pages();
+	//为分配的页表清0
+	memsetd( (void*)(PROC_PAGE_TABLE_MAP+769*PAGE_SIZE), 0, (1024-769)<<10 );
+	//映射内核进程页目录到0xE0400000
+	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (kernel_page_dir>>12);
+	te[0].v = 0x00010000|P_WRITE|P_PRESENT;
+	//恢复0-4KB的原映射
 	table_entry[0].v = 0|P_WRITE|P_PRESENT;
 	//修改页表后更新cr3
 	reflush_pages();
-	
-	PERROR("ok");
 	return 0;
 }
 

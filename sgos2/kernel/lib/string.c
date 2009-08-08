@@ -372,6 +372,15 @@ __asm__("cld\n\t"
 return s;
 }
 
+void * memsetd(void * s,int n,int count)
+{
+__asm__("cld\n\t"
+	"rep\n\t"
+	"stosl"
+	::"a" (n),"D" (s),"c" (count));
+return s;
+}
+
 char * strlwr(char * str)
 {
 	int i=0;
