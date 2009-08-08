@@ -87,7 +87,7 @@ void kinit_resume()
 	THREAD* thr;
 	thr = thread_create( current_proc(), (uint)kinit_halt );
 	sched_set_state( thr, TS_READY );
-	kprintf("display a point every minute.\n");
+	kprintf("display a point every second.\n");
 	while(1){
 		kprintf(".");
 		thread_wait(1000 );
