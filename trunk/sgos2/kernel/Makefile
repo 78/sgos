@@ -6,6 +6,8 @@ ARCH = i386
 ASFLAGS = -g
 CCFLAGS = -g -Werror -Iinclude -fno-builtin -ffreestanding -fleading-underscore
 LDFLAGS =
+OCFLAGS = -Obinary
+ODFLAGS = -S
 
 ifeq ($(OSTYPE), Linux)
 # linux env
@@ -54,8 +56,8 @@ all: kernel
 
 kernel: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$@
-	$(OD) -S $@ > $@.dmp
-	$(OC) -Obinary $@ $@.bin
+	$(OD) $@ > $@.dmp
+	$(OC) $@ $@.bin
 
 clean:
 	$(RM) $(OBJECTS) \
