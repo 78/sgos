@@ -17,7 +17,7 @@
 // 那么剩下2MB，可以使用了。。。
 // 要用空间换取效率的话，这里还是使用链表好。。。。
 // 0xE0000000 - 0xE0400000 4MB来映射各个进程的页目录，每个进程占用4KB
-// 0xE0400000 - 0xE0800000 4MB用来映射内核各个页表
+// 0xBFC00000 - 0xC0800000 4MB用来映射进程各个页表
 
 #define PAGE_INDEX_TO_PHYS_ADDR( i ) ( (uint)(i<<PAGE_SIZE_BITS) )
 #define PHYS_ADDR_TO_PAGE_INDEX(addr) ((uint)addr>>PAGE_SIZE_BITS)
@@ -67,7 +67,7 @@ int page_init(uint mem_size)
 	}
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	kprintf("Mapping tables for kernel process\n");
-	i = 0xE0400000>>22;
+	i = PROC_PAGE_TABLE_MAP>>22;
 	dir_entry[i].v = 0x00010000|P_PRESENT|P_WRITE;
 	//恢复该页
 	table_entry[0].v = 0|P_WRITE|P_PRESENT;
