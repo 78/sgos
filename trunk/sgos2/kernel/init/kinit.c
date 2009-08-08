@@ -52,10 +52,16 @@ void kinit( uint boot_info )
 	}
 	//init machine
 	machine_init();
+	//page_dir init
+	dir_init();
 	//page management
 	page_init( mem_size );
 	//init kmalloc
 	kmalloc_init();
+	//init thread management.
+	thread_init();
+	//set running thread
+	sched_init();
 	//
 	process_init();
 	//

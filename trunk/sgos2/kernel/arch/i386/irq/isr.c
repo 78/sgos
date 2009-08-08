@@ -115,6 +115,7 @@ void isr_dumpcpu( const I386_REGISTERS *r )
 #define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )
 void isr_init()
 {
+	memset( isr_routines, 0, sizeof(isr_routines) );
 	/* ISR 0x0~0x1F */
 	SET_TRAP_GATE(0, (void*)isr0);
 	SET_TRAP_GATE(1, (void*)isr1);

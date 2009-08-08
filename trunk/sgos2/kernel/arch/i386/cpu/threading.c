@@ -25,7 +25,6 @@ static void test4()
 		print_id();
 }
 
-int km_block;
 static void dump()
 {
 	while(1){
@@ -40,7 +39,7 @@ static void test3()
 	THREAD* thr;
 	thr = thread_create( current_proc(), (uint)dump );
 	sched_set_state( thr, TS_READY );
-	for(i=0;i<20; i++ ){
+	for(i=0;i<5; i++ ){
 		thr = thread_create( current_proc(), (uint)test4 );
 		sched_set_state( thr, TS_READY );
 	}
@@ -61,6 +60,7 @@ void start_threading()
 	set_ldt_desc( &g_ldt[2], 0, 0xFFFFF, DA_DRW | DA_32 | DA_LIMIT_4K /*| DA_DPL3*/ );	// 可读写数据段	段限4GB
 	
 	//TSS, 保存着内核所用的堆栈, 从特权3到特权0要借助TSS
+	memset(&g_tss, 0, sizeof(TSS) );
 	g_tss.ss0 = 0x10;
 	g_tss.esp0 = (uint)current_thread()+sizeof(THREAD);
 	g_tss.iobase = sizeof(TSS);

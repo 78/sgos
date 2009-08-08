@@ -19,8 +19,8 @@ int machine_init()
 {
 	//init i386
 	gdt_init();
-    isr_init();
-    irq_init();
+	isr_init();
+	irq_init();
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
 	kprintf("Protect mode was controled successfully.\n");
 	rtc_init();

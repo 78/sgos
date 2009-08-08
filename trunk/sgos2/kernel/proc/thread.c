@@ -9,6 +9,11 @@
 
 static uint thread_id = 0;
 
+void thread_init()
+{
+	thread_id = 0;
+}
+
 THREAD* thread_create( PROCESS* proc, uint entry_addr )
 {
 	THREAD* thr;

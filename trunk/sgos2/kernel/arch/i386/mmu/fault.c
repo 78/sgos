@@ -22,7 +22,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 			if( !phys_addr )
 				KERROR("no page for allocation.");
-			map_pages( addr, phys_addr, PAGE_SIZE, P_WRITE );
+			map_one_page( kernel_page_dir, addr, phys_addr, P_WRITE );
 			return 0;
 		}
 		PERROR("not present this page at 0x%X.", addr);

@@ -59,9 +59,11 @@ void set_ldt_desc( SEGMENT_DESC *desc, uint base, uint limit, uint attribute )
 void gdt_init()
 {
 	t_8 ptr[6];
+	idt_code_seg = 0x08;
 	// setup a new gdt
 	/* 但这里有必要再做一次这个工作，便于管理。 */
 	memset( gdt, 0, sizeof(gdt) );
+	memset( idt, 0, sizeof(idt) );
 	// 初始化一个代码段和一个数据段
 	set_gdt_desc( 1, 0x0000, 0xFFFFF, DA_CR | DA_32 | DA_LIMIT_4K );
 	set_gdt_desc( 2, 0x0000, 0xFFFFF, DA_DRW | DA_LIMIT_4K | DA_32 );
@@ -69,16 +71,16 @@ void gdt_init()
 	gdt_ptr.limit = sizeof(SEGMENT_DESC)*256;
 	gdt_ptr.addr = (t_32)gdt;
 	
-    // 内嵌汇编载入 gdt 表描述符
-    __asm__ __volatile__ ( "lgdt %0" : "=m"( gdt_ptr ) ) ; //载入GDT表
+	// 内嵌汇编载入 gdt 表描述符
+	__asm__ __volatile__ ( "lgdt %0" : "=m"( gdt_ptr ) ) ; //载入GDT表
 
 	// 保存实模式中断屏蔽寄存器(IMREG)值
 	realmode_idt_mask = in_byte( 0x21 );
 	//
 	idt_ptr.limit = sizeof(idt);
 	idt_ptr.addr = (t_32)idt;
-    // 内嵌汇编载入 idt 表描述符
-    __asm__ __volatile__  ( "lidt %0" : "=m"( idt_ptr ) ) ; //
+	// 内嵌汇编载入 idt 表描述符
+	__asm__ __volatile__  ( "lidt %0" : "=m"( idt_ptr ) ) ; //
 	PERROR("ok");
 }
 
