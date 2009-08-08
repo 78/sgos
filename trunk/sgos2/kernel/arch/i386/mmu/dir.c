@@ -3,6 +3,7 @@
 #include <sgos.h>
 #include <arch.h>
 #include <debug.h>
+#include <string.h>
 
 // currently we support no more than 1024 processes
 // running at the same time
@@ -11,7 +12,7 @@ static uint proc_dir_bitmap[MAX_PROCESS_NUM/32] = {0,};
 
 void dir_init()
 {
-	memset( proc_dir_bitmap, 0, sizeof(uint)*MAX_PROCESS_NUM/32 );
+	memsetd( proc_dir_bitmap, 0, (sizeof(uint)*MAX_PROCESS_NUM)>>(5+2) );
 }
 
 uint get_page_dir()

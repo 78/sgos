@@ -108,7 +108,7 @@ void putchar(char ch)
 // scroll up the screen
 static void scroll_up()
 {
-	memcpy((char*)buffer,(char*)(buffer+_w),_w*(_h-1)*2);
+	memcpyw((char*)buffer,(char*)(buffer+_w),_w*(_h-1) );
 	memsetw((char*)(buffer+_w*(_h-1)), style ,_w);
 	memcpyw( video, buffer, _w*_h);
 	_y--;

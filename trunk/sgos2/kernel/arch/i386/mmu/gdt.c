@@ -3,6 +3,7 @@
 #include <sgos.h>
 #include <arch.h>
 #include <debug.h>
+#include <string.h>
 
 #define MAX_IDT 256
 #define MAX_GDT 256
@@ -62,8 +63,8 @@ void gdt_init()
 	idt_code_seg = 0x08;
 	// setup a new gdt
 	/* 但这里有必要再做一次这个工作，便于管理。 */
-	memset( gdt, 0, sizeof(gdt) );
-	memset( idt, 0, sizeof(idt) );
+	memsetd( gdt, 0, sizeof(gdt)>>2 );
+	memsetd( idt, 0, sizeof(idt)>>2 );
 	// 初始化一个代码段和一个数据段
 	set_gdt_desc( 1, 0x0000, 0xFFFFF, DA_CR | DA_32 | DA_LIMIT_4K );
 	set_gdt_desc( 2, 0x0000, 0xFFFFF, DA_DRW | DA_LIMIT_4K | DA_32 );

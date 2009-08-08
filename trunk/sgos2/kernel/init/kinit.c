@@ -6,6 +6,7 @@
 #include <process.h>
 #include <mm.h>
 
+//内核初始化入口
 void kinit( uint boot_info )
 {
 	uint mem_size;
@@ -72,14 +73,14 @@ void kinit( uint boot_info )
 	KERROR("##Warning: kernel not ready.");
 }
 
-
+//halt thread, did nothing, for cpu idle
 static void kinit_halt()
 {
 	while(1)
 		halt();
 }
 
-//线程0执行hlt指令，线程2继续内核初始化。
+//线程0执行hlt指令，线程1继续内核初始化。
 void kinit_resume()
 {
 	THREAD* thr;

@@ -3,6 +3,7 @@
 #include <sgos.h>
 #include <arch.h>
 #include <debug.h>
+#include <string.h>
 
 extern void irq0();
 extern void irq1();
@@ -161,7 +162,7 @@ void irq_handler(const I386_REGISTERS *r)
 #define SET_INT_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
 void irq_init()
 {
-	memset( irq_routines, 0, sizeof(irq_routines) );
+	memsetd( irq_routines, 0, sizeof(irq_routines)>>2 );
 	irq_remap();
 	// IDT初始化
 	SET_INT_GATE(32, (void*)irq0);
