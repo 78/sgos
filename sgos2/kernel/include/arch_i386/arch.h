@@ -118,6 +118,7 @@ typedef union PAGE_TABLE{
 #define P_USER		(1<<2)	//页面为用户级
 #define P_ACCESS	(1<<5)	//页面被访问过
 
+#define halt() __asm__("hlt")
 // (端口, 数据)
 #define out_byte_wait(port,data) \
 __asm__ __volatile__ ( "out %%al , %%dx\n\tjmp 1f\n1:\tjmp 1f\n1:" : : "a"( data ) , "d"( port ) );

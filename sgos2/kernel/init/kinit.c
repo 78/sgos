@@ -2,6 +2,8 @@
 #include <debug.h>
 #include <arch.h>
 #include <multiboot.h>
+#include <thread.h>
+#include <process.h>
 #include <mm.h>
 
 void kinit( uint boot_info )
@@ -64,9 +66,27 @@ void kinit( uint boot_info )
 	sched_init();
 	//
 	process_init();
-	//
+	//启动线程
 	start_threading();
 	//never return here
 	KERROR("##Warning: kernel not ready.");
 }
 
+
+static void kinit_halt()
+{
+	while(1)
+		halt();
+}
+
+//线程0执行hlt指令，线程2继续内核初始化。
+void kinit_resume()
+{
+	THREAD* thr;
+	thr = thread_create( current_proc(), (uint)kinit_halt );
+	sched_set_state( thr, TS_READY );
+	while(1){
+		kprintf(".");
+		thread_wait(1000 );
+	}
+}

@@ -63,14 +63,12 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 		de->a.present = 1;
 	}
 	// get page table entry
-//	temp = (PAGE_TABLE*)map_temp_page( (uint)(de->a.phys_addr<<12) );
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	if( newpage ){
 		reflush_pages();
 		memset( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>12)&1023),
 			 0, PAGE_SIZE );
 	}
-//	te = temp + (vir_addr>>12&1023);
 	if( te->v )	//remap??
 		free_phys_page( (uint)(te->a.phys_addr<<12) );
 	te->v = phys_addr;
@@ -79,7 +77,6 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 	if( attr&P_WRITE )
 		te->a.write = 1;
 	te->a.present = 1;
-//	unmap_temp_page( (uint)temp );
 	reflush_pages();
 }
 
@@ -95,14 +92,10 @@ void unmap_one_page( uint dir, uint vir_addr )
 	if( !de->v )	//no dir entry
 		return;
 	// get page table entry
-	te = (PAGE_TABLE*)map_temp_page( (uint)(de->a.phys_addr<<12) );
-//	reflush_pages();
-//	te = temp + (vir_addr>>12&1023);
+	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	if( te->v )	//there it is!!
 		free_phys_page( (uint)(te->a.phys_addr<<12) );
 	te->v = 0;
-//	unmap_temp_page( (uint)temp );
-//	reflush_pages();
 }
 
 
