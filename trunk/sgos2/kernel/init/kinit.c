@@ -7,10 +7,16 @@
 #include <mm.h>
 
 //内核初始化入口
+extern PROCESS* cur_proc;
 void kinit( uint boot_info )
 {
 	uint mem_size;
-	multiboot_info_t* mbi = (multiboot_info_t*)boot_info;
+	multiboot_info_t* mbi;
+	//before we do something, we initialize some important vars
+	cur_proc = NULL;
+	
+	//get mbi
+	mbi = (multiboot_info_t*)boot_info;
 	//init debugger as soon as possible.
 	debug_init();
 	
@@ -65,7 +71,7 @@ void kinit( uint boot_info )
 	thread_init();
 	//set running thread
 	sched_init();
-	//
+	//init process management.
 	process_init();
 	//启动线程
 	start_threading();

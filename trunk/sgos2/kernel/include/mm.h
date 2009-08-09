@@ -7,9 +7,15 @@
 // kernel memory allocator
 void	kmalloc_init();
 void*	kmalloc(size_t siz);
+int	kcheck_allocated(size_t addr);
 void	kfree(void* p);
-void*	kcalloc(size_t u, size_t c);
-void* 	krealloc(void* p, size_t siz);
+
+// user space memory allocator
+void	umalloc_init(PROCESS*);
+void*	umalloc(PROCESS*, size_t siz);
+void*	umalloc_ex(PROCESS*, size_t addr, size_t siz);
+int	ucheck_allocated(PROCESS*, size_t addr );
+void	ufree(PROCESS*, void* p);
 
 #endif
 

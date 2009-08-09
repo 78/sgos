@@ -33,11 +33,13 @@ typedef struct allocator{
 
 //导出函数
 void*	mm_alloc(allocator_t*, size_t);
-void	mm_free(allocator_t*, void*);
+void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz );
+size_t	mm_free(allocator_t*, void*);
 void*	mm_calloc(allocator_t*, size_t, size_t);
 void* 	mm_realloc(allocator_t*, void*, size_t);
 void	mm_init_block(allocator_t* who, size_t addr, size_t size);
 void	mm_print_block(allocator_t* who);
 void	mm_free_all(allocator_t * who);
+int	mm_check_allocated(allocator_t* who, size_t addr );
 
 #endif //_ALLOC_H_
