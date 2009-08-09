@@ -157,6 +157,7 @@ void isr_init()
 	PERROR("ok");
 }
 
+//异常处理入口。
 void isr_handler(const I386_REGISTERS *r)
 {
 	void (*handler)(int err_code, const I386_REGISTERS *r);

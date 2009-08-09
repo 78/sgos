@@ -18,11 +18,12 @@ static void scroll_up(); //向上卷屏
 static void next_line();	//下一行
 static void move_cursor(); //移动光标
 
+// 下一行
 static void next_line()
 {
 	_x=0;
 	_y++;
-	if(_y>=_h){
+	if(_y>=_h){	//是否需要滚屏？
 		scroll_up();
 	}
 }
@@ -72,6 +73,7 @@ void putchar(char ch)
 		}while( (_x-1)%4 );
 		return;
 	}
+	//特殊字符处理
 	switch( ch ){
 	case '#':
 		style = 0x0C00;
@@ -81,19 +83,20 @@ void putchar(char ch)
 		break;
 	}
 	local_irq_save( eflags );
+	//
 	if(ch=='\n')
 	{
 		next_line();
 	}
 	else if( ch == 8 )
 	{
-			buffer[_y*_w+ --_x]=style;
+			buffer[_y*_w+ --_x]=style;	//到缓冲区
 	}
 	else if ( isprint((unsigned char)ch) )
 	{
-			buffer[_y*_w+_x++] = style | ch;
+			buffer[_y*_w+_x++] = style | ch;	//到缓冲区
 	}
-
+	//恢复正常字体颜色
 	if( ch== ']'||ch=='\n' )	
 		style = 0x0700;
 		
@@ -101,6 +104,7 @@ void putchar(char ch)
 	{
 		next_line();
 	}
+	//移动光标
 	move_cursor();
 	local_irq_restore( eflags );
 }

@@ -11,7 +11,7 @@
 unsigned rtc_time;      //unit: ms
 unsigned rtc_second;    //unit: s
 
-
+//设置时钟频率
 void rtc_set_freq(unsigned freq)
 {
 	unsigned div = 1193180/freq;
@@ -20,6 +20,7 @@ void rtc_set_freq(unsigned freq)
 	out_byte(0x40, div>>8);
 }
 
+//时钟中断
 void rtc_interrupt(const I386_REGISTERS* r)
 {
 	rtc_time ++;
@@ -29,6 +30,7 @@ void rtc_interrupt(const I386_REGISTERS* r)
 	sched_clock();
 }
 
+//实时钟初始化
 void rtc_init()
 {
 	struct tm t;

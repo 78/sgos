@@ -5,6 +5,7 @@
 #include <debug.h>
 #include <string.h>
 
+//中断捕获函数
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -22,6 +23,7 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
+//中断处理函数数组
 static void *irq_routines[16] =
 {
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -143,12 +145,13 @@ void irq_mask( int irq, int enabled )
 	}
 }
 
+//irq处理
 void irq_handler(const I386_REGISTERS *r)
 {
 	void (*handler)(const I386_REGISTERS *r);
 
 	handler = irq_routines[r->int_no - 32];
-	if( handler ){
+	if( handler ){	//调用特定处理函数。
 		handler(r);
 	}
 	if( r->int_no >= 40 )
@@ -158,11 +161,12 @@ void irq_handler(const I386_REGISTERS *r)
 	out_byte( 0x20, 0x20);
 }
 
-
+//硬件中断初始化
 #define SET_INT_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
 void irq_init()
 {
 	memsetd( irq_routines, 0, sizeof(irq_routines)>>2 );
+	//重新映射irq
 	irq_remap();
 	// IDT初始化
 	SET_INT_GATE(32, (void*)irq0);

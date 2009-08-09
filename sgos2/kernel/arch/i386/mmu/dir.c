@@ -10,11 +10,13 @@
 #define MAX_PROCESS_NUM 1024
 static uint proc_dir_bitmap[MAX_PROCESS_NUM/32] = {0,};
 
+//页目录初始化
 void dir_init()
 {
 	memsetd( proc_dir_bitmap, 0, (sizeof(uint)*MAX_PROCESS_NUM)>>(5+2) );
 }
 
+//获取一个给进程使用的页目录，返回的是虚拟地址
 uint get_page_dir()
 {
 	register int i;
@@ -36,6 +38,7 @@ uint get_page_dir()
 	return 0;
 }
 
+//释放一个页目录
 void free_page_dir(uint addr)
 {
 	addr -= PROC_PAGE_DIR_BASE;

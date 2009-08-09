@@ -11,16 +11,16 @@ extern PROCESS* cur_proc;
 void kinit( uint boot_info )
 {
 	uint mem_size;
-	multiboot_info_t* mbi;
+	multiboot_info_t* mbi;	//=multiboot information
 	//before we do something, we initialize some important vars
-	cur_proc = NULL;
+	cur_proc = NULL;	
 	
 	//get mbi
 	mbi = (multiboot_info_t*)boot_info;
 	//init debugger as soon as possible.
 	debug_init();
 	
-	//	check module        
+	//	check module   内核需要加载的基本服务信息   
 	if (CHECK_FLAG (mbi->flags, 3)) 
 	{ 
 		module_t *mod; 
@@ -34,7 +34,7 @@ void kinit( uint boot_info )
 				mod->mod_end, 
 				(char *) mod->string ); 
 	} 
-	// memory map
+	// memory map  MBI提供的内存映射信息
 	if ( CHECK_FLAG (mbi->flags, 6) ) 
 	{
 		memory_map_t *mmap; 
@@ -59,7 +59,7 @@ void kinit( uint boot_info )
 		mem_size = (mbi->mem_upper + 1024)<<10;
 		kprintf ("mem_total = %uMB\n", mem_size>>20 );
 	}
-	//init machine
+	//init machine 
 	machine_init();
 	//page_dir init
 	dir_init();
@@ -90,9 +90,11 @@ static void kinit_halt()
 //线程0执行hlt指令，线程1继续内核初始化。
 void kinit_resume()
 {
+	//create a halt thread
 	THREAD* thr;
 	thr = thread_create( current_proc(), (uint)kinit_halt );
 	sched_set_state( thr, TS_READY );
+	//do something boring currently
 	kprintf("display a point every second.\n");
 	while(1){
 		kprintf(".");
