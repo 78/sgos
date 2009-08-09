@@ -35,17 +35,22 @@ void start_threading()
 		"ltr %bx\n\t"
 		"mov $0x30, %bx\n\t"
 		"lldt %bx\n" );
+	//进入线程运行模式
 	enter_threading_mode();
-	tbox.running = current_proc()->thread;
 	//back here
+	//设置当前运行的线程
+	tbox.running = current_proc()->thread;
+	//继续初始化。
 	kinit_resume();
 }
 
+//线程切换
 void i386_switch( THREAD*, uint*, uint* );
 void switch_to( THREAD* cur, THREAD* thr )
 {
 	//let clock work
 	out_byte(0x20, 0x20);
+	//下面是汇编代码了
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
 }
 
@@ -60,9 +65,9 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 	r->gs = r->fs = r->es = r->ds = r->ss = 0x14;
 	r->cs = 0x0C;
 	r->eflags = 0x203;
-	r->esp = stack_addr;
+	r->esp = stack_addr;	//一般运行时堆栈
 	r->kesp = 0;
-	r->eip = entry_addr;
-	thr->stack_pointer = (t_32)r;
+	r->eip = entry_addr;	//入口
+	thr->stack_pointer = (t_32)r;	//中断时堆栈
 //	PERROR("ok init:%d  pointer:0x%X", thr->id, thr->stack_pointer );
 }

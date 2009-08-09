@@ -2,7 +2,7 @@
 #define _MM_H_
 
 #include <sgos.h>
-
+#include <process.h>
 
 // kernel memory allocator
 void	kmalloc_init();

@@ -33,24 +33,26 @@ typedef struct MEMORY_INFO{
 
 // 内核进程结构体。
 typedef struct PROCESS{
-	uint				id;
-	mutex_t				mutex;
-	uint				user;
-	struct PROCESS*			pre, *next;
-	struct PROCESS*			parent, *child;
-	struct THREAD*			thread;
-	struct MEMORY_INFO		memory_info;
-	struct MESSAGE_QUEUE		message;
-	char				name[PROCESS_NAME_LEN];
-	void*				information;
+	uint				id;	//进程标识
+	mutex_t				mutex;	
+	uint				user;	//用户
+	struct PROCESS*			pre, *next;	//进程链表，不分父子关系
+	struct PROCESS*			parent, *child;	//父子进程
+	struct THREAD*			thread;	//第一个线程
+	struct MEMORY_INFO		memory_info;	//内存信息
+	struct MESSAGE_QUEUE		message;	//消息
+	char				name[PROCESS_NAME_LEN];	//进程名称
+	void*				information;		//其它信息
 	uint				page_dir;	//page_dir
-	uint				exit_code;
+	uint				exit_code;	//退出码
 	void*				module;		//module informations
 	void*				environment;	//process startup environment
 	
 }PROCESS;
 
+//第一个进程初始化
 void process_init();
+//返回当前进程
 PROCESS* current_proc();
 
 #endif

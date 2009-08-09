@@ -6,8 +6,8 @@
 #include <arch.h>
 #include <debug.h>
 
-#define KERNEL_PAGE_TABLE_BASE 0xE0400000
 
+//映射一个临时页，虚拟地址是占用了进程页目录地址的
 uint map_temp_page( uint phys_addr )
 {
 	uint temp_addr = get_page_dir();
@@ -25,6 +25,7 @@ uint map_temp_page( uint phys_addr )
 	return temp_addr;
 }
 
+//释放一个临时页
 void unmap_temp_page( uint vir_addr )
 {
 //	what's the use for to change it to 0?
@@ -65,21 +66,24 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 	// get page table entry
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	if( newpage ){
-		reflush_pages();
+		reflush_pages();	//刷新页目录了，否则下面这句就不管用了
 		memsetd( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>12)&1023),
 			 0, PAGE_SIZE>>2 );
 	}
 	if( te->v )	//remap??
 		free_phys_page( (uint)(te->a.phys_addr<<12) );
+	//设置新的值
 	te->v = phys_addr;
 	if( attr&P_USER )
 		te->a.user = 1;
 	if( attr&P_WRITE )
 		te->a.write = 1;
 	te->a.present = 1;
+	//更改了分页信息，刷新页目录
 	reflush_pages();
 }
 
+//取消一个页面的映射
 void unmap_one_page( uint dir, uint vir_addr )
 {
 	PAGE_DIR* de, *te, *temp;
@@ -110,7 +114,7 @@ void map_pages( uint dir, uint vir_addr, uint phys_addr, uint size, uint attr )
 	}
 }
 
-//
+//取消一堆页面的映射。。。
 void unmap_pages( uint dir, uint vir_addr, uint size )
 {
 	uint count;

@@ -14,6 +14,7 @@ void thread_init()
 	thread_id = 0;
 }
 
+//创建一个线程
 THREAD* thread_create( PROCESS* proc, uint entry_addr )
 {
 	THREAD* thr;
@@ -24,13 +25,17 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 		die("## kernel memory used out!!");
 	}
 	memset( thr, 0, sizeof(THREAD) );
+	//初始化mutex
 	mutex_init( &thr->mutex );
+	//调度信息
 	sched = &thr->sched_info;
+	//线程基本信息
 	thr->id = thread_id++;
 	thr->process = proc;
 	thr->state = TS_INIT;
 	thr->entry_address = entry_addr;
 	thr->stack_pointer = (uint)kmalloc(1024*1024);	//test
+	//初始化寄存器
 	init_thread_regs( thr, current_thread(), NULL, entry_addr, thr->stack_pointer );
 	//进行链表操作
 	local_irq_save( eflags );
@@ -46,16 +51,19 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	return thr;
 }
 
+//结束线程
 int thread_terminate( THREAD* thr )
 {
 	sched_set_state( thr, TS_DEAD );
 	return 0;
 }
 
+//等待一个线程结束
 void thread_join( THREAD* thr )
 {
 }
 
+//线程继续
 int thread_resume( THREAD* thr )
 {
 	sched_set_state( thr, TS_READY );

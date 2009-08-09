@@ -22,14 +22,17 @@
 #define PAGE_INDEX_TO_PHYS_ADDR( i ) ( (uint)(i<<PAGE_SIZE_BITS) )
 #define PHYS_ADDR_TO_PAGE_INDEX(addr) ((uint)addr>>PAGE_SIZE_BITS)
 
-static uint	total_pages;
+static uint	total_pages;	//总物理页面数
 static ushort*	page_ref;	//page reference count
 static uint	page_used;	//used page count
-static uint	page_front;	//
+static uint	page_front;	//第一个可使用的页面
 uint		kernel_page_dir;	//page dir for kernel
 static uint	page_it = 0;	//for fast allocation
 
+//页面异常调用函数
 extern int pagefault_handler( int err_code, I386_REGISTERS* r );
+
+//初始化分页
 int page_init(uint mem_size)
 {
 	int i;
@@ -40,10 +43,14 @@ int page_init(uint mem_size)
 	//we initialized it in multiboot.S
 	page_ref = (ushort*) (KERNEL_BASE+0x00200000);
 	memsetd( page_ref, 0, (2<<20)>>2 );
+	//计算物理页面总数
 	total_pages = mem_size / PAGE_SIZE;
+	//第一个可分配物理页面
 	page_front = PHYS_ADDR_TO_PAGE_INDEX(0x00400000);
 	page_used = page_front;
+	//page_it指向一个可用的物理页面，为了快速分配使用。
 	page_it = page_front;
+	//设置isr
 	isr_install( PAGEFAULT_INTERRUPT, (void*)pagefault_handler );
 	//分配所有的共享页表 3G-4G  大概需要2MB
 	kprintf("Allocating tables for kernel space.\n");
@@ -85,9 +92,11 @@ uint get_phys_page()
 		PERROR("## no pages for allocation.");
 		return 0;
 	}
+	//进入不可中断区域
 	local_irq_save(eflags);
 	if( page_it < page_front )
 		page_it = page_front;
+	//从page_it开始搜索
 	for( i=page_it; i<total_pages; i++ ){
 		if( !page_ref[i] ){
 			page_ref[i]++;
@@ -96,6 +105,7 @@ uint get_phys_page()
 			return PAGE_INDEX_TO_PHYS_ADDR(i);
 		}
 	}
+	//如果找不到，再从头开始找
 	for( i=page_front; i<page_it; i++ ){
 		if( !page_ref[i] ){
 			page_ref[i]++;
@@ -136,7 +146,7 @@ void dump_phys_pages()
 	kprintf("\n");
 }
 
-//更新cr3
+//更新cr3（刷新页目录）
 void load_page_dir(uint phys_addr)
 {
  	__asm__("mov %0, %%eax"::"m"(phys_addr) );

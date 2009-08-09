@@ -18,11 +18,13 @@ static t_8			realmode_idt_mask;			//中断屏蔽位图
 static t_16			idt_code_seg = 0x8;	//default is 0x8
 
 
+//设置门描述符
 void set_gate( int vector, uchar desc_type, void* handle )
 {
 	set_idt_desc( vector, desc_type, handle );
 }
 
+//设置gdt
 void set_gdt_desc( int vector, uint base, uint limit, uint attribute )
 {
 	SEGMENT_DESC* desc	=	&gdt[vector];
