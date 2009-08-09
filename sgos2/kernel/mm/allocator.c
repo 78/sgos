@@ -61,17 +61,18 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	node_t* nod;
 	uint eflags;
 	if(!siz) return NULL;
-	m = siz + sizeof(node_t);
+	m = siz + sizeof(node_t);	//m是包括节点大小计算的。
 	i = calc_hash_index( m );
 	//进入临界区
 	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
-		while( nod && nod->size < m )
+		//patched by Huang Guan. added "&& nod->size!=siz"
+		while( nod && nod->size < m && nod->size!=siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块
-			size_t rest = nod->size + sizeof(node_t) - m;	//rest大小不包括分配描述符大小
+			size_t rest = nod->size - siz;	//rest大小不包括分配描述符大小
 			//从空闲散列表中删除
 			HASH_DELETE( nod, who->free_table[j] );
 			MAKE_OCCUPIED(nod);	//占用
@@ -101,6 +102,77 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	return NULL;
 }
 
+//指定分配地址分配，时间复杂度O(n)，希望不要存放太多块了，不过这个函数估计只在开始
+//时候使用一两次，这是完全没问题的 ！！
+void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz )
+{
+	size_t k, a, j;
+	node_t* nod;
+	uint eflags;
+	if(!siz) return NULL;
+	//进入临界区
+	local_irq_save( eflags );
+	//在空闲块散列表中搜索合适的块
+	//
+	for( nod = who->first_node; nod; nod = nod->next ){
+		a = (uint)nod+sizeof(node_t);
+		if( IS_FREE_NODE(nod) && a >= addr && nod->size >= siz ){
+			//good luck!!	//找到可用块
+			size_t rest = nod->size - siz;	//rest大小不包括分配描述符大小
+			j = calc_hash_index( nod->size + sizeof(node_t) );
+			//从空闲散列表中删除
+			HASH_DELETE( nod, who->free_table[j] );
+			MAKE_OCCUPIED(nod);	//占用
+			if( rest>=32 ){ //如果有余下空间，则添加到空闲散列表中。rest == 0 为理想状态
+				node_t* nod2 = (node_t*)((size_t)nod + siz + sizeof(node_t) );
+				nod2->size = rest - sizeof(node_t);
+				nod->size = siz;
+				//调整邻接链表
+				nod2->next = nod->next;
+				if( nod2->next )
+					nod2->next->pre = nod2;
+				nod->next = nod2;
+				nod2->pre = nod;
+				//调整散列表
+				k = calc_hash_index( rest );
+				HASH_APPEND( nod2, who->free_table[k] );
+				MAKE_FREE( nod2 );
+			}
+			//离开临界区
+			local_irq_restore(eflags);
+			return (void*)((size_t)nod + sizeof(node_t));
+			
+		}
+	}
+	//没有合适块
+	//离开临界区
+	local_irq_restore(eflags);
+	return NULL;
+}
+
+//检查地址为addr的空间是否已被分配。
+int	mm_check_allocated(allocator_t* who, size_t addr )
+{
+	node_t* nod;
+	uint eflags;
+	uint nod_addr;
+	local_irq_save( eflags );
+	nod = who->first_node;
+	while( nod ){
+		//
+		if( (uint)nod <= addr && (uint)nod+sizeof(node_t)+nod->size > addr  ){
+			local_irq_restore(eflags);
+			if( IS_FREE_NODE(nod) )
+				return 0;
+			else
+				return 1;
+		}
+		nod = nod->next;
+	}
+	local_irq_restore(eflags);
+	return 0;
+}
+
 //合并a和b，c为a、b中不是当前释放的一个。
 static node_t*	merge( allocator_t* who, node_t* a, node_t* b, node_t* c )
 {
@@ -119,21 +191,23 @@ static node_t*	merge( allocator_t* who, node_t* a, node_t* b, node_t* c )
 
 //基本释放函数。
 //时间复杂度分析：最坏情况W(1)  一般O(1)
-void	mm_free(allocator_t* who, void* p)
+size_t	mm_free(allocator_t* who, void* p)
 {
 	int k;
 	node_t* nod;
 	uint eflags;
+	size_t siz;
 	if( !p ) return;
 	nod = (node_t*)((size_t)p - sizeof(node_t));
 	//进入临界区
 	local_irq_save(eflags);
 	if( IS_FREE_NODE(nod) ){
-		kprintf("Error: cannot free free node.\n");
+		PERROR("## cannot free free node.\n");
 		local_irq_restore(eflags);
-		return;
+		return 0;
 	}
 	MAKE_FREE(nod);
+	siz = nod->size;
 	if( nod->pre && IS_FREE_NODE(nod->pre) ){
 		//和前面一块空闲块合并，
 		nod = merge(who, nod->pre, nod, nod->pre);
@@ -146,6 +220,7 @@ void	mm_free(allocator_t* who, void* p)
 	HASH_APPEND(nod, who->free_table[k]);
 	//离开临界区
 	local_irq_restore(eflags);
+	return siz;
 }
 
 void*	mm_calloc(allocator_t* who, size_t c, size_t n)
@@ -175,6 +250,7 @@ void	mm_init_block(allocator_t* who, size_t addr, size_t size)
 }
 
 //添加可用内存空间
+/* 以禁用此函数，理由：破坏pre和next的顺序。
 void	mm_insert_block(allocator_t* who, size_t addr, size_t size)
 {
 	//make a node
@@ -194,6 +270,7 @@ void	mm_insert_block(allocator_t* who, size_t addr, size_t size)
 	//ok
 	local_irq_restore(eflags);
 }
+*/
 
 /***************** 以下为测试用代码 ******************/
 void	mm_print_block(allocator_t* who)
@@ -233,5 +310,5 @@ void	mm_print_block(allocator_t* who)
 void	mm_free_all(allocator_t * who)
 {
 	//
-	KERROR("not implemented.");
+	PERROR("not implemented.");
 }
