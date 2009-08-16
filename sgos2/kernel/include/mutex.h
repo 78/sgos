@@ -12,7 +12,9 @@ typedef struct THREAD_LIST{
 
 typedef struct MUTEX{
 	struct THREAD_LIST*	list;
-	uint				lock;
+	uint			lock;
 }mutex_t;
+
+void mutex_remove_thread( mutex_t* mut, struct THREAD* thr );
 
 #endif

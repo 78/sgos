@@ -15,13 +15,17 @@
 #define PROC_PAGE_DIR_BASE	0xE0000000
 #define PROC_PAGE_TABLE_MAP	0xBFC00000
 
+#define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_BASE )
+#define IS_USER_MEMORY(addr) ( addr <= PROC_PAGE_TABLE_MAP )
+
+
 struct THREAD;
 // gdt 
 // segment
 typedef struct SEGMENT_DESC
 {
-	t_16	limit_low;
-	t_16	base_low;
+	t_16		limit_low;
+	t_16		base_low;
 	t_8		base_mid;
 	t_8		attr1;
 	t_8		limit_high_attr2;
@@ -30,11 +34,11 @@ typedef struct SEGMENT_DESC
 // 门描述符
 typedef struct GATE_DESC
 {
-	t_16	offset_low;
-	t_16	selector;
+	t_16		offset_low;
+	t_16		selector;
 	t_8		dcount;	
 	t_8		attr;
-	t_16	offset_high;
+	t_16		offset_high;
 }GATE_DESC;
 // GDT位置描述符
 typedef struct GDT_ADDR {
@@ -163,6 +167,7 @@ void free_phys_page( uint addr );
 uint get_phys_page();
 void reflush_pages();
 void load_page_dir(uint phys_addr);
+uint switch_page_dir(uint phys_addr);
 //map
 uint map_temp_page( uint phys_addr );
 void unmap_temp_page( uint vir_addr );

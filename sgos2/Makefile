@@ -25,6 +25,7 @@ all: check
 	make -C kernel
 	make -C services
 	tools/wf/wf sgos2.img -src kernel/kernel.bin -dest sgos2/kernel.bin
+	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
 	@echo OK!
 
 check:

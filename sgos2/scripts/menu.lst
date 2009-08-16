@@ -1,0 +1,76 @@
+#! -*- mode: text; coding: gbk -*-
+#
+#  $Id: menu.lst, 06-06-2007 17:49:48 Aeon Exp $
+#
+#  Copyleft (C) 2007   Aeon Operation System lab.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+# default - boot the first entry
+default 0
+
+# if have problem boot the second entry
+fallback 1
+
+# after 30 secs boot default
+timeout 1
+
+# Set the color ;)
+color light-green/black blink-red/black
+
+# SGOS2
+title SGOS2
+	root (hd0,0)
+	kernel /sgos2/kernel.bin root=/dev/hda0
+	modulenounzip /sgos2/api.bxm
+
+# Halt the machine
+title Turn off power!
+halt
+
+# Reboot the computer
+title Reboot
+reboot
+
+
+
+### following command can list the mode!
+# > grub
+# > vbeprobe
+
+#
+# 0x100: Packed pixel, 640x400x8
+# 0x101: Packed pixel, 640x480x8
+# 0x103: Packed pixel, 800x600x8
+# 0x105: Packed pixel, 1024x768x8
+
+# 0x110: Direct Color, 640x480x15
+# 0x113: Direct Color, 800x600x15
+# 0x116: Direct Color, 1024x768x15
+
+# 0x111: Direct Color, 640x480x16
+# 0x114: Direct Color, 800x600x16
+# 0x117: Direct Color, 1024x768x16
+
+# 0x112: Direct Color, 640x480x24
+# 0x115: Direct Color, 800x600x24
+# 0x118: Direct Color, 1024x768x24
+
+# 0x142: Direct Color, 640x480x32
+# 0x143: Direct Color, 800x600x32
+# 0x144: Direct Color, 1024x768x32
+
+# 0x146: Direct Color, 320x200x8

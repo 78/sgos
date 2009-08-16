@@ -578,7 +578,7 @@ static int fat32_remove_ent( FILE_DESC* f )
 //
 static int fat32_create_ent( FILE_DESC* fsave )
 {
-    #define MAX_LNAME_ENTRIS FILENAME_LEN/26
+	#define MAX_LNAME_ENTRIS FILENAME_LEN/26
 	FAT32_ENTRY* ff;
 	FILE_DESC* f = fsave->parent;
 	FAT32DEV* fat = (FAT32DEV*)f->dev_info;
@@ -592,13 +592,13 @@ static int fat32_create_ent( FILE_DESC* fsave )
 	int uni_len = 0;
 	if( strlen( fsave->name ) > 11 )    //使用了长文件名
 	{
-	    memset( uni_name, 0xff, FILENAME_LEN );
-        uni_len = unicode_encode( (unsigned char*)fsave->name, FILENAME_LEN, (wchar_t*)uni_name, FILENAME_LEN );
-        name_entries = uni_len/13+1+1;  //计算使用多少个项
+		memset( uni_name, 0xff, FILENAME_LEN );
+		uni_len = unicode_encode( (unsigned char*)fsave->name, FILENAME_LEN, (wchar_t*)uni_name, FILENAME_LEN );
+		name_entries = uni_len/13+1+1;  //计算使用多少个项
 	}
 	clu_data = fat32_readclu( f, clu );
 read_clu:
-    found=0; //从新找，长文件名不希望跨越簇
+	found=0; //从新找，长文件名不希望跨越簇
 	for( i=0, ff=(FAT32_ENTRY*)(clu_data+pos); i<max_entries; i++,ff++ )
 	{
 	    //检查第一个字符

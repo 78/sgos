@@ -65,6 +65,10 @@ int page_init(uint mem_size)
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
 		table_entry[0].v = dir_entry[i].v;
 	}
+	// 未分配的清0
+	for( i=1; i<768; i++ ){
+		dir_entry[i].v = 0;
+	}
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	kprintf("Mapping tables for kernel process\n");
 	i = PROC_PAGE_TABLE_MAP>>22;	//767
@@ -149,8 +153,17 @@ void dump_phys_pages()
 //更新cr3（刷新页目录）
 void load_page_dir(uint phys_addr)
 {
- 	__asm__("mov %0, %%eax"::"m"(phys_addr) );
-	__asm__("mov %eax, %cr3");
+ 	__asm__ __volatile__("mov %0, %%eax"::"m"(phys_addr) );
+	__asm__ __volatile__("mov %eax, %cr3");
+}
+
+uint switch_page_dir(uint phys_addr)
+{
+	uint old;
+	__asm__ __volatile__ \
+	("pushfl ; popl %0":"=g" (old): :"memory");
+	load_page_dir( phys_addr );
+	return old;
 }
 
 //刷新当前进程的页目录

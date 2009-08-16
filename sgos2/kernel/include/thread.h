@@ -4,7 +4,10 @@
 #include <sgos.h>
 #include <arch.h>
 #include <mutex.h>
-#define THREAD_KERNEL_STACK_SIZE 2048
+#include <message.h>
+
+#define THREAD_KERNEL_STACK_SIZE (1024*6)
+#define THREAD_STACK_SIZE (1<<20)	//1MB
 
 struct PROCESS;
 struct THREAD;
@@ -34,14 +37,14 @@ typedef struct THREAD{
 	//线程正在睡眠时,sleepon指向等待唤醒的mutex
 	mutex_t*			sleepon;
 	//拥有该线程的进程指针
-	struct PROCESS*		process;
-	struct THREAD*		pre, *next;	//thread link
-	enum THREAD_STATE	state;		//thread state
-	struct ARCH_THREAD	arch;		//schedule information
+	struct PROCESS*			process;
+	struct THREAD*			pre, *next;	//thread link
+	enum THREAD_STATE		state;		//thread state
+	struct ARCH_THREAD		arch;		//schedule information
 	//run time, clock, read or write information, message information
 	void*				information;	//某些信息,暂未用
-	void*				messsage;		//消息链
-	SCHEDULE_INFO		sched_info;		//调度信息,调度链表 时间片之类的.
+	MESSAGE_QUEUE			message_queue;		//消息链
+	SCHEDULE_INFO			sched_info;		//调度信息,调度链表 时间片之类的.
 	uint				exit_code;		//线程退出码
 	uint				entry_address;	//线程入口
 	uint				stack_pointer;	//线程运行时堆栈指针
