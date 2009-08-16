@@ -11,8 +11,8 @@ static SEGMENT_DESC g_ldt[3];	//局部描述符 0x7  0xF  0x17
 
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
-extern void enter_user_mode();
-extern THREAD_BOX tbox;
+extern void enter_user_mode();	//switch.S
+extern THREAD_BOX tbox;	//in sched.c
 void start_threading()
 {
 	//初始化2个局部描述符, LDT

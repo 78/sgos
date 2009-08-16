@@ -7,6 +7,7 @@
 #include <thread.h>
 #include <mutex.h>
 
+//尝试
 int mutex_trylock( mutex_t *mut )
 {	
 	uint eflags;
@@ -23,6 +24,7 @@ int mutex_trylock( mutex_t *mut )
 	return 1;
 }
 
+//请求
 void mutex_lock( mutex_t *mut )
 {
 	uint eflags;
@@ -57,12 +59,14 @@ void mutex_lock( mutex_t *mut )
 	local_irq_restore(eflags);
 }
 
+//初始化
 void mutex_init( mutex_t *mut )
 {
 	memset( mut, 0, sizeof(mutex_t) );
 	mut->lock = 1;
 }
 
+//解除
 void mutex_unlock( mutex_t *mut )
 {
 	//
@@ -85,18 +89,47 @@ void mutex_unlock( mutex_t *mut )
 	}
 }
 
+//释放一个mutex
 void mutex_destroy( mutex_t *mut )
 {
 	THREAD_LIST* tl, *tl_next;
+	THREAD* thr;
 	uint eflags;
 	local_irq_save( eflags );
 	for( tl=mut->list; tl;  ){
 		tl_next = tl->next;
-		thread_terminate( tl->thread );
+		thr = tl->thread;
 		kfree( tl );
 		tl = tl_next;
+		thread_terminate( thr );
 	}
 	mut->lock = 0;
 	local_irq_restore( eflags );
 }
 
+//删除一个链表中的项
+void mutex_remove_thread( mutex_t* mut, THREAD* thr )
+{
+	THREAD_LIST* tl;
+	uint eflags;
+	local_irq_save(eflags);
+	if( mut->list ){
+		if( thr==mut->list->thread ){//简单情况
+			kfree( mut->list );
+			mut->list = NULL;
+		}else{ //复杂情况
+			for(tl=mut->list; tl->next; tl=tl->next ){
+				if( tl->next->thread == thr ){
+					//catched it
+					THREAD_LIST* tl2;
+					tl2 = tl->next;
+					tl->next = tl->next->next;
+					kfree(tl->next);
+					break;
+				}
+			}
+			PERROR("thread not found.");
+		}
+	}
+	local_irq_restore(eflags);
+}

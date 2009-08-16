@@ -113,40 +113,62 @@ void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz )
 	//进入临界区
 	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
-	//
 	for( nod = who->first_node; nod; nod = nod->next ){
 		a = (uint)nod+sizeof(node_t);
-		if( IS_FREE_NODE(nod) && a >= addr && nod->size >= siz ){
-			//good luck!!	//找到可用块
-			size_t rest = nod->size - siz;	//rest大小不包括分配描述符大小
+		if( IS_FREE_NODE(nod) && a <= addr && a+nod->size >= addr+siz ){
+			//good luck!!	//找到可用块，必须剪出来
+			//一般剪中间的一块占用，两边的是可用空闲
+			size_t left, middle, right;
+			node_t* nl, *nm, *nr, *opre, *onext;
+			//记下原来的左右节点
+			opre = nod->pre;
+			onext = nod->next;
+			//从空闲散列表中移除
 			j = calc_hash_index( nod->size + sizeof(node_t) );
-			//从空闲散列表中删除
 			HASH_DELETE( nod, who->free_table[j] );
-			MAKE_OCCUPIED(nod);	//占用
-			if( rest>=32 ){ //如果有余下空间，则添加到空闲散列表中。rest == 0 为理想状态
-				node_t* nod2 = (node_t*)((size_t)nod + siz + sizeof(node_t) );
-				nod2->size = rest - sizeof(node_t);
-				nod->size = siz;
-				//调整邻接链表
-				nod2->next = nod->next;
-				if( nod2->next )
-					nod2->next->pre = nod2;
-				nod->next = nod2;
-				nod2->pre = nod;
+			//开始设置新的节点
+			nl = nod;	//左节点
+			nm = (node_t*)(addr-sizeof(node_t));	//中间节点
+			nr = (node_t*)(addr+siz);	//右节点
+			left = (size_t)nm - (size_t)nl; //左边剩余大小
+			right = (a+nod->size) - (addr+siz);
+			nm->size = siz;
+			if( left>=32 ){ //左边有空闲足够添加到散列表中 
+				nl->size = left - sizeof(node_t); //新大小
+				nl->next = nm; //右节点变了
+				nm->pre = nl; //调整中间的节点
 				//调整散列表
-				k = calc_hash_index( rest );
-				HASH_APPEND( nod2, who->free_table[k] );
-				MAKE_FREE( nod2 );
+				k = calc_hash_index( left );
+				HASH_APPEND( nl, who->free_table[k] );
+				//不用MAKEFREE了，本来就是free的
+			}else{	//如果不足够，则加入到中间
+				nm = nl; //吞并左节点
+				nm->size = left + siz;
+				nm->pre = opre;
 			}
+			if( right>=32 ){ //右边有空闲足够添加到散列表中 
+				nr->size = right - sizeof(node_t);
+				nr->pre = nm;
+				nr->next = onext;
+				nm->next = nr;
+				//调整散列表
+				k = calc_hash_index( right );
+				HASH_APPEND( nr, who->free_table[k] );
+				MAKE_FREE(nr);
+			}else{
+				nm->next = onext;
+				nm->size += right;
+			}
+			MAKE_OCCUPIED(nm);
 			//离开临界区
 			local_irq_restore(eflags);
-			return (void*)((size_t)nod + sizeof(node_t));
-			
+			return (void*)((size_t)nm + sizeof(node_t));
 		}
 	}
 	//没有合适块
 	//离开临界区
 	local_irq_restore(eflags);
+	PERROR("##failed to allocate memory.");
 	return NULL;
 }
 
@@ -162,10 +184,11 @@ int	mm_check_allocated(allocator_t* who, size_t addr )
 		//
 		if( (uint)nod <= addr && (uint)nod+sizeof(node_t)+nod->size > addr  ){
 			local_irq_restore(eflags);
-			if( IS_FREE_NODE(nod) )
+			if( IS_FREE_NODE(nod) ){
 				return 0;
-			else
+			}else{
 				return 1;
+			}
 		}
 		nod = nod->next;
 	}

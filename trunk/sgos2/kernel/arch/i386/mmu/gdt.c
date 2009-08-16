@@ -13,9 +13,9 @@ static GDT_ADDR		gdt_ptr;
 static GATE_DESC	idt[MAX_IDT];	//	256 gdt items
 static GDT_ADDR		idt_ptr;
 
-static t_8			realmode_idt_mask;			//中断屏蔽位图
+static t_8		realmode_idt_mask;			//中断屏蔽位图
 
-static t_16			idt_code_seg = 0x8;	//default is 0x8
+static t_16		idt_code_seg = 0x8;	//default is 0x8
 
 
 //设置门描述符

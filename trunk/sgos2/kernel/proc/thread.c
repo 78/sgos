@@ -34,7 +34,11 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	thr->process = proc;
 	thr->state = TS_INIT;
 	thr->entry_address = entry_addr;
-	thr->stack_pointer = (uint)kmalloc(1024*1024);	//test
+	if( IS_USER_MEMORY( entry_addr ) ){//创建用户态线程？？
+		thr->stack_pointer = (uint)umalloc( proc, THREAD_STACK_SIZE );
+	}else{
+		thr->stack_pointer = (uint)kmalloc( THREAD_STACK_SIZE );//内核堆栈
+	}
 	//初始化寄存器
 	init_thread_regs( thr, current_thread(), NULL, entry_addr, thr->stack_pointer );
 	//进行链表操作
@@ -54,13 +58,28 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 //结束线程
 int thread_terminate( THREAD* thr )
 {
+	PROCESS* proc;
+	proc = current_proc();
 	sched_set_state( thr, TS_DEAD );
+	//回收资源
+	if( IS_USER_MEMORY( thr->entry_address ) ){//用户态线程？？
+		ufree( proc, thr->stack_pointer );
+	}else{
+		kfree( thr->stack_pointer );//内核堆栈
+	}
+	//如果线程睡眠了
+	if( thr->state == TS_SLEEP && thr->sleepon ){
+		mutex_remove_thread(thr->sleepon, thr);
+	}
+	//向各服务发送线程结束消息
+	
 	return 0;
 }
 
 //等待一个线程结束
 void thread_join( THREAD* thr )
 {
+	die("not implemented.");
 }
 
 //线程继续
@@ -91,6 +110,7 @@ int thread_wait( uint ms )
 {
 	THREAD* cur = current_thread();
 	uint flags;
+	//关中断，禁止线程切换
 	local_irq_save( flags );
 	cur->sched_info.clock = ms;
 	//如果此时被切换了线程，则clock被更改了。。。
@@ -106,4 +126,11 @@ int thread_wakeup( THREAD* thr )
 {
 	sched_set_state( thr, TS_READY );
 	return 0;
+}
+
+//引发一个事件，让线程从内核态返回用户态后执行。
+void thread_raise_event( THREAD* thr, uint addr )
+{
+	//这个有点复杂。。。
+	die("not implemented.");
 }

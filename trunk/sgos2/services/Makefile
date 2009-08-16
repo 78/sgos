@@ -1,7 +1,9 @@
 #Makefile for SGOS2:services
 
+
 all:
-#do nothing
+	make -Capi
 
 clean:
+	make -Capi clean
 

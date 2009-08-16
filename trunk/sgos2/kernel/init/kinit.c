@@ -8,10 +8,10 @@
 
 //内核初始化入口
 extern PROCESS* cur_proc;
+static multiboot_info_t* mbi;	//=multiboot information
 void kinit( uint boot_info )
 {
 	uint mem_size;
-	multiboot_info_t* mbi;	//=multiboot information
 	//before we do something, we initialize some important vars
 	cur_proc = NULL;	
 	
@@ -20,20 +20,6 @@ void kinit( uint boot_info )
 	//init debugger as soon as possible.
 	debug_init();
 	
-	//	check module   内核需要加载的基本服务信息   
-	if (CHECK_FLAG (mbi->flags, 3)) 
-	{ 
-		module_t *mod; 
-		int i; 
-		kprintf ("mods_count = %d, mods_addr = 0x%x\n", 
-			(int) mbi->mods_count, (int) mbi->mods_addr ); 
-		for (i = 0, mod = (module_t *) mbi->mods_addr; 
-			i < mbi->mods_count; i++, mod += sizeof (module_t)) 
-			kprintf ("mod_start = 0x%x, mod_end = 0x%x, string = %s\n", 
-				mod->mod_start, 
-				mod->mod_end, 
-				(char *) mod->string ); 
-	} 
 	// memory map  MBI提供的内存映射信息
 	if ( CHECK_FLAG (mbi->flags, 6) ) 
 	{
@@ -73,6 +59,8 @@ void kinit( uint boot_info )
 	sched_init();
 	//init process management.
 	process_init();
+	//init module management.
+	module_init();
 	//启动线程
 	start_threading();
 	//never return here
@@ -94,6 +82,28 @@ void kinit_resume()
 	THREAD* thr;
 	thr = thread_create( current_proc(), (uint)kinit_halt );
 	sched_set_state( thr, TS_READY );
+	
+	//check module   内核需要加载的基本服务信息   
+	if (CHECK_FLAG (mbi->flags, 3)) 
+	{ 
+		module_t *mod; 
+		int i; 
+		kprintf ("mods_count = %d, mods_addr = 0x%x\n", 
+			(int) mbi->mods_count, (int) mbi->mods_addr ); 
+		for (i = 0, mod = (module_t *) mbi->mods_addr; 
+			i < mbi->mods_count; i++, mod += sizeof (module_t)) {
+			kprintf ("mod_start = 0x%x, mod_end = 0x%x, string = %s\n", 
+				mod->mod_start, 
+				mod->mod_end, 
+				(char *) mod->string ); 
+			//load it 
+			if( loader_process( current_proc(), mod->string, (uchar*)mod->mod_start, 
+				1, NULL ) < 0 ){
+				PERROR("##failed to load module %s", mod->string );
+			}
+		}
+	} 
+	
 	//do something boring currently
 	kprintf("display a point every second.\n");
 	while(1){

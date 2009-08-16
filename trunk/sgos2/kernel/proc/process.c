@@ -55,24 +55,34 @@ PROCESS* current_proc()
 	return cur_proc;
 }
 
+//创建进程
 int process_create()
 {
+	die("not implemented.");
 }
 
+//挂起进程
 int process_suspend()
 {
+	die("not implemented.");
 }
 
+//结束进程
 int process_terminate()
 {
+	die("not implemented.");
 }
 
+//进程睡眠？？？应该没这个功能的。。。
 int process_sleep()
 {
+	die("not implemented.");
 }
 
+//同上
 int process_wakeup()
 {
+	die("not implemented.");
 }
 
 

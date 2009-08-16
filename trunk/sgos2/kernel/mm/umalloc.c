@@ -1,9 +1,9 @@
-//user space memory allocator
+//user space memory bigblock allocator
 //provide a lot of memory for running SGOS2 user process
 //use 0x00000000 - 0x80000000  2GB  VIRTUAL_MEMORY
 
 #include <sgos.h>
-#include <allocator.h>
+#include <bigblock.h>
 #include <debug.h>
 #include <process.h>
 #include <mm.h>
@@ -11,8 +11,8 @@
 
 void umalloc_init( PROCESS* proc )
 {
-	mm_init_block( &proc->memory_info.umem_mgr, 
-		0x00000000,		//address
+	bb_init_block( &proc->memory_info.umem_mgr, 
+		0x00100000,		//address
 		0x80000000		//size
 		);
 	//
@@ -30,9 +30,10 @@ void*	umalloc_ex(PROCESS* proc, size_t addr, size_t siz)
 	info->umem_size += siz;
 	if( info->umem_size > info->max_umem ){
 		info->umem_size -= siz;
+		PERROR("##user memory used out!");
 		return NULL;
 	}
-	ret = mm_alloc_ex( &info->umem_mgr, addr, siz );
+	ret = bb_alloc_ex( &info->umem_mgr, addr, siz );
 	if( ret )
 		return ret;
 	//no memory??
@@ -53,7 +54,7 @@ void*	umalloc(PROCESS* proc, size_t siz)
 		info->umem_size -= siz;
 		return NULL;
 	}
-	ret = mm_alloc( &info->umem_mgr, siz );
+	ret = bb_alloc( &info->umem_mgr, siz );
 	if( ret )
 		return ret;
 	//no memory??
@@ -66,7 +67,7 @@ void	ufree(PROCESS* proc, void* p)
 	MEMORY_INFO* info;
 	size_t siz;
 	if( proc ){
-		siz = mm_free( &info->umem_mgr, p );
+		siz = bb_free( &info->umem_mgr, p );
 		//change some mem info
 		info = &proc->memory_info;
 		info->umem_size -= siz;
@@ -81,7 +82,7 @@ int	ucheck_allocated(PROCESS* proc, size_t addr)
 	if( proc ){
 		//change some mem info
 		info = &proc->memory_info;
-		return mm_check_allocated( &info->umem_mgr, addr );
+		return bb_check_allocated( &info->umem_mgr, addr );
 	}
 }
 

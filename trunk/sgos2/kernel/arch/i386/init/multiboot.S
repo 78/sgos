@@ -98,7 +98,7 @@ MAP_PTE:
 	movw	%ax, %gs
 	movw	%ax, %ss
 	;//设置内核堆栈
-	movl	$0x10000, %esp
+	movl	$0xC0010000, %esp
 	;//mbi信息
 	movl	multiboot_info, %ebx
 	pushl	%ebx
