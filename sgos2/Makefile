@@ -21,12 +21,13 @@ endef
 
 .PHONY : all check run bochsdbg bochs windbg debug clean
 # Target
-all: check
+all: check grub
 	make -C kernel
 	make -C apps
-	tools/wf/wf sgos2.img -src kernel/kernel.bin -dest sgos2/kernel.bin
-	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
 	@echo OK!
+
+grub: scripts/menu.lst
+	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
 
 check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
