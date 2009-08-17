@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <debug.h>
 #include <string.h>
-
+#include <thread.h>
 
 void print_err(char* file, char* function, int line, const char *fmt, ...)
 {
@@ -22,11 +22,15 @@ void kernel_err(char* file, char* function, int line, const char *fmt, ...)
 	va_list args;
 	char printbuf[256];
 	int i;
+	THREAD* thr;
 	va_start(args, fmt);
 	i=vsprintf( printbuf, fmt, args );
 	va_end(args);
 	kprintf("[%s]%s(%d): %s\n", file, function, line, printbuf );
-	while(1)
-		__asm__ __volatile__ ("hlt");
+	thr = current_thread();
+	if( thr )
+		thread_terminate( thr, -1 );
+	else
+		die("System halted.");
 }
 

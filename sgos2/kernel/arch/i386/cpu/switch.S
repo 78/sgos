@@ -6,11 +6,11 @@ _enter_threading_mode:
 	pushl	$0x202	;//flag寄存器
 	pushl	$0x0C	;//0x0F用户代码段
 	pushl	$return
-	mov		$0x14, %ax	;//$0x17
-	mov		%ax, %es
-	mov		%ax, %ds
-	mov		%ax, %fs
-	mov		%ax, %gs
+	mov	$0x14, %ax	;//$0x17
+	mov	%ax, %es
+	mov	%ax, %ds
+	mov	%ax, %fs
+	mov	%ax, %gs
 	iret
 
 return:
@@ -35,16 +35,16 @@ _i386_switch:	;// 线程切换
 	movl	%esp, (%edi)	;// cur->stack_pointer = esp
 	movl	0x10(%ebp), %esp
 	movl	(%esp), %esp	;// esp = p->stack_pointer
-	pop		%gs
-	pop		%fs
-	pop		%es
-	pop		%ds
+	pop	%gs
+	pop	%fs
+	pop	%es
+	pop	%ds
 	popa
 	addl	$8, %esp
 	iret
 
 return_from_switch:
-	pop		%ebp
+	pop	%ebp
 	ret
 
 

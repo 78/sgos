@@ -12,7 +12,6 @@ static SEGMENT_DESC g_ldt[5];	//局部描述符 0x7  0xF  0x17
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
 extern void enter_user_mode();	//switch.S
-extern THREAD_BOX tbox;	//in sched.c
 void start_threading()
 {
 	//初始化2个局部描述符, LDT
@@ -26,7 +25,7 @@ void start_threading()
 	//TSS, 保存着内核所用的堆栈, 从特权3到特权0要借助TSS
 	memset(&g_tss, 0, sizeof(TSS) );
 	g_tss.ss0 = 0x10;
-	g_tss.esp0 = (uint)current_thread()+sizeof(THREAD);
+	g_tss.esp0 = 0;
 	g_tss.iobase = sizeof(TSS);
 	//设置TSS描述符
 	set_gdt_desc( 5, (t_32)&g_tss, sizeof(TSS)-1, DA_386TSS );
@@ -40,8 +39,6 @@ void start_threading()
 	//进入线程运行模式
 	enter_threading_mode();
 	//back here
-	//设置当前运行的线程
-	tbox.running = current_proc()->thread;
 	//继续初始化。
 	kinit_resume();
 }
@@ -60,6 +57,7 @@ void switch_to( THREAD* cur, THREAD* thr )
 		load_page_dir( cur_proc->page_dir );
 //		kprintf("{%d}", cur_proc->pid );
 	}
+	g_tss.esp0 = (uint)thr+sizeof(THREAD);
 	//下面是汇编代码了
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
 }
