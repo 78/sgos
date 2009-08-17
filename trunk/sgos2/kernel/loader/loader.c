@@ -73,8 +73,6 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 		//有的程序指定了堆栈大小
 		bxml_read(bxml, ":stack_size", &mod->stack_size, sizeof(mod->stack_size) );
 		//开始读入数据
-		if( proc->page_dir != current_proc()->page_dir )
-			old_page_dir = switch_page_dir( proc->page_dir );
 		//section data
 		if( bxml_redirect(bxml, "/program/section_table/section", 0) ){
 			do{
@@ -102,6 +100,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 			int export_num = 0;
 			do export_num ++; while(bxml_movenext(bxml));	//获取符号数目
 			//分配存储空间
+			mod->export_num = 0;
 			mod->export_table = (SYMBOL_ENTRY*)kmalloc( export_num * sizeof(SYMBOL_ENTRY) );
 			if( mod->export_table ){
 				//重新定位
@@ -120,51 +119,64 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 					mod->export_table[index].address = addr;
 					strncpy( mod->export_table[index].name, name, SYMBOL_NAME_LEN );
 					mod->export_num ++;
+				//	if( mod->export_num > export_num )
 				}while(bxml_movenext(bxml));
 			}
 		}
 		//import table
 		if( bxml_redirect(bxml, "/program/import_table/module", 0) ){
-			do{
-				MODULE* mod_imp;
-				char* name;
-				char* tmp;
-				name = bxml_readstr(bxml, ":name");
-				mod_imp = module_get( proc, name ); //看看是否能直接得到
-				if( !mod_imp ){
-					//否则从文件系统中加载
-					if( loader_load(proc, name, &mod_imp) != 0 ){
-						PERROR("##failed to load module: %s", name );
-						break;
-					}
-				}
-				if( mod_imp && bxml_redirect(bxml, "import", 0) ){
-					do{	//修改所有导入地址
-						char* name;
-						size_t addr, ordinal;
-						//read export entry attributes
-						name = bxml_readstr(bxml, ":name");
-						bxml_read(bxml, ":virtual_address", &addr, sizeof(addr));
-						bxml_read(bxml, ":id", &ordinal, sizeof(ordinal) );
-						addr += load_addr;
-						//保证不会越界
-						if( addr+sizeof(size_t) <= load_addr+load_size ){
-							//写入地址
-							*(size_t*)addr = module_get_export_addr(mod_imp, name);
-						}else{
-							PERROR("## out of boundary.");
+			int import_num = 0;
+			//获取模块数目
+			do import_num ++; while(bxml_movenext(bxml));
+			//分配导入模块信息存储空间
+			mod->import_num = 0;
+			mod->import_modules = (MODULE**)kmalloc( import_num * sizeof(MODULE*) );
+			if( mod->import_modules ){
+				//重新定位
+				bxml_redirect(bxml, "../module", 0);
+				do{
+					MODULE* mod_imp;
+					char* name;
+					char* tmp;
+					name = bxml_readstr(bxml, ":name");
+					mod_imp = module_get( proc, name ); //看看是否能直接得到
+					if( !mod_imp ){
+						//否则从文件系统中加载
+						if( loader_load(proc, name, &mod_imp) != 0 ){
+							PERROR("##failed to load module: %s", name );
+							break;
 						}
-					}while(bxml_movenext(bxml));
-				}
-				//back
-				tmp = (char*)kmalloc(1024);
-				sprintf(tmp, "/program/import_table/module?name=%s", name );
-				bxml_redirect(bxml, tmp, 0 );
-				kfree(tmp);
-			}while(bxml_movenext(bxml));
+					}
+					if( mod_imp && bxml_redirect(bxml, "import", 0) ){
+						//设置该模块信息
+						mod->import_modules[mod->import_num] = mod_imp;
+						mod->import_num++;
+						do{	//修改所有导入地址
+							char* name;
+							size_t addr, ordinal;
+							//read export entry attributes
+							name = bxml_readstr(bxml, ":name");
+							bxml_read(bxml, ":virtual_address", &addr, sizeof(addr));
+							bxml_read(bxml, ":id", &ordinal, sizeof(ordinal) );
+							addr += load_addr;
+							//保证不会越界
+							if( addr+sizeof(size_t) <= load_addr+load_size ){
+								//写入地址
+								*(size_t*)addr = module_get_export_addr(mod_imp, name);
+							}else{
+								PERROR("## out of boundary.");
+							}
+						}while(bxml_movenext(bxml));
+						//把该模块添加到导入模块链表
+					}
+					//back
+					tmp = (char*)kmalloc(1024);
+					sprintf(tmp, "/program/import_table/module?name=%s", name );
+					bxml_redirect(bxml, tmp, 0 );
+					kfree(tmp);
+				}while(bxml_movenext(bxml));
+			}
 		}
-		if( old_page_dir )	//切换过页目录，则恢复
-			load_page_dir( old_page_dir );
 	}else{ //mod==NULL
 		bxml_free(bxml);
 		PERROR("##module add failed.");

@@ -4,7 +4,6 @@
 #ifndef _BXML_
 #define _BXML_
 
-#include <mutex.h>
 
 #define BXML_MAGIC 0x4C4D5842 //'BXML'
 #define BXML_HEAD_SIZE 16

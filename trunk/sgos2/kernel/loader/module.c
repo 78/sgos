@@ -35,8 +35,9 @@ void module_attach( struct PROCESS* proc, MODULE* mod )
 		attr |= P_WRITE;
 	for( i=0; i<mod->page_num; i++ )
 		if( mod->page_table[i] )
-			map_one_page( proc->page_dir, mod->vir_addr + (i<<PAGE_SIZE_BITS), mod->page_table[i], attr );
-	PERROR("ok");
+			map_one_page( proc->page_dir, mod->vir_addr + (i<<PAGE_SIZE_BITS), 
+				mod->page_table[i], attr );
+	PERROR("attach %s ok", mod->name );
 }
 
 //取消映射
@@ -52,14 +53,19 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar share,
 	size_t len;
 	//申请内存
 	mod = (MODULE*)kmalloc( sizeof(MODULE) );
-	//无需检查mod是否为NULL，当为NULL时，内核已经不能工作了。
+	if( !mod )
+		return NULL;
+	memset( mod, 0, sizeof(MODULE) );
 	mod->vir_addr = addr;
 	mod->vir_size = size;
 	mod->share = share;
-	//模块名称
+	//模块名称，例如 /sgos2/api.bxm
 	len = strlen(name);
-	mod->name = (char*)kmalloc(len+1);	//预留'\0'的空间
-	strcpy( mod->name, name );	//strcpy应该会补'\0'
+	mod->full_name = (char*)kmalloc(len+1);	//预留'\0'的空间
+	strcpy( mod->full_name, name );	//strcpy应该会补'\0'
+	//短名，例如 api.bxm
+	if( (mod->name = strrchr(name, '/')+1 )==(char*)1 )
+		mod->name = mod->full_name;
 	//获取锁
 	mutex_lock( &g_mods.mutex );
 	//插入到链头 
@@ -76,7 +82,7 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar share,
 		PERROR("##not implemented.");
 		mod->share = 0;	//重定位后不要共享，数据已被修改。
 		//释放资源
-		kfree( mod->name );
+		kfree( mod->full_name );
 		kfree( mod );
 		return NULL;
 	}
@@ -124,19 +130,31 @@ void module_unlink( struct PROCESS* proc, MODULE* mod )
 MODULE* module_get( struct PROCESS* proc, char* name )
 {
 	MODULE* mod;
+	int i;
 	//获取锁
 	mutex_lock( &g_mods.mutex );
-	//查找
-	for( mod=g_mods.module; mod; mod=mod->next ){
-		if( mod->share && strcmp(name, mod->name)==0 ){
-			mod->reference ++;
-			mutex_unlock( &g_mods.mutex );
-			//连接该模块到进程
-			module_link( proc, mod );
-			//映射模块页面到进程
-			module_attach( proc, mod );
-			return mod;
+	mod = module_search_by_name( proc, name );
+	if( !mod ){
+		//查找
+		for( mod=g_mods.module; mod; mod=mod->next ){
+			if( mod->share && strcmp(name, mod->name)==0 ){
+				mod->reference ++;
+				mutex_unlock( &g_mods.mutex );
+				//连接该模块到进程
+				module_link( proc, mod );
+				//映射模块页面到进程
+				module_attach( proc, mod );
+				//加载导入模块
+				for(i=0; i<mod->import_num; i++ )
+					if(mod->import_modules[i]){
+						module_get( proc, mod->import_modules[i]->name );
+					}
+				return mod;
+			}
 		}
+	}else{
+		mutex_unlock( &g_mods.mutex );
+		return mod;
 	}
 	//not found
 	mutex_unlock( &g_mods.mutex );
@@ -164,6 +182,19 @@ MODULE* module_search( struct PROCESS* proc, size_t vir_addr )
 	for( ml=proc->module_link; ml; ml=ml->next )
 		if( ml->module->vir_addr <= vir_addr && 
 			ml->module->vir_addr+ml->module->vir_size > vir_addr ){
+			//we found it
+			return ml->module;
+		}
+	//not found.
+	return NULL;
+}
+
+//从进程链表中查找模块
+MODULE* module_search_by_name( struct PROCESS* proc, char* name )
+{
+	MODULE_LINK* ml;
+	for( ml=proc->module_link; ml; ml=ml->next )
+		if( strcmp(ml->module->name, name)==0 ){
 			//we found it
 			return ml->module;
 		}

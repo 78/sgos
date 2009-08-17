@@ -101,7 +101,7 @@ void mutex_destroy( mutex_t *mut )
 		thr = tl->thread;
 		kfree( tl );
 		tl = tl_next;
-		thread_terminate( thr );
+		thread_terminate( thr, -1 );
 	}
 	mut->lock = 0;
 	local_irq_restore( eflags );

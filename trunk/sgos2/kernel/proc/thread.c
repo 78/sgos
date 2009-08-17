@@ -7,11 +7,19 @@
 #include <debug.h>
 #include <string.h>
 
-static uint thread_id = 0;
+static uint thread_id = 1;
 
 void thread_init()
 {
-	thread_id = 0;
+	thread_id = 1;
+}
+
+static uint generate_tid()
+{
+	uint tid = thread_id;
+	if( (++thread_id)%4 == 0 )
+		++thread_id;
+	return tid;
 }
 
 //创建一个线程
@@ -30,15 +38,19 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	//调度信息
 	sched = &thr->sched_info;
 	//线程基本信息
-	thr->id = thread_id++;
+	thr->tid = generate_tid();
 	thr->process = proc;
 	thr->state = TS_INIT;
 	thr->entry_address = entry_addr;
+	thr->stack_size = THREAD_STACK_SIZE;
 	if( IS_USER_MEMORY( entry_addr ) ){//创建用户态线程？？
-		thr->stack_pointer = (uint)umalloc( proc, THREAD_STACK_SIZE );
+		thr->kernel = 0;
+		thr->stack_address = (uint)umalloc( proc, thr->stack_size );
 	}else{
-		thr->stack_pointer = (uint)kmalloc( THREAD_STACK_SIZE );//内核堆栈
+		thr->kernel = 1;
+		thr->stack_address = (uint)kmalloc( thr->stack_size );//内核堆栈
 	}
+	thr->stack_pointer = thr->stack_address + thr->stack_size;
 	//初始化寄存器
 	init_thread_regs( thr, current_thread(), NULL, entry_addr, thr->stack_pointer );
 	//进行链表操作
@@ -56,23 +68,25 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 }
 
 //结束线程
-int thread_terminate( THREAD* thr )
+int thread_terminate( THREAD* thr, int code )
 {
 	PROCESS* proc;
 	proc = current_proc();
 	sched_set_state( thr, TS_DEAD );
-	//回收资源
-	if( IS_USER_MEMORY( thr->entry_address ) ){//用户态线程？？
-		ufree( proc, thr->stack_pointer );
-	}else{
-		kfree( thr->stack_pointer );//内核堆栈
-	}
 	//如果线程睡眠了
 	if( thr->state == TS_SLEEP && thr->sleepon ){
 		mutex_remove_thread(thr->sleepon, thr);
 	}
 	//向各服务发送线程结束消息
 	
+	//回收资源
+	/*
+	if( thr->kernel ){//用户态线程？？
+		kfree( thr->stack_pointer );//内核堆栈
+	}else{
+		ufree( proc, thr->stack_pointer );
+	}*/
+	schedule();
 	return 0;
 }
 
