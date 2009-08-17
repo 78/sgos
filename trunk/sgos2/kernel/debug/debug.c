@@ -37,7 +37,9 @@ void kprintf(const char *fmt, ...)
 void die(const char *s )
 {
 	local_irq_disable();
-	KERROR( s );
+	debug_print( (char*)s );
+	while(1)
+		halt();
 }
 
 int debug_print( char *buf )

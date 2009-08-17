@@ -9,6 +9,7 @@
 
 //内核初始化入口
 extern PROCESS* cur_proc;
+extern THREAD_BOX tbox;	//in sched.c
 static multiboot_info_t* mbi;	//=multiboot information
 void kinit( uint boot_info )
 {
@@ -63,6 +64,9 @@ void kinit( uint boot_info )
 	process_init();
 	//init module management.
 	module_init();
+	//set running thread
+	//设置当前运行的线程
+	tbox.running = current_proc()->thread;
 	//启动线程
 	start_threading();
 	//never return here
