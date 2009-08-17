@@ -5,7 +5,7 @@
 #include <gdt_const.h>
 #include <lock.h>
 
-#define SYSTEM_INTERRUPT 0xA0
+#define SYSTEM_INTERRUPT 0xA1
 #define PAGEFAULT_INTERRUPT 14
 #define RTC_INTERRUPT		0
 
@@ -13,9 +13,10 @@
 #define PAGE_SIZE_BITS 12
 #define KERNEL_BASE	0xC0000000
 #define PROC_PAGE_DIR_BASE	0xE0000000
+#define PROC_PAGE_DIR_END	0xE0400000
 #define PROC_PAGE_TABLE_MAP	0xBFC00000
 
-#define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_BASE )
+#define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_END )
 #define IS_USER_MEMORY(addr) ( addr <= PROC_PAGE_TABLE_MAP )
 
 
@@ -168,6 +169,7 @@ uint get_phys_page();
 void reflush_pages();
 void load_page_dir(uint phys_addr);
 uint switch_page_dir(uint phys_addr);
+uint page_dir_phys_addr( uint vir_addr );
 //map
 uint map_temp_page( uint phys_addr );
 void unmap_temp_page( uint vir_addr );

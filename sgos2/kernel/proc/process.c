@@ -9,14 +9,21 @@
 PROCESS* init_proc = NULL;	//初始进程
 extern uint kernel_page_dir;	//内核进程页目录
 PROCESS* cur_proc = NULL;		//当前进程
-static uint process_id = 0;		//进程ID计数器
+static int process_id = 0;		//进程ID计数器
+
+static int generate_pid()
+{
+	int pid = process_id;
+	process_id += 4;
+	return pid;
+}
 
 //设置进程基本信息
 static void process_init_basicinfo( PROCESS* proc )
 {
 	MEMORY_INFO* mem_info;
-	init_proc->id = process_id ++;
-	mutex_init( &init_proc->mutex );
+	proc->pid = generate_pid();
+	mutex_init( &proc->mutex );
 	mem_info = &proc->memory_info;
 	//进程用户态内存
 	mem_info->max_umem = 1<<30;		//1GB !!!
@@ -56,31 +63,51 @@ PROCESS* current_proc()
 }
 
 //创建进程
-int process_create()
+PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env )
 {
-	die("not implemented.");
+	PROCESS* proc;
+	uint flags;
+	if( !parent )
+		return NULL;
+	proc = (PROCESS*)kmalloc( sizeof(PROCESS) );
+	if( proc == NULL )
+		return NULL;
+	memset( proc, 0, sizeof(PROCESS) );
+	// allocate a page_dir
+	proc->page_dir = get_page_dir();
+	// 映射内核空间 
+	init_page_dir( proc->page_dir ); //arch/*/page.c
+	// restore basic information
+	process_init_basicinfo( proc );
+	proc->user = parent->user;
+	// 设置进程链表
+	proc->parent = parent;
+	// 进入临界区
+	local_irq_save( flags );
+	proc->next = parent->child;
+	if( parent->child )
+		parent->child->pre = proc;
+	parent->child = proc;
+	// 离开临界区
+	local_irq_restore( flags );
+	PERROR("ok");
+	return proc;
 }
 
 //挂起进程
-int process_suspend()
+int process_suspend( PROCESS* proc )
 {
 	die("not implemented.");
 }
 
 //结束进程
-int process_terminate()
+int process_terminate( PROCESS* proc, int exit_code )
 {
 	die("not implemented.");
 }
 
-//进程睡眠？？？应该没这个功能的。。。
-int process_sleep()
-{
-	die("not implemented.");
-}
-
-//同上
-int process_wakeup()
+//启动进程
+int process_resume( PROCESS* proc )
 {
 	die("not implemented.");
 }

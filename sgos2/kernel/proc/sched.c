@@ -54,19 +54,19 @@ void dump_link()
 		;
 	kprintf("(%d) ready list: ", i);
 	for( i=0, thr=tbox.ready; thr; i++, thr=thr->sched_info.next )	
-		kprintf("[%d]", thr->id );
+		kprintf("[%d]", thr->tid );
 	kprintf("(%d)\n", i);
 	kprintf("sleep list: ");
 	for( i=0, thr=tbox.sleep; thr; i++, thr=thr->sched_info.next )	
-		kprintf("[%d]", thr->id );
+		kprintf("[%d]", thr->tid );
 	kprintf("(%d)\n", i);
 	kprintf("wait list: ");
 	for( i=0, thr=tbox.wait; thr; i++, thr=thr->sched_info.next )	
-		kprintf("[%d]", thr->id );
+		kprintf("[%d]", thr->tid );
 	kprintf("(%d)\n", i);
 	kprintf("paused list: ");
 	for( i=0, thr=tbox.paused; thr; i++, thr=thr->sched_info.next )	
-		kprintf("[%d]", thr->id );
+		kprintf("[%d]", thr->tid );
 	kprintf("(%d)\n", i);
 	local_irq_restore(eflags);
 }

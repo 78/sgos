@@ -2,7 +2,7 @@
 #ifndef __MICRON_KERNEL_TIME_H__
 #define __MICRON_KERNEL_TIME_H__
 
-#include <sgos.h>
+#include <types.h>
 
 //! the old time struct
 #ifndef _TM_DEFINED

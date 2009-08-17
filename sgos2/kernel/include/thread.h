@@ -6,7 +6,7 @@
 #include <mutex.h>
 #include <message.h>
 
-#define THREAD_KERNEL_STACK_SIZE (1024*6)
+#define THREAD_KERNEL_STACK_SIZE (1024*7)
 #define THREAD_STACK_SIZE (1<<20)	//1MB
 
 struct PROCESS;
@@ -31,7 +31,7 @@ typedef struct SCHEDULE_INFO{
 
 typedef struct THREAD{
 	//线程ID,用来给开发者定位线程
-	uint				id;
+	uint				tid;
 	//在修改线程资料时,一般要lock下面的mutex
 	mutex_t				mutex;
 	//线程正在睡眠时,sleepon指向等待唤醒的mutex
@@ -47,7 +47,10 @@ typedef struct THREAD{
 	SCHEDULE_INFO			sched_info;		//调度信息,调度链表 时间片之类的.
 	uint				exit_code;		//线程退出码
 	uint				entry_address;	//线程入口
+	uint				stack_address;	//线程运行时堆栈地址
+	uint				stack_size;	//线程运行时堆栈大小
 	uint				stack_pointer;	//线程运行时堆栈指针
+	uchar				kernel;		//判断是否是内核线程。
 	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	//线程中断时堆栈
 }THREAD;
 
@@ -64,7 +67,7 @@ typedef struct THREAD_BOX{
 
 THREAD* current_thread();
 THREAD* thread_create( struct PROCESS* proc, uint entry_addr );
-int thread_terminate( THREAD* thr );
+int thread_terminate( THREAD* thr, int code );
 int thread_wakeup( THREAD* thr );
 int thread_wait( uint ms );
 int thread_sleep();

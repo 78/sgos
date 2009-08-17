@@ -323,6 +323,15 @@ __asm__("cld\n\t"
 return dest;
 }
 
+void * memcpyd(void * dest,const void * src, int n)
+{
+__asm__("cld\n\t"
+	"rep\n\t"
+	"movsl"
+	::"c" (n),"S" (src),"D" (dest));
+return dest;
+}
+
 char * memmove(char * dest,const char * src, int n)
 {
 if (dest<src)

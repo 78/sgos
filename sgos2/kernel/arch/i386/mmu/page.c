@@ -6,6 +6,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <string.h>
+#include <process.h>
 #include <multiboot.h>
 
 // 初始化时计算一个有多少个物理页面，
@@ -36,7 +37,7 @@ extern int pagefault_handler( int err_code, I386_REGISTERS* r );
 int page_init(uint mem_size)
 {
 	int i;
-	PAGE_DIR* dir_entry, *table_entry, *te;
+	PAGE_DIR* dir_entry, *te;
 	if( mem_size == 0 ){
 		KERROR("Sorry, no memory detected on this machine.");
 	}
@@ -57,18 +58,14 @@ int page_init(uint mem_size)
 	dir_entry = (PAGE_DIR*)0xC0010000;
 	//内核进程页目录
 	kernel_page_dir = get_page_dir();
-	//临时使用一下0-4KB的空间
-	table_entry = (PAGE_TABLE*)0xC0011000;
 	// 分配内核3G-4G的页表，0xC0000000 - 0xC0400000 已分配，所以 +1
 	for( i=768+1; i<1024; i++ ){
 		dir_entry[i].v = get_phys_page();
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
-		table_entry[0].v = dir_entry[i].v;
 	}
 	// 未分配的清0
-	for( i=1; i<768; i++ ){
-		dir_entry[i].v = 0;
-	}
+	memsetd( dir_entry+1, 0, 768-1 );
+	
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	kprintf("Mapping tables for kernel process\n");
 	i = PROC_PAGE_TABLE_MAP>>22;	//767
@@ -79,8 +76,7 @@ int page_init(uint mem_size)
 	//映射内核进程页目录到0xE0400000
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (kernel_page_dir>>12);
 	te[0].v = 0x00010000|P_WRITE|P_PRESENT;
-	//恢复0-4KB的原映射
-	table_entry[0].v = 0|P_WRITE|P_PRESENT;
+	
 	//修改页表后更新cr3
 	reflush_pages();
 	return 0;
@@ -151,23 +147,60 @@ void dump_phys_pages()
 }
 
 //更新cr3（刷新页目录）
-void load_page_dir(uint phys_addr)
+void load_page_dir(uint vir_addr)
 {
+	uint phys_addr = page_dir_phys_addr(vir_addr);
  	__asm__ __volatile__("mov %0, %%eax"::"m"(phys_addr) );
 	__asm__ __volatile__("mov %eax, %cr3");
 }
 
-uint switch_page_dir(uint phys_addr)
+//临时切换页目录，返回旧的页目录
+uint switch_page_dir(uint vir_addr)
 {
 	uint old;
 	__asm__ __volatile__ \
 	("pushfl ; popl %0":"=g" (old): :"memory");
-	load_page_dir( phys_addr );
+	load_page_dir( vir_addr );
 	return old;
+}
+
+uint page_dir_phys_addr( uint vir_addr )
+{
+	PAGE_TABLE* te;
+	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
+	return ((te->a.phys_addr)<<12);
 }
 
 //刷新当前进程的页目录
 void reflush_pages()
 {
-	load_page_dir( 0x00010000 );
+	PROCESS* proc = current_proc();
+	if( proc )
+		load_page_dir( proc->page_dir );
+	else{
+		__asm__ __volatile__("movl $0x10000, %eax; movl %eax, %cr3");
+	}
+}
+
+//初始化页目录 
+void init_page_dir( uint vir_addr )
+{
+	PAGE_DIR* dir_entry = (PAGE_DIR*)vir_addr;
+	PAGE_DIR* kdir_entry = (PAGE_DIR*)kernel_page_dir;
+	PAGE_TABLE* te;
+	uint phys_addr;
+	int i;
+	// 复制内核3G-4G的页表，0xC0000000 - 0xFFFFFFFF
+	memcpyd( dir_entry + 768, kdir_entry + 768, 1024-768 );
+	// 未分配的清0
+	memsetd( dir_entry, 0, 768 );
+	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
+	kprintf("Mapping tables for process\n");
+	//获取页目录的物理地址
+	phys_addr = page_dir_phys_addr( vir_addr );
+	//设置映射
+	i = PROC_PAGE_TABLE_MAP>>22;	//767
+	dir_entry[i].v = phys_addr|P_PRESENT|P_WRITE;
+	//修改页表后更新cr3
+	reflush_pages();
 }

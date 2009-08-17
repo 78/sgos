@@ -25,7 +25,7 @@ void rtc_interrupt(const I386_REGISTERS* r)
 {
 	rtc_time ++;
 	if( !(rtc_time % RTC_FREQUENCY) ){
-        rtc_second ++;
+		rtc_second ++;
 	}
 	sched_clock();
 }

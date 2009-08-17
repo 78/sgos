@@ -16,17 +16,13 @@ typedef struct SYMBOL_ENTRY{
 	ushort		ordinal;		//编号
 	size_t		address;		//相对模块地址（RVA）
 }SYMBOL_ENTRY;
-//import
-typedef struct IMPORT_ENTRY{
-	void*		module;
-	ushort		import_num;
-	SYMBOL_ENTRY*	import_table;
-}IMPORT_ENTRY;
+
 //relocation
 typedef struct RELOC_ENTRY{
 	size_t		reloc_addr;	//重定位地址
 }RELOC_ENTRY;
 
+struct MODULE_LINK;
 // 加载的模块描述和数据
 typedef struct MODULE{
 	char*		name;		//以 '\0' 结尾的字符串
@@ -42,10 +38,11 @@ typedef struct MODULE{
 	size_t		stack_size;	//堆栈大小
 	ushort		import_num;	//导入模块数
 	ushort		export_num;	//导出符号数
-	IMPORT_ENTRY*	import_modules;	//导入模块数组
+	struct MODULE**	import_modules;	//导入模块数组
 	SYMBOL_ENTRY*	export_table;	//导出模块数组
 	ushort		reloc_num;	//重定位项数
 	RELOC_ENTRY*	reloc_table;	//重定位表
+	char*		full_name;	//文件路径名称
 }MODULE;
 
 // 进程模块信息
@@ -75,6 +72,7 @@ void module_link( struct PROCESS* proc, MODULE* mod );
 void module_unlink( struct PROCESS* proc, MODULE* mod );
 //从进程链表中查找模块
 MODULE* module_search( struct PROCESS* proc, size_t vir_addr );
+MODULE* module_search_by_name( struct PROCESS* proc, char* name );
 
 #endif	//_MODULE_H_
 

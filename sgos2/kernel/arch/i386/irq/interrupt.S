@@ -1,11 +1,39 @@
 ;//ported from SGOS1
 ;//System call
+.extern _syscall_table
 .global _syscall_interrupt
+ret_val:
+.long	0
+
 _syscall_interrupt:
 	cli
-.loop:
-	hlt
-	jmp .loop
+	pushl	$0	;//err_code
+	pushl	$0xA1	;//int_no
+	pusha
+	push	%ds
+	push	%es
+	push	%fs
+	push	%gs
+	pushl	%eax
+	;//use kernel segment selector
+	mov	$0x10, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
+	popl	%eax
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	call	*_syscall_table(,%eax,4)
+	addl	$12, %esp
+	movl	%eax, ret_val
+	pop	%gs
+	pop	%fs
+	pop	%es
+	pop	%ds
+	popa
+	addl	$8, %esp
+	movl	ret_val, %eax
+	iret
 
 
 ;//-----------------------------------------------
@@ -149,9 +177,9 @@ do_irq:
 	pushl	%fs
 	pushl	%gs
 
-	mov		$0x10, %ax
-	mov		%ax, %ds
-	mov		%ax, %es
+	mov	$0x10, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
 
 	movl	%esp, %eax
 
@@ -159,10 +187,10 @@ do_irq:
 	call	_irq_handler
 	popl	%eax
 
-	pop		%gs
-	pop		%fs
-	pop		%es
-	pop		%ds
+	pop	%gs
+	pop	%fs
+	pop	%es
+	pop	%ds
 	popa
 	addl	$8, %esp 
 	iret

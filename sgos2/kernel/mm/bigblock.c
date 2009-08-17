@@ -146,11 +146,16 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 				nl->addr = nod->addr;
 				nl->next = nod; //右节点变了
 				nl->pre = opre;
+				if( opre )
+					opre->next = nl;
+				else
+					who->first_node = nl;
 				nod->pre = nl; //调整中间的节点
 				nod->addr = addr;
 				//调整散列表
 				k = calc_hash_index( left );
 				HASH_APPEND( nl, who->free_table[k] );
+				MAKE_FREE(nl);
 				//不用MAKEFREE了，本来就是free的
 			}else{	//如果不足够，则加入到中间
 				nod->size += left;
@@ -161,6 +166,8 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 				nr->addr = addr + siz;
 				nr->pre = nod;
 				nr->next = onext;
+				if( onext )
+					onext->pre = nr;
 				nod->next = nr;
 				//调整散列表
 				k = calc_hash_index( right );
@@ -179,7 +186,7 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 	//没有合适块
 	//离开临界区
 	local_irq_restore(eflags);
-	PERROR("##failed to allocate memory.");
+	PERROR("##failed to allocate memory at 0x%x(0x%x).", addr, siz );
 	return NULL;
 }
 
