@@ -24,6 +24,9 @@ LD = ld $(LDFLAGS)
 OC = objcopy $(OCFLAGS)
 OD = objdump $(ODFLAGS)
 LD2 = ld2
+WF = ../tools/wf/wf
+
+IMAGE = ../sgos2.img
 
 # Kernel dir
 DIR_ARCH	= arch
@@ -58,6 +61,7 @@ kernel: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$@
 	$(OD) $@ > $@.dmp
 	$(OC) $@ $@.bin
+	$(WF) $(IMAGE) -src $@.bin -dest sgos2/$@.bin
 
 clean:
 	$(RM) $(OBJECTS) \
