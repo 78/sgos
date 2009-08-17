@@ -196,6 +196,6 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	if( ret_mod )
 		*ret_mod = mod;
 	//加载成功
-	kprintf("Module %s is loaded successfully at 0x%X\n", file, mod->vir_addr);
+	kprintf("Module %s is loaded at 0x%X\n", file, mod->vir_addr);
 	return 0;
 }

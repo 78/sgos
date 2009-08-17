@@ -17,13 +17,13 @@ IMAGE = ../../sgos2.img
 
 OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c))
 
-all: $(PROGRAM)
+all: $(PROGRAM).run
 
-$(PROGRAM): $(OBJECTS)
-	$(LD) $(OBJECTS) -o$@.exe
-	$(OD) $@.exe > $@.dmp
-	$(LD2) $@.exe $@.run
-	$(WF) $(IMAGE) -src $@.run -dest sgos2/$@.run
+$(PROGRAM).run: $(OBJECTS)
+	$(LD) $(OBJECTS) -o$(PROGRAM).exe
+	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
+	$(LD2) $(PROGRAM).exe $@
+	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
 .c.o:
@@ -32,6 +32,5 @@ $(PROGRAM): $(OBJECTS)
 clean:
 	$(RM) $(OBJECTS)
 	$(RM) $(PROGRAM).run
-	$(RM) $(PROGRAM)
 	$(RM) $(PROGRAM).dmp
 	$(RM) $(PROGRAM).exe
