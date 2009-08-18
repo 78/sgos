@@ -25,6 +25,8 @@ int machine_init()
 	irq_init();	//设置irq，捕获硬、软件中断
 	//设置软中断
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
+	//初始化fastcall
+	fastcall_init();
 	kprintf("Protect mode was controled successfully.\n");
 	//Real time clock
 	rtc_init();

@@ -72,6 +72,7 @@ int thread_wakeup( THREAD* thr );
 int thread_wait( uint ms );
 int thread_sleep();
 void thread_init();
+THREAD* thread_get( int tid );
 //sched.c
 void schedule();
 void sched_clock();

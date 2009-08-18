@@ -4,10 +4,17 @@
 #include <sgos.h>
 #include <gdt_const.h>
 #include <lock.h>
+#include <msr.h>
 
 #define SYSTEM_INTERRUPT 0xA1
 #define PAGEFAULT_INTERRUPT 14
 #define RTC_INTERRUPT		0
+
+#define GD_KERNEL_CODE	0x08
+#define GD_KERNEL_DATA	0x10
+#define GD_USER_CODE	0x1b
+#define GD_USER_DATA	0x23
+#define GD_TSS_INDEX	5
 
 #define PAGE_SIZE	4096
 #define PAGE_SIZE_BITS 12
@@ -135,6 +142,9 @@ __asm__ __volatile__ ( "out %%al , %%dx" : : "a"( data ) , "d"( port ) );
 __asm__ __volatile__ ( "out %%ax , %%dx" : : "a"( data ) , "d"( port ) );
 #define out_t_32(port,data) \
 __asm__ __volatile__ ( "out %%eax , %%dx" : : "a"( data ) , "d"( port ) );
+
+
+
 // port.c
 t_16 in_word( t_16 port );
 t_32 in_t_32( t_16 port );
@@ -187,5 +197,7 @@ void init_thread_regs( struct THREAD* thr, struct THREAD* parent,
 	void* context, uint entry_addr, uint stack_addr );
 void switch_to( struct THREAD* cur, struct THREAD* thr );
 void start_threading();
+void fastcall_update_esp(uint kesp);
+void fastcall_init();
 
 #endif

@@ -117,7 +117,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 					index = mod->export_num;
 					mod->export_table[index].ordinal = ordinal;
 					mod->export_table[index].address = addr;
-					strncpy( mod->export_table[index].name, name, SYMBOL_NAME_LEN );
+					strncpy( mod->export_table[index].name, name, SYMBOL_NAME_LEN-1 );
 					mod->export_num ++;
 				//	if( mod->export_num > export_num )
 				}while(bxml_movenext(bxml));

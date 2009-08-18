@@ -67,9 +67,12 @@ void gdt_init()
 	/* 但这里有必要再做一次这个工作，便于管理。 */
 	memsetd( gdt, 0, sizeof(gdt)>>2 );
 	memsetd( idt, 0, sizeof(idt)>>2 );
-	// 初始化一个代码段和一个数据段
+	// 初始化一个代码段和一个数据段，内核态的线程使用
 	set_gdt_desc( 1, 0x0000, 0xFFFFF, DA_CR | DA_32 | DA_LIMIT_4K );
 	set_gdt_desc( 2, 0x0000, 0xFFFFF, DA_DRW | DA_LIMIT_4K | DA_32 );
+	// 用户态线程使用
+	set_gdt_desc( 3, 0x0000, 0xFFFFF, DA_CR | DA_32 | DA_LIMIT_4K | DA_DPL3 );
+	set_gdt_desc( 4, 0x0000, 0xFFFFF, DA_DRW | DA_LIMIT_4K | DA_32 | DA_DPL3 );
 
 	gdt_ptr.limit = sizeof(SEGMENT_DESC)*256;
 	gdt_ptr.addr = (t_32)gdt;

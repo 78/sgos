@@ -69,7 +69,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
 		//patched by Huang Guan. added "&& nod->size!=siz"
-		while( nod && nod->size < m && nod->size!=siz )
+		while( nod && nod->size < siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块
 			size_t rest = nod->size - siz;	//rest大小不包括分配描述符大小

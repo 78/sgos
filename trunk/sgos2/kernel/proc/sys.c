@@ -15,6 +15,7 @@
 #define SYSCALL1(id, type, name, atype, a) static type sys_##name( atype a )
 #define SYSCALL2(id, type, name, atype, a, btype, b) static type sys_##name( atype a, btype b )
 #define SYSCALL3(id, type, name, atype, a, btype, b, ctype, c) static type sys_##name( atype a, btype b, ctype c )
+#define SYSCALL4(id, type, name, atype, a, btype, b, ctype, c, dtype, d) static type sys_##name( atype a, btype b, ctype c, dtype d )
 
 #include <apidef.h>
 
@@ -103,7 +104,8 @@ void sys_virtual_free( void* p )
 //退出线程
 void sys_thread_exit( int code )
 {
-	PERROR("not implemented.");
+	//直接终止
+	thread_terminate( current_thread(), code );
 }
 
 //创建线程
@@ -146,19 +148,37 @@ int sys_thread_wait( time_t ms )
 //挂起线程
 int sys_thread_suspend( int tid )
 {
-	PERROR("not implemented.");
+	THREAD* thr;
+	thr = thread_get( tid );
+	if( thr ){
+		thread_suspend( thr );
+		return 0;
+	}
+	return -1;
 }
 
 //启动线程
 int sys_thread_resume( int tid )
 {
-	PERROR("not implemented.");
+	THREAD* thr;
+	thr = thread_get( tid );
+	if( thr ){
+		thread_resume( thr );
+		return 0;
+	}
+	return -1;
 }
 
 //结束线程
 int sys_thread_terminate( int tid, int code )
 {
-	PERROR("not implemented.");
+	THREAD* thr;
+	thr = thread_get( tid );
+	if( thr ){
+		thread_terminate( thr, code );
+		return 0;
+	}
+	return -1;
 }
 
 //设置线程优先级
@@ -200,7 +220,7 @@ int sys_process_resume( int id )
 //当前进程ID
 int sys_process_self()
 {
-	PERROR("not implemented.");
+	return current_proc()->pid;
 }
 
 //加载器 返回加载id
