@@ -23,20 +23,13 @@ static void seterr( struct BXML_DATA* xml, const char* str )
 }
 
 /*
-static void* safe_malloc( struct BXML_DATA* xml, uint size )
+static void* safe_malloc( uint size )
 {
-	if( !xml )
-		return NULL;
-	xml->cur_size += size;
-	if( xml->cur_size > xml->max_size )
-		return NULL;
 	return kmalloc( size );
 }
 
-static void safe_free( struct BXML_DATA* xml, void* p )
+static void safe_free( void* p )
 {
-	if( !xml )
-		return;
 	kfree( p );
 }
 */
@@ -499,6 +492,8 @@ static void free_node( struct BXML_DATA* xml, struct BXML_NODE* nod )
 			free_node( xml, nod->node_child );
 		if( nod->value )
 			kfree( nod->value );
+		if( nod->name )
+			kfree( nod->name );
 		if( nod->node_next ){
 			nod = nod->node_next;
 			kfree( nod->node_pre );

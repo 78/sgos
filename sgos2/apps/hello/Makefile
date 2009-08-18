@@ -6,7 +6,7 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = hello
-LDFLAGS += ../libc/libc.dll -e_entry
+LDFLAGS += ../libc/libc.dll ../api/api.dll -e_entry
 
 CC = gcc $(CCFLAGS)
 LD = ld $(LDFLAGS)

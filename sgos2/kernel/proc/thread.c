@@ -22,6 +22,29 @@ static uint generate_tid()
 	return tid;
 }
 
+THREAD* thread_get( int tid )
+{
+	PROCESS* proc;
+	THREAD* thr;
+	uint flags;
+	//看是否当前线程tid
+	thr = current_thread();
+	if( thr->tid == tid )
+		return thr;
+	//否则在当前进程中查找
+	proc = current_proc();
+	//是否需要禁中断呢？？
+	local_irq_save(flags);
+	for( thr=proc->thread; thr; thr=thr->next ){
+		if( thr->tid == tid ){
+			local_irq_restore(flags);
+			return thr;
+		}
+	}
+	local_irq_restore(flags);
+	return NULL;
+}
+
 //创建一个线程
 THREAD* thread_create( PROCESS* proc, uint entry_addr )
 {
@@ -48,11 +71,11 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 		thr->stack_address = (uint)umalloc( proc, thr->stack_size );
 	}else{
 		thr->kernel = 1;
-		thr->stack_address = (uint)kmalloc( thr->stack_size );//内核堆栈
+	//	thr->stack_address = (uint)kmalloc( thr->stack_size );//内核堆栈(内核线程不需要这个堆栈)
 	}
-	thr->stack_pointer = thr->stack_address + thr->stack_size;
 	//初始化寄存器
-	init_thread_regs( thr, current_thread(), NULL, entry_addr, thr->stack_pointer );
+	init_thread_regs( thr, current_thread(), NULL, entry_addr, 
+		thr->stack_address + thr->stack_size );
 	//进行链表操作
 	local_irq_save( eflags );
 	//插队
@@ -81,9 +104,7 @@ int thread_terminate( THREAD* thr, int code )
 	
 	//回收资源
 	/*
-	if( thr->kernel ){//用户态线程？？
-		kfree( thr->stack_pointer );//内核堆栈
-	}else{
+	if( !thr->kernel ){//用户态线程？？
 		ufree( proc, thr->stack_pointer );
 	}*/
 	schedule();
