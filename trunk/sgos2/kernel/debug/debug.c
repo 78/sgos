@@ -30,14 +30,17 @@ void kprintf(const char *fmt, ...)
 	uint eflags;
 	va_start(args, fmt);
 	i=vsprintf( printbuf, fmt, args );
+	//为了保持调试信息的完整，先关中断。
+	local_irq_save(eflags);
 	printer( printbuf );
+	local_irq_restore(eflags);
 	va_end(args);
 }
 
 void die(const char *s )
 {
-	local_irq_disable();
 	debug_print( (char*)s );
+	local_irq_disable();
 	while(1)
 		halt();
 }

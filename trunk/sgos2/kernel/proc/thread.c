@@ -6,6 +6,7 @@
 #include <process.h>
 #include <debug.h>
 #include <string.h>
+#include <mm.h>
 
 static uint thread_id = 1;
 
@@ -22,6 +23,28 @@ static uint generate_tid()
 	return tid;
 }
 
+//初始化用户态线程信息块
+static void init_thread_info( THREAD* thr )
+{
+	if( thr->thread_info = umalloc(thr->process, PAGE_ALIGN(sizeof(THREAD_INFO))) ){
+		THREAD_INFO* ti = thr->thread_info;
+		//清0操作，以免用户获得错误信息
+		memset( ti, 0, PAGE_ALIGN(sizeof(THREAD_INFO)) );
+		//线程堆栈地址
+		ti->stack_base = thr->stack_address;
+		//线程堆栈大小
+		ti->stack_size = thr->stack_size;
+		//进程信息地址
+		ti->process_info = thr->process->process_info;
+		//指向自己
+		ti->self = ti;
+		//进程id
+		ti->pid = thr->process->pid;
+		ti->tid = thr->tid;
+	}
+}
+
+//由线程ID获得线程结构指针
 THREAD* thread_get( int tid )
 {
 	PROCESS* proc;
@@ -72,6 +95,10 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	}else{
 		thr->kernel = 1;
 	//	thr->stack_address = (uint)kmalloc( thr->stack_size );//内核堆栈(内核线程不需要这个堆栈)
+	}
+	//初始化用户态信息
+	if( thr->kernel == 0 ){
+		init_thread_info( thr );
 	}
 	//初始化寄存器
 	init_thread_regs( thr, current_thread(), NULL, entry_addr, 

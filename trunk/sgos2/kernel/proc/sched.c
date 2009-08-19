@@ -120,20 +120,29 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 	local_irq_restore( flags );
 }
 
-
+extern time_t rtc_second;
+//调度器获得时钟信号
 void sched_clock()
 {
 	THREAD* thr;
 	SCHEDULE_INFO* info;
-	
+	//处理等待一定时间的线程
 	for( thr=tbox.wait; thr; thr=thr->sched_info.next ){
 		thr->sched_info.clock -= ms;
 		if( thr->sched_info.clock<=0 ){
 			sched_set_state( thr, TS_READY );
 		}
 	}
+	//允许中断
 	local_irq_enable();
+	//获取当前线程
 	thr = current_thread();
+	//是否用户态线程
+	if( !thr->kernel ){
+		//用户空间的时间变化
+		thr->thread_info->time = rtc_second;
+	}
+	//获取调度信息
 	info = &thr->sched_info;
 	--info->clock;
 	if( info->clock <= 0 ){	//need scheduling
@@ -158,7 +167,6 @@ void schedule()
 		thr = tbox.ready;
 	if( thr ){
 		if( thr != cur ){
-			tbox.running = thr;
 			thr->sched_info.clock = 1;
 			switch_to( cur, thr );
 		}

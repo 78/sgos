@@ -9,7 +9,6 @@
 #include <module.h>
 
 #define MAX_PROCESS_NUM	1024
-#define PROCESS_NAME_LEN	32
 
 #define IS_KERNEL_PROCESS( p ) (p->user)
 
@@ -30,25 +29,26 @@ typedef struct PAGE_INFO{
 typedef struct MEMORY_INFO{
 	struct PAGE_INFO*	page;		//使用页面链表
 	uint			total_pages;	//页面计数
-	uint			umem_size;	//用户空间分配大小
-	uint			kmem_size;	//内核空间占用大小
+	int			umem_size;	//用户空间分配大小
+	int			kmem_size;	//内核空间占用大小
 	bigblock_t		umem_mgr;	//用户空间分配管理器
-	uint			max_umem;	//用户空间允许使用内存总大小
-	uint			max_kmem;	//最大内核占用大小
+	int			max_umem;	//用户空间允许使用内存总大小
+	int			max_kmem;	//最大内核占用大小
 }MEMORY_INFO;
 
 // 内核进程结构体。
 typedef struct PROCESS{
 	uint				pid;		//进程标识
 	mutex_t				mutex;	
-	uint				user;		//用户
+	uint				uid;		//用户
 	struct PROCESS*			pre, *next;	//进程链表，兄弟关系
 	struct PROCESS*			parent, *child;	//父子进程
 	struct THREAD*			thread;		//第一个线程
+	struct THREAD*			main_thread;	//主线程
 	struct MEMORY_INFO		memory_info;	//内存信息
 	struct MESSAGE_QUEUE		message;	//消息
 	char				name[PROCESS_NAME_LEN];	//进程名称
-	void*				information;		//其它信息
+	PROCESS_INFO*			process_info;		//用户空间信息
 	uint				page_dir;	//page_dir
 	uint				exit_code;	//退出码
 	ENVIRONMENT*			environment;	//process startup environment

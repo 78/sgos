@@ -1,4 +1,4 @@
-//
+//real time clock
 #include <sgos.h>
 #include <arch.h>
 #include <time.h>

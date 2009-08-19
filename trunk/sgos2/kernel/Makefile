@@ -4,7 +4,7 @@
 ARCH = i386
 
 ASFLAGS = -g
-CCFLAGS = -g -Werror -Iinclude -fno-builtin -ffreestanding -fleading-underscore
+CCFLAGS = -g -Werror -I../include -Iinclude -fno-builtin -ffreestanding -fleading-underscore
 LDFLAGS =
 OCFLAGS = -Obinary
 ODFLAGS = -S

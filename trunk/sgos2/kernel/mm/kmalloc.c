@@ -31,6 +31,8 @@ void*	kmalloc(size_t siz)
 		info->kmem_size += siz;
 		if( info->kmem_size > info->max_kmem ){
 			info->kmem_size -= siz;
+			PERROR("##process %d kernel memory used out at %u bytes.(%u)", 
+				proc->pid, info->kmem_size, siz );
 			return NULL;
 		}
 	}

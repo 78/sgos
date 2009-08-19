@@ -3,6 +3,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <string.h>
+#include <thread.h>
 
 static char *exception_msg[] =
 {
@@ -103,14 +104,31 @@ void isr_uninstall( int isr )
 
 void isr_dumpcpu( const I386_REGISTERS *r )
 {
-	kprintf("PID:%d Dump CPU:\ncs: 0x%X\teip: 0x%X\nss: 0x%X\tesp: 0x%X\n"
+	THREAD* cur = current_thread();
+	kprintf("PID:%d Dump CPU:\ncs: 0x%X\teip: 0x%X\nss: 0x%X\tesp: 0x%X\tkesp: 0x%X\tused: 0x%X\n"
 		"ds: 0x%X\tesi: 0x%X\nes: 0x%X\tedi: 0x%X\nfs: 0x%X\ngs: 0x%X\neax: 0x%X\tecx: 0x%X\tebx: 0x%X\t"
-		"edx: 0x%X\neflags: 0x%X\n", 0,r->cs, r->eip, r->ss, r->esp,
+		"edx: 0x%X\neflags: 0x%X\n", 0,r->cs, r->eip, r->ss, r->esp, r->kesp, (uint)cur+sizeof(THREAD)-r->kesp,
 		r->ds, r->esi, r->es, r->edi, r->fs, r->gs, r->eax, r->ecx,
 		r->ebx, r->edx, r->eflags);
 
 }
 
+void isr_dumpstack( void* thr, const I386_REGISTERS *r )
+{
+	size_t start = r->kesp, end=(uint)thr+ sizeof(THREAD);
+	kprintf("tid: %d dump stcak: ", ((THREAD*)thr)->tid);
+	if( start>=(size_t)thr && start<=end-sizeof(size_t) )
+	{
+		size_t value;
+		char* name;
+		for( ; start<=end-sizeof(size_t); start+=sizeof(size_t) )
+		{
+			value = *((size_t*)start);
+			kprintf("0x%x ", value );
+		}
+	}
+	kprintf("\n");
+}
 // ptrace
 
 #define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )

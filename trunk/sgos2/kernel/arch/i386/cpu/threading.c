@@ -10,6 +10,7 @@ static TSS g_tss;
 
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
+void enter_threading_mode(size_t stackptr);
 void start_threading()
 {
 	//TSS, 保存着内核所用的堆栈, 从特权3到特权0要借助TSS
@@ -22,30 +23,41 @@ void start_threading()
 	//加载TSS和LDT
 	__asm__ __volatile__("mov $0x28, %bx\n\t"
 		"ltr %bx\n\t");
-	//开启中断，引发线程切换
-	__asm__ __volatile__("sti");
+	//进入线程模式，开启中断，引发线程切换
+	enter_threading_mode((size_t)(current_thread())+sizeof(THREAD));
 	//继续初始化。
 	kinit_resume();
 }
 
 //线程切换
 void i386_switch( THREAD*, uint*, uint* );
+extern THREAD_BOX tbox;
 void switch_to( THREAD* cur, THREAD* thr )
 {
-	//let clock work
-	out_byte(0x20, 0x20);
+	//更新中断的线程内核栈
+	g_tss.esp0 = (uint)thr+sizeof(THREAD);
+	//更新fastcall使用的线程内核栈
+	fastcall_update_esp( g_tss.esp0 );
+	if( !thr->kernel ){
+		//设置用户态线程信息段，fs使用
+		set_gdt_desc( GD_TIB_INDEX, (t_32)thr->thread_info, 
+			PAGE_ALIGN(sizeof(THREAD_INFO))-1, DA_DRW | DA_32 | DA_DPL3 );
+	}
+	//屏蔽硬件中断
 	local_irq_disable();
 	//如果改变了进程，页目录也会随着变化
-	if( cur->process != thr->process ){
-		extern PROCESS* cur_proc;
+	extern PROCESS* cur_proc;
+	if( cur_proc != thr->process ){
 		cur_proc = thr->process;
 		load_page_dir( cur_proc->page_dir );
-//		kprintf("{%d}", cur_proc->pid );
 	}
-	g_tss.esp0 = (uint)thr+sizeof(THREAD);
-	fastcall_update_esp( g_tss.esp0 );
+	//改变当前线程
+	tbox.running = thr;
+//	kprintf("(%d-%x:", cur->tid, cur->stack_pointer );
 	//下面是汇编代码了
 	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
+//	kprintf("%d-%x)", current_thread()->tid, cur->stack_pointer );
+	//let clock work
 }
 
 //初始化线程的寄存器信息。
@@ -55,17 +67,21 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 	I386_REGISTERS *r;
 	if( !parent )
 		return;
+	//获取堆栈的寄存器帧，通过设置这里的数据改变返回地址和返回后的寄存器
 	r = GET_THREAD_REGS(thr);
+	//判断是否内核态
 	if( thr->kernel ){
-		r->gs = r->fs = r->es = r->ds = r->ss = GD_KERNEL_DATA;
+		r->es = r->ds = r->ss = GD_KERNEL_DATA;
 		r->cs = GD_KERNEL_CODE;
 	}else{
-		r->gs = r->fs = r->es = r->ds = r->ss = GD_USER_DATA;
+		//用户态段寄存器
+		r->es = r->ds = r->ss = GD_USER_DATA;
+		r->fs = GD_USER_TIB;
 		r->cs = GD_USER_CODE;
 	}
 	r->eflags = 0x202;
 	r->esp = stack_addr;	//一般运行时堆栈
-	r->kesp = r->esp;
+	r->kesp = 0;	//useless
 	r->eip = entry_addr;	//入口
 	thr->stack_pointer = (t_32)r;	//中断时堆栈
 }

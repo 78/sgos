@@ -17,6 +17,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 	//被访问或修改的内存地址
 	__asm__("movl %%cr2, %0" : "=r"( addr ) );
 	PROCESS* proc = current_proc();
+//	kprintf("page fault at 0x%X\n", addr );
 	if( !(err_code&P_PRESENT ) ){	//not present this page
 		if( IS_KERNEL_MEMORY( addr ) ){	//如果是在内核空间
 			//判断是否用户态违规访问。
@@ -65,7 +66,10 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 	}
 	//未能处理，则BSOD
 	isr_dumpcpu( r );
-	KERROR("##unhandled pagefault at 0x%X, err_code=0x%X", addr, err_code );
+	isr_dumpstack( current_thread(), r );
+	PERROR("[%d:%d]##unhandled pagefault at 0x%X, err_code=0x%X", proc->pid, 
+		current_thread()->tid, addr, err_code );
+	die(".");
 	return 0;
 }
 

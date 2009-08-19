@@ -5,6 +5,7 @@
 #include <process.h>
 #include <debug.h>
 #include <string.h>
+#include <mm.h>
 
 PROCESS* init_proc = NULL;	//初始进程
 extern uint kernel_page_dir;	//内核进程页目录
@@ -48,12 +49,11 @@ void process_init()
 	// set as current process
 	cur_proc = init_proc;
 	// create an init thread for the init process
-	init_thr = thread_create( cur_proc, (uint)0 );
+	init_thr = thread_create( cur_proc, (uint)process_init ); //用process_init来标记是内核线程
 	// set run time because no scheduler can be used at the present
 	init_thr->sched_info.clock = 10;
 	// set ready state!!
 	sched_set_state( init_thr, TS_READY );
-	PERROR("ok");
 }
 
 //返回当前进程
@@ -79,7 +79,8 @@ PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env )
 	init_page_dir( proc->page_dir ); //arch/*/page.c
 	// restore basic information
 	process_init_basicinfo( proc );
-	proc->user = parent->user;
+	// 设置用户
+	proc->uid = parent->uid;
 	// 设置进程链表
 	proc->parent = parent;
 	// 进入临界区
@@ -90,7 +91,6 @@ PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env )
 	parent->child = proc;
 	// 离开临界区
 	local_irq_restore( flags );
-	PERROR("ok");
 	return proc;
 }
 

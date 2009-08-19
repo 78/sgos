@@ -1,3 +1,18 @@
+.global _enter_threading_mode
+_enter_threading_mode:
+	pushl	%ebp
+	movl	%esp, %ebp
+	movl	0x08(%ebp), %esp
+	pushl	0x04(%ebp)	;//returen address
+	pushfl			;//flag寄存器
+	pushl	$0x08		;//代码段
+	pushl	$return
+	movw	$0x10, %ax
+	movw	%ax, %es
+	movw	%ax, %ds
+	iret
+return:
+	ret
 
 .global _i386_switch
 _i386_switch:	;// 线程切换
@@ -25,7 +40,7 @@ _i386_switch:	;// 线程切换
 	iret
 
 return_from_switch:
-	pop	%ebp
+	popl	%ebp
 	ret
 
 
