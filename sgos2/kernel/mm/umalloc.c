@@ -16,7 +16,6 @@ void umalloc_init( PROCESS* proc )
 		0x80000000		//size
 		);
 	//
-	PERROR("ok");
 }
 
 void*	umalloc_ex(PROCESS* proc, size_t addr, size_t siz)
@@ -34,8 +33,9 @@ void*	umalloc_ex(PROCESS* proc, size_t addr, size_t siz)
 		return NULL;
 	}
 	ret = bb_alloc_ex( &info->umem_mgr, addr, siz );
-	if( ret )
+	if( ret ){
 		return ret;
+	}
 	//no memory??
 	info->umem_size -= siz;
 	return NULL;
@@ -52,6 +52,7 @@ void*	umalloc(PROCESS* proc, size_t siz)
 	info->umem_size += siz;
 	if( info->umem_size > info->max_umem ){
 		info->umem_size -= siz;
+		PERROR("##user memory used out!");
 		return NULL;
 	}
 	ret = bb_alloc( &info->umem_mgr, siz );
@@ -59,6 +60,7 @@ void*	umalloc(PROCESS* proc, size_t siz)
 		return ret;
 	//no memory??
 	info->umem_size -= siz;
+	PERROR("##user memory used out!");
 	return NULL;
 }
 

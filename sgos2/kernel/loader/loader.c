@@ -139,7 +139,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 					char* name;
 					char* tmp;
 					name = bxml_readstr(bxml, ":name");
-					mod_imp = module_get( proc, name ); //看看是否能直接得到
+					mod_imp = module_get_by_name( proc, name ); //看看是否能直接得到
 					if( !mod_imp ){
 						//否则从文件系统中加载
 						if( loader_load(proc, name, &mod_imp) != 0 ){
@@ -196,6 +196,6 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	if( ret_mod )
 		*ret_mod = mod;
 	//加载成功
-	kprintf("Module %s is loaded at 0x%X\n", file, mod->vir_addr);
+//	kprintf("[%d]Module %s is loaded at 0x%X\n", proc->pid, file, mod->vir_addr);
 	return 0;
 }

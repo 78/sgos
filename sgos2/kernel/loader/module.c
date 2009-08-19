@@ -16,6 +16,16 @@ struct MODULE_INFO{
 	mutex_t	mutex;
 }g_mods;
 
+static int module_id = 1;
+
+static int generate_mid()
+{
+	int id;
+	id = module_id;
+	module_id ++;
+	return id;
+}
+
 
 //模块初始化
 void module_init()
@@ -37,7 +47,7 @@ void module_attach( struct PROCESS* proc, MODULE* mod )
 		if( mod->page_table[i] )
 			map_one_page( proc->page_dir, mod->vir_addr + (i<<PAGE_SIZE_BITS), 
 				mod->page_table[i], attr );
-	PERROR("attach %s ok", mod->name );
+//	PERROR("attach %s ok", mod->name );
 }
 
 //取消映射
@@ -59,6 +69,7 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar share,
 	mod->vir_addr = addr;
 	mod->vir_size = size;
 	mod->share = share;
+	mod->mid = generate_mid();
 	//模块名称，例如 /sgos2/api.bxm
 	len = strlen(name);
 	mod->full_name = (char*)kmalloc(len+1);	//预留'\0'的空间
@@ -127,7 +138,7 @@ void module_unlink( struct PROCESS* proc, MODULE* mod )
 }
 
 //由名称获取模块，会增加引用计数。。。
-MODULE* module_get( struct PROCESS* proc, char* name )
+MODULE* module_get_by_name( struct PROCESS* proc, char* name )
 {
 	MODULE* mod;
 	int i;
@@ -147,7 +158,7 @@ MODULE* module_get( struct PROCESS* proc, char* name )
 				//加载导入模块
 				for(i=0; i<mod->import_num; i++ )
 					if(mod->import_modules[i]){
-						module_get( proc, mod->import_modules[i]->name );
+						module_get_by_name( proc, mod->import_modules[i]->name );
 					}
 				return mod;
 			}
@@ -159,6 +170,18 @@ MODULE* module_get( struct PROCESS* proc, char* name )
 	//not found
 	mutex_unlock( &g_mods.mutex );
 	PERROR("##module %s is not loaded.", name );
+	return NULL;
+}
+
+MODULE* module_get( struct PROCESS* proc, int mid )
+{
+	MODULE_LINK* ml;
+	for( ml=proc->module_link; ml; ml=ml->next )
+		if( ml->module->mid == mid ){
+			//we found it
+			return ml->module;
+		}
+	//not found.
 	return NULL;
 }
 

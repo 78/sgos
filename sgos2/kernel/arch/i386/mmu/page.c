@@ -167,6 +167,9 @@ uint switch_page_dir(uint vir_addr)
 uint page_dir_phys_addr( uint vir_addr )
 {
 	PAGE_TABLE* te;
+	te = (PAGE_TABLE*)(vir_addr + 0xC00 );
+	if( !te->v )
+		KERROR("#%x %x", te, te->v);
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	return ((te->a.phys_addr)<<12);
 }
@@ -195,7 +198,7 @@ void init_page_dir( uint vir_addr )
 	// 未分配的清0
 	memsetd( dir_entry, 0, 768 );
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
-	kprintf("Mapping tables for process\n");
+//	kprintf("Mapping tables for process\n");
 	//获取页目录的物理地址
 	phys_addr = page_dir_phys_addr( vir_addr );
 	//设置映射

@@ -13,7 +13,7 @@ struct PROCESS;
 struct THREAD;
 
 typedef enum THREAD_STATE{
-	TS_INIT = 0,		//线程初始化中
+	TS_INIT = 0,			//线程初始化中
 	TS_READY,			//线程就绪，可能在running中，也可能是等待run
 	TS_RUNNING,			//此状态未使用
 	TS_PAUSED,			//线程暂停
@@ -24,8 +24,8 @@ typedef enum THREAD_STATE{
 
 typedef struct SCHEDULE_INFO{
 	//clock在线程状态为running时候,它是计算剩余运行时间,wait时候是等待运行时间
-	int					clock;		
-	struct THREAD*		pre, *next;	//schedule link
+	int				clock;		
+	struct THREAD*			pre, *next;	//schedule link
 	uint				cpu;		//running by which cpu??
 }SCHEDULE_INFO;
 
@@ -42,7 +42,7 @@ typedef struct THREAD{
 	enum THREAD_STATE		state;		//thread state
 	struct ARCH_THREAD		arch;		//schedule information
 	//run time, clock, read or write information, message information
-	void*				information;	//某些信息,暂未用
+	THREAD_INFO*			thread_info;		//Thread Information Block，用户态线程才有。
 	MESSAGE_QUEUE			message_queue;		//消息链
 	SCHEDULE_INFO			sched_info;		//调度信息,调度链表 时间片之类的.
 	uint				exit_code;		//线程退出码

@@ -143,15 +143,3 @@ type sys_##name(atype a,btype b,ctype c, dtype d) \
 #include "../../kernel/include/apidef.h"
 
 
-
-//线程用户态入口点
-//内核会把用户态入口地址放在ebx寄存器里。(x86)
-void _program_entry_()
-{
-	__asm__ __volatile__(
-		"call *%ebx;"
-		"movl %eax, %ebx;"
-		"movl $6, %eax;"
-		"int $0xA1" );
-}
-

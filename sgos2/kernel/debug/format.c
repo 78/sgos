@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <string.h>
 #include <thread.h>
+#include <process.h>
 
 void print_err(char* file, char* function, int line, const char *fmt, ...)
 {
@@ -28,9 +29,10 @@ void kernel_err(char* file, char* function, int line, const char *fmt, ...)
 	va_end(args);
 	kprintf("[%s]%s(%d): %s\n", file, function, line, printbuf );
 	thr = current_thread();
-	if( thr )
+	if( thr ){
+		kprintf("Terminated. tid:%d pid:%d\n", thr->tid, thr->process->pid );
 		thread_terminate( thr, -1 );
-	else
+	}else
 		die("System halted.");
 }
 

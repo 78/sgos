@@ -37,6 +37,8 @@ free_table[7]	4096字节空闲块
 free_table[8]	8192字节空闲块
 free_table[9]	超大空闲块
 */
+//标识当前是否运行在mm_alloc中
+static int in_allocator = 0;
 
 //从大小得到散列表索引号
 static int calc_hash_index(size_t k)
@@ -65,6 +67,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	i = calc_hash_index( m );
 	//进入临界区
 	local_irq_save( eflags );
+	in_allocator = 1;	//告诉内核，进入了分配器
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
@@ -72,7 +75,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 		while( nod && nod->size < siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块
-			size_t rest = nod->size - siz;	//rest大小不包括分配描述符大小
+			int rest = nod->size - siz;	//rest大小不包括分配描述符大小
 			//从空闲散列表中删除
 			HASH_DELETE( nod, who->free_table[j] );
 			MAKE_OCCUPIED(nod);	//占用
@@ -92,18 +95,23 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 				MAKE_FREE( nod2 );
 			}
 			//离开临界区
+			in_allocator = 0;
 			local_irq_restore(eflags);
 			return (void*)((size_t)nod + sizeof(node_t));
 		}
 		//没有可用块
 	}
 	//离开临界区
+	in_allocator = 0;	//离开分配器
+	PERROR("##failed to allocate memory for size: %x.", siz);
+	die(".");
 	local_irq_restore(eflags);
 	return NULL;
 }
 
 //指定分配地址分配，时间复杂度O(n)，希望不要存放太多块了，不过这个函数估计只在开始
 //时候使用一两次，这是完全没问题的 ！！
+/*
 void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz )
 {
 	size_t k, a, j;
@@ -168,9 +176,10 @@ void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz )
 	//没有合适块
 	//离开临界区
 	local_irq_restore(eflags);
-	PERROR("##failed to allocate memory.");
+	PERROR("##failed to allocate memory at 0x%X.", addr);
 	return NULL;
 }
+*/
 
 //检查地址为addr的空间是否已被分配。
 int	mm_check_allocated(allocator_t* who, size_t addr )
@@ -179,6 +188,11 @@ int	mm_check_allocated(allocator_t* who, size_t addr )
 	uint eflags;
 	uint nod_addr;
 	local_irq_save( eflags );
+	//这是例外情况。
+	if( in_allocator ){
+		local_irq_restore(eflags);
+		return 1;
+	}
 	nod = who->first_node;
 	while( nod ){
 		//

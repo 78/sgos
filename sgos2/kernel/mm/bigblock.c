@@ -71,14 +71,17 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 	size_t k, i, j;
 	bnode_t* nod;
 	uint eflags;
-	if(!siz) return NULL;
+	if(!siz) {
+		PERROR("##trying to allocate 0 size memory");
+		return NULL;
+	}
 	i = calc_hash_index( siz );
 	//进入临界区
 	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
-		//patched by Huang Guan. added "&& nod->size!=siz"
+		//大小符合了，基本上都是可用的
 		while( nod && nod->size < siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块
@@ -88,6 +91,12 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 			MAKE_OCCUPIED(nod);	//占用
 			if( rest>=PAGE_SIZE ){ //如果有余下空间，则添加到空闲散列表中。rest == 0 为理想状态
 				bnode_t* nod2 = (bnode_t*)kmalloc( sizeof(bnode_t) );
+				if(!nod2){
+					PERROR("##memory used out.");
+					//离开临界区
+					local_irq_restore(eflags);
+					return (void*)(nod->addr);
+				}
 				nod2->size = rest;
 				nod2->addr = nod->addr + siz;
 				nod->size = siz;
@@ -110,6 +119,7 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 	}
 	//离开临界区
 	local_irq_restore(eflags);
+	PERROR("##bb return NULL for size: 0x%X", siz );
 	return NULL;
 }
 
@@ -120,7 +130,10 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 	size_t k, j;
 	bnode_t* nod;
 	uint eflags;
-	if(!siz) return NULL;
+	if(!siz) {
+		PERROR("##trying to allocate 0 size memory");
+		return NULL;
+	}
 	//进入临界区
 	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
@@ -142,6 +155,9 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			nod->size = siz;
 			if( left>=PAGE_SIZE ){ //左边有空闲足够添加到散列表中 
 				nl = (bnode_t*)kmalloc(sizeof(bnode_t));
+				if( !nl ){ //
+					KERROR("##memory used out.");
+				}
 				nl->size = left; //新大小
 				nl->addr = nod->addr;
 				nl->next = nod; //右节点变了
@@ -162,6 +178,9 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			}
 			if( right>=PAGE_SIZE ){ //右边有空闲足够添加到散列表中 
 				nr = (bnode_t*)kmalloc(sizeof(bnode_t));
+				if( !nr ){ //
+					KERROR("##memory used out.");
+				}
 				nr->size = right;
 				nr->addr = addr + siz;
 				nr->pre = nod;
@@ -203,10 +222,10 @@ int	bb_check_allocated(bigblock_t* who, size_t addr )
 		if( nod->addr <= addr && nod->addr+nod->size > addr  ){
 			local_irq_restore(eflags);
 			if( IS_FREE_NODE(nod) ){
+				PERROR("##warning");
 				return 0;
-			}else{
-				return 1;
 			}
+			return 1;
 		}
 		nod = nod->next;
 	}

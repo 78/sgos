@@ -14,10 +14,13 @@
 #define GD_KERNEL_DATA	0x10
 #define GD_USER_CODE	0x1b
 #define GD_USER_DATA	0x23
+#define GD_USER_TIB	0x3B
 #define GD_TSS_INDEX	5
+#define GD_TIB_INDEX	7
 
 #define PAGE_SIZE	4096
 #define PAGE_SIZE_BITS 12
+#define PAGE_ALIGN(a) ((a&0xFFF)?((a&0xFFFFF000)+0x1000):a)
 #define KERNEL_BASE	0xC0000000
 #define PROC_PAGE_DIR_BASE	0xE0000000
 #define PROC_PAGE_DIR_END	0xE0400000
@@ -160,6 +163,7 @@ void isr_init();
 void isr_dumpcpu( const I386_REGISTERS *r );
 void isr_uninstall( int isr );
 int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) );
+void isr_dumpstack( void* thr, const I386_REGISTERS *r );
 //irq
 void irq_init();
 void irq_mask( int irq, int enabled );

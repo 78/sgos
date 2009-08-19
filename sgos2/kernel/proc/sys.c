@@ -105,7 +105,12 @@ void sys_virtual_free( void* p )
 void sys_thread_exit( int code )
 {
 	//直接终止
-	thread_terminate( current_thread(), code );
+	THREAD* thr;
+	thr = current_thread();
+	if( current_proc()->main_thread == thr ){
+		kprintf("Program %s exited with code 0x%X\n", current_proc()->name, code );
+	}
+	thread_terminate( thr, code );
 }
 
 //创建线程

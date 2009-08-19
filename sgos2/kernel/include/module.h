@@ -43,6 +43,7 @@ typedef struct MODULE{
 	ushort		reloc_num;	//重定位项数
 	RELOC_ENTRY*	reloc_table;	//重定位表
 	char*		full_name;	//文件路径名称
+	int		mid;		//模块ID
 }MODULE;
 
 // 进程模块信息
@@ -61,8 +62,10 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar type, 
 //释放模块
 MODULE* module_free( struct PROCESS* proc, MODULE* mod );
 //由名称获取模块，会增加引用计数。。。
-MODULE* module_get( struct PROCESS* proc, char* name );
+MODULE* module_get_by_name( struct PROCESS* proc, char* name );
 //
+MODULE* module_get( struct PROCESS* proc, int id );
+//进程映射模块的页面
 void module_attach( struct PROCESS* proc, MODULE* mod );
 //获取export地址
 size_t module_get_export_addr( MODULE* mod, char* name );
@@ -73,6 +76,7 @@ void module_unlink( struct PROCESS* proc, MODULE* mod );
 //从进程链表中查找模块
 MODULE* module_search( struct PROCESS* proc, size_t vir_addr );
 MODULE* module_search_by_name( struct PROCESS* proc, char* name );
+//
 
 #endif	//_MODULE_H_
 

@@ -5,6 +5,7 @@
 #include <thread.h>
 #include <string.h>
 #include <process.h>
+#include <module.h>
 #include <mm.h>
 
 //内核初始化入口
@@ -85,19 +86,47 @@ static void kinit_halt()
 static void kinit_process_start()
 {
 	PROCESS* proc;
-	proc = current_proc();
+	MODULE* mod, *mod_api;
+	THREAD* main;
+	proc = current_proc();	//当前进程
 	if( proc->environment ){
 		//根据环境信息加载程序。
 	}else if( proc->module_addr ){
-		MODULE* mod;
-		THREAD* main;
+		//根据内存地址加载
 		if( loader_process( proc, proc->name, (uchar*)proc->module_addr, 
 			0, &mod ) < 0 ){
 			PERROR("##failed to load module %s", proc->name );
 		}
-		main = thread_create( proc, mod->entry_address );
-		thread_resume( main );
 	}
+	
+	// 设置用户态信息
+	// umalloc是最小分配8KB的
+	if( proc->pid == 16 ){
+	}
+	proc->process_info = umalloc( proc, PAGE_ALIGN(sizeof(PROCESS_INFO)) );
+	//设置进程信息
+	if( proc->process_info ){ //复制数据到用户态
+		PROCESS_INFO* pi = proc->process_info;
+		memset( pi, 0, PAGE_ALIGN(sizeof(PROCESS_INFO)) );
+		//复制进程名
+		strcpy( pi->name, proc->name );
+		//进程id
+		pi->pid = proc->pid;
+		pi->uid = proc->uid;
+		pi->parent = proc->parent->pid;
+		//主线程
+		//程序入口
+		proc->process_info->entry_address = mod->entry_address;
+	}
+	//获得api接口库
+	mod_api = module_get_by_name( proc, "api.bxm");
+	//创建进程主线程
+	main = thread_create( proc, module_get_export_addr( mod_api, "_program_entry_" ) );
+	//设置主线程
+	proc->main_thread = main;
+	if( proc->process_info )
+		proc->process_info->main_thread = main->tid;
+	thread_resume( main );
 	thread_terminate(current_thread(), 0);
 }
 
@@ -138,13 +167,15 @@ void kinit_resume()
 				PROCESS* proc;
 				THREAD* thr;
 				//创建进程
-				PERROR("create process %s", mod->string );
+				int i;
+				for (i=0; i<100; i++ ){
 				proc = process_create( current_proc(), NULL );
 				proc->module_addr = mod->mod_start;
 				strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
 				//为该进程创建一个内核线程来加载模块
 				thr = thread_create( proc, (uint)kinit_process_start );
 				thread_resume( thr );
+				}
 			}
 		}
 	} 

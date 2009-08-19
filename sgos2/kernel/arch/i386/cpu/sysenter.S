@@ -5,6 +5,7 @@
 ret_val:
 .long	0
 _sysenter_handler:
+	sti
 	pushal
 	pushl	%ds
 	pushl	%es
