@@ -5,6 +5,7 @@
 #include <string.h>
 #include <thread.h>
 #include <process.h>
+#include <stdlib.h>
 
 void print_err(char* file, char* function, int line, const char *fmt, ...)
 {

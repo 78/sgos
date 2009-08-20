@@ -16,5 +16,10 @@ typedef struct MUTEX{
 }mutex_t;
 
 void mutex_remove_thread( mutex_t* mut, struct THREAD* thr );
+int mutex_trylock( mutex_t *mut );
+void mutex_lock( mutex_t *mut );
+void mutex_init( mutex_t *mut );
+void mutex_unlock( mutex_t *mut );
+void mutex_destroy( mutex_t *mut );
 
 #endif

@@ -11,6 +11,7 @@ static TSS g_tss;
 #define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
 
 void enter_threading_mode(size_t stackptr);
+void kinit_resume();
 void start_threading()
 {
 	//TSS, 保存着内核所用的堆栈, 从特权3到特权0要借助TSS
@@ -23,41 +24,45 @@ void start_threading()
 	//加载TSS和LDT
 	__asm__ __volatile__("mov $0x28, %bx\n\t"
 		"ltr %bx\n\t");
-	//进入线程模式，开启中断，引发线程切换
+	//进入线程模式
 	enter_threading_mode((size_t)(current_thread())+sizeof(THREAD));
+	//开启中断，引发线程切换
+	local_irq_enable();
 	//继续初始化。
 	kinit_resume();
 }
 
-//线程切换
-void i386_switch( THREAD*, uint*, uint* );
-extern THREAD_BOX tbox;
-void switch_to( THREAD* cur, THREAD* thr )
+// 设置下一个运行的线程环境
+void update_for_next_thread()
 {
-	//更新中断的线程内核栈
-	g_tss.esp0 = (uint)thr+sizeof(THREAD);
-	//更新fastcall使用的线程内核栈
-	fastcall_update_esp( g_tss.esp0 );
-	if( !thr->kernel ){
+	THREAD* next = tbox.next;
+	if( !next )	
+		return;
+	if( !next->kernel ){
+		//更新中断的线程内核栈
+		g_tss.esp0 = (uint)next+sizeof(THREAD);
+		//更新fastcall使用的线程内核栈
+		fastcall_update_esp( g_tss.esp0 );
 		//设置用户态线程信息段，fs使用
-		set_gdt_desc( GD_TIB_INDEX, (t_32)thr->thread_info, 
+		set_gdt_desc( GD_TIB_INDEX, (t_32)next->thread_info, 
 			PAGE_ALIGN(sizeof(THREAD_INFO))-1, DA_DRW | DA_32 | DA_DPL3 );
 	}
-	//屏蔽硬件中断
-	local_irq_disable();
 	//如果改变了进程，页目录也会随着变化
-	extern PROCESS* cur_proc;
-	if( cur_proc != thr->process ){
-		cur_proc = thr->process;
-		load_page_dir( cur_proc->page_dir );
-	}
+	if( current_proc() != next->process )
+		load_page_dir( next->process->page_dir );
+	
+}
+
+//线程切换
+void switch_to( THREAD* cur, THREAD* next )
+{
+	//改变环境
+	update_for_next_thread();
 	//改变当前线程
-	tbox.running = thr;
-//	kprintf("(%d-%x:", cur->tid, cur->stack_pointer );
+	tbox.running = next;
+	tbox.next = NULL;
 	//下面是汇编代码了
-	i386_switch( cur, &cur->stack_pointer, &thr->stack_pointer );
-//	kprintf("%d-%x)", current_thread()->tid, cur->stack_pointer );
-	//let clock work
+	i386_switch( NULL, &cur->stack_pointer, &next->stack_pointer );
 }
 
 //初始化线程的寄存器信息。
@@ -79,9 +84,8 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 		r->fs = GD_USER_TIB;
 		r->cs = GD_USER_CODE;
 	}
-	r->eflags = 0x202;
+	r->eflags = 0x202;	//标志寄存器
 	r->esp = stack_addr;	//一般运行时堆栈
-	r->kesp = 0;	//useless
 	r->eip = entry_addr;	//入口
 	thr->stack_pointer = (t_32)r;	//中断时堆栈
 }

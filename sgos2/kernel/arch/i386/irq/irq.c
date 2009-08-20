@@ -4,6 +4,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <string.h>
+#include <thread.h>
 
 //中断捕获函数
 extern void irq0();
@@ -145,46 +146,50 @@ void irq_mask( int irq, int enabled )
 	}
 }
 
-//irq处理
-void irq_handler(const I386_REGISTERS *r)
+//irq处理(关中断情况下处理)
+//返回1，表示线程切换。
+int irq_handler(const I386_REGISTERS *r)
 {
 	void (*handler)(const I386_REGISTERS *r);
-
+	//设置irq模式
+	current_thread()->interrupted = 1;
+	//获取处理函数句柄
 	handler = irq_routines[r->int_no - 32];
-	if( handler ){	//调用特定处理函数。
+	//调用特定处理函数。
+	if( handler )
 		handler(r);
+	//清irq模式
+	current_thread()->interrupted = 0;
+	//是否线程切换
+	if( tbox.next ){
+		//更新线程环境，如是否需要重装页目录
+		update_for_next_thread();;
+		return 1;
 	}
-	if( r->int_no >= 40 )
-	{
-		out_byte( 0xA0, 0x20 );	//从片
-	}
-	out_byte( 0x20, 0x20);
+	return 0;
 }
 
 //硬件中断初始化
-#define SET_INT_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
 void irq_init()
 {
 	memsetd( irq_routines, 0, sizeof(irq_routines)>>2 );
 	//重新映射irq
 	irq_remap();
 	// IDT初始化
-	SET_INT_GATE(32, (void*)irq0);
-	SET_INT_GATE(33, (void*)irq1);
-	SET_INT_GATE(34, (void*)irq2);
-	SET_INT_GATE(35, (void*)irq3);
-	SET_INT_GATE(36, (void*)irq4);
-	SET_INT_GATE(37, (void*)irq5);
-	SET_INT_GATE(38, (void*)irq6);
-	SET_INT_GATE(39, (void*)irq7);
-	SET_INT_GATE(40, (void*)irq8);
-	SET_INT_GATE(41, (void*)irq9);
-	SET_INT_GATE(42, (void*)irq10);
-	SET_INT_GATE(43, (void*)irq11);
-	SET_INT_GATE(44, (void*)irq12);
-	SET_INT_GATE(45, (void*)irq13);
-	SET_INT_GATE(46, (void*)irq14);
-	SET_INT_GATE(47, (void*)irq15);
-	
-	PERROR("ok");
+	SET_INTR_GATE(32, (void*)irq0);
+	SET_INTR_GATE(33, (void*)irq1);
+	SET_INTR_GATE(34, (void*)irq2);
+	SET_INTR_GATE(35, (void*)irq3);
+	SET_INTR_GATE(36, (void*)irq4);
+	SET_INTR_GATE(37, (void*)irq5);
+	SET_INTR_GATE(38, (void*)irq6);
+	SET_INTR_GATE(39, (void*)irq7);
+	SET_INTR_GATE(40, (void*)irq8);
+	SET_INTR_GATE(41, (void*)irq9);
+	SET_INTR_GATE(42, (void*)irq10);
+	SET_INTR_GATE(43, (void*)irq11);
+	SET_INTR_GATE(44, (void*)irq12);
+	SET_INTR_GATE(45, (void*)irq13);
+	SET_INTR_GATE(46, (void*)irq14);
+	SET_INTR_GATE(47, (void*)irq15);
 }

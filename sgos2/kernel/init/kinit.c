@@ -7,6 +7,7 @@
 #include <process.h>
 #include <module.h>
 #include <mm.h>
+#include <loader.h>
 
 //内核初始化入口
 extern PROCESS* cur_proc;
@@ -101,8 +102,6 @@ static void kinit_process_start()
 	
 	// 设置用户态信息
 	// umalloc是最小分配8KB的
-	if( proc->pid == 16 ){
-	}
 	proc->process_info = umalloc( proc, PAGE_ALIGN(sizeof(PROCESS_INFO)) );
 	//设置进程信息
 	if( proc->process_info ){ //复制数据到用户态
@@ -146,35 +145,45 @@ void kinit_resume()
 		char* ext;
 		kprintf ("mods_count = %d, mods_addr = 0x%x\n", 
 			(int) mbi->mods_count, (int) mbi->mods_addr ); 
-		mbi->mods_addr += KERNEL_BASE;
+		mbi->mods_addr += KERNEL_BASE;	//修正地址
 		for (i = 0, mod = (module_t *) mbi->mods_addr; 
 			i < mbi->mods_count; i++, mod ++) {
 			kprintf ("mod_start = 0x%x, mod_end = 0x%x, string = %s\n", 
 				mod->mod_start, 
 				mod->mod_end, 
 				(char *) mod->string ); 
+			//修正地址
 			mod->mod_start += KERNEL_BASE;
+			mod->mod_end += KERNEL_BASE;
 			mod->string += KERNEL_BASE;
 			//check file extension
 			ext = strrchr( (char*)mod->string, '.' );
-			if( ext && strcmp(ext,".bxm")==0 ){
-				//load it and share it 
-				if( loader_process( current_proc(), mod->string, (uchar*)mod->mod_start, 
-					1, NULL ) < 0 ){
-					PERROR("##failed to load module %s", mod->string );
-				}
-			}else{
-				PROCESS* proc;
-				THREAD* thr;
-				//创建进程
-				int i;
-				for (i=0; i<100; i++ ){
-				proc = process_create( current_proc(), NULL );
-				proc->module_addr = mod->mod_start;
-				strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
-				//为该进程创建一个内核线程来加载模块
-				thr = thread_create( proc, (uint)kinit_process_start );
-				thread_resume( thr );
+			if( ext ){
+				if( strcmp(ext,".bxm")==0 ){	//动态链接库
+					//load it and share it 
+					if( loader_process( current_proc(), (char*)mod->string, (uchar*)mod->mod_start, 
+						1, NULL ) < 0 ){
+						PERROR("##failed to load module %s", mod->string );
+					}
+				}else if( strcmp(ext,".sym")==0 ){//符号表
+					debug_set_symbol( mod->mod_start, mod->mod_end );
+				}else if( strcmp(ext,".run")==0 ){//执行文件
+					PROCESS* proc;
+					THREAD* thr;
+					//创建进程
+					int i;
+					kprintf("[K_TEST] The kernel will run 1000 processes(hello.run) "
+						"for stability test in 10 seconds.");
+					thread_wait( 10000 );	//5 seconds.
+					//测试：创建1000个hello.run进程
+					for (i=0; i<1000; i++ ){
+						proc = process_create( current_proc(), NULL );
+						proc->module_addr = mod->mod_start;
+						strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
+						//为该进程创建一个内核线程来加载模块
+						thr = thread_create( proc, (uint)kinit_process_start );
+						thread_resume( thr );
+					}
 				}
 			}
 		}

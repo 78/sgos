@@ -86,7 +86,7 @@ int page_init(uint mem_size)
 //## be careful multi-threading
 uint get_phys_page()
 {
-	register uint i;
+	uint i;
 	uint eflags;
 	if( page_used == total_pages ){
 		PERROR("## no pages for allocation.");
@@ -135,7 +135,7 @@ void free_phys_page( uint addr )
 	page_ref[i]--;
 }
 
-//
+// 打印物理页面使用情况
 void dump_phys_pages()
 {
 	uint i;
@@ -164,12 +164,10 @@ uint switch_page_dir(uint vir_addr)
 	return old;
 }
 
+//由0xE0000000上的页目录虚拟地址得到物理页面的地址
 uint page_dir_phys_addr( uint vir_addr )
 {
 	PAGE_TABLE* te;
-	te = (PAGE_TABLE*)(vir_addr + 0xC00 );
-	if( !te->v )
-		KERROR("#%x %x", te, te->v);
 	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
 	return ((te->a.phys_addr)<<12);
 }
@@ -180,9 +178,8 @@ void reflush_pages()
 	PROCESS* proc = current_proc();
 	if( proc )
 		load_page_dir( proc->page_dir );
-	else{
+	else
 		__asm__ __volatile__("movl $0x10000, %eax; movl %eax, %cr3");
-	}
 }
 
 //初始化页目录 
@@ -190,7 +187,6 @@ void init_page_dir( uint vir_addr )
 {
 	PAGE_DIR* dir_entry = (PAGE_DIR*)vir_addr;
 	PAGE_DIR* kdir_entry = (PAGE_DIR*)kernel_page_dir;
-	PAGE_TABLE* te;
 	uint phys_addr;
 	int i;
 	// 复制内核3G-4G的页表，0xC0000000 - 0xFFFFFFFF
@@ -198,7 +194,6 @@ void init_page_dir( uint vir_addr )
 	// 未分配的清0
 	memsetd( dir_entry, 0, 768 );
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
-//	kprintf("Mapping tables for process\n");
 	//获取页目录的物理地址
 	phys_addr = page_dir_phys_addr( vir_addr );
 	//设置映射

@@ -1,4 +1,5 @@
 .global _enter_threading_mode
+;// 主要是变更内核堆栈
 _enter_threading_mode:
 	pushl	%ebp
 	movl	%esp, %ebp

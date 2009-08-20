@@ -35,10 +35,10 @@ color light-green/black blink-red/black
 title SGOS2
 	root (hd0,0)
 	kernel /sgos2/kernel.bin root=/dev/hda0
-	modulenounzip /sgos2/api.bxm
-	modulenounzip /sgos2/libc.bxm
-	modulenounzip /sgos2/msg.bxm
-	modulenounzip /sgos2/hello.run
+	module /sgos2/api.bxm
+	module /sgos2/libc.bxm
+	module /sgos2/msg.bxm
+	module /sgos2/hello.run
 
 # Halt the machine
 title Turn off power!

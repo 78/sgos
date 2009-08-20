@@ -9,6 +9,7 @@
 #include <sgos.h>
 #include <debug.h>
 #include <string.h>
+#include <stdlib.h>
 #include <mm.h>
 #include <bxml.h>
 
@@ -355,7 +356,7 @@ struct BXML_DATA* bxml_parse( const char* mem )
 static int build_xml_node( struct BXML_NODE* nod, int level, char* mem, int mem_size )
 {
 	struct BXML_NODE* p;
-	int i, len, ret;
+	int i, len;
 	len = mem_size;
 	len -= strlen(nod->name)+1+level*1;
 	//tag name
@@ -418,7 +419,7 @@ static int build_bxml_node( struct BXML_NODE* nod, char* mem, int mem_size )
 	char* q;
 	int child_count;
 	int attr_count;
-	int i, len, ret;
+	int len, ret;
 	q = mem;
 	len = mem_size - 8 - nod->name_len - nod->value_len;
 	if( len < 0 ){
@@ -571,7 +572,7 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 	}else{	//得意之作
 		char *p, *m, *v;
 		char* conds[16][2];
-		int count, i, j, end;
+		int i, j, end;
 		struct BXML_NODE* nod_attr;
 		for( p=condition, i=0, end=0, v=condition; !end && i<16; p++ ){
 			if( *p=='&' || *p=='\0' ){

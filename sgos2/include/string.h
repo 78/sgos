@@ -27,6 +27,7 @@ extern char * ___strtok;
 char * strtok(char * s,const char * ct);
 void * memcpy(void * dest,const void * src, int n);
 void * memcpyw(void * dest,const void * src, int n);
+void * memcpyd(void * dest,const void * src, int n);
 char * memmove(char * dest,const char * src, int n);
 int memcmp(const void * cs,const void * ct,int count);
 void * memchr(const void * cs,char c,int count);

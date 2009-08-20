@@ -4,22 +4,28 @@
 #include <arch.h>
 #include <thread.h>
 #include <process.h>
+#include <string.h>
 #include <debug.h>
+
+//线程调度方式
+#define SCHED_FIFO
 
 THREAD_BOX tbox = {NULL, };
 static const unsigned ms = 1000/RTC_FREQUENCY;
 
+// 调度初始化
 void sched_init()
 {
 	memset( &tbox, 0, sizeof(THREAD_BOX) );
-//	tbox.running = current_proc()->thread;
 }
 
+// 返回当前线程
 THREAD* current_thread()
 {
 	return tbox.running;
 }
 
+// 由状态获取链表
 THREAD** get_thread_link( enum THREAD_STATE st )
 {
 	switch( st ){
@@ -43,6 +49,7 @@ THREAD** get_thread_link( enum THREAD_STATE st )
 	return NULL;
 }
 
+// 打印调度链表
 void dump_link()
 {
 	uint eflags;
@@ -71,6 +78,7 @@ void dump_link()
 	local_irq_restore(eflags);
 }
 
+// 设置线程状态，装入不同的链表中
 void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 {
 	uint flags;
@@ -95,7 +103,8 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 	//put to link
 	link = get_thread_link( st );
 	if(link){
-		//先来先占
+#ifndef SCHED_FIFO
+//		抢占式。。。。
 		if( *link ){
 			THREAD* t2;
 			t2 = *link;
@@ -107,25 +116,29 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 			*link = thr;
 		}
 		info->next = NULL;
-/*
-//		抢占式。。。。
+#else
+		//先来先服务
 		info->next = *link;
 		if( *link )
 			(*link)->sched_info.pre = thr;
-		*link = thr;*/
+		*link = thr;
+#endif
 	}
 	thr->state = st;
-//	kprintf("set state %d to %d\n", (*link)->id, st );
 	//ok
 	local_irq_restore( flags );
 }
 
+// 系统时间，单位：秒
 extern time_t rtc_second;
 //调度器获得时钟信号
 void sched_clock()
 {
 	THREAD* thr;
 	SCHEDULE_INFO* info;
+	uint flags;
+	//禁中断
+	local_irq_save(flags);
 	//处理等待一定时间的线程
 	for( thr=tbox.wait; thr; thr=thr->sched_info.next ){
 		thr->sched_info.clock -= ms;
@@ -134,7 +147,7 @@ void sched_clock()
 		}
 	}
 	//允许中断
-	local_irq_enable();
+	local_irq_restore(flags);
 	//获取当前线程
 	thr = current_thread();
 	//是否用户态线程
@@ -148,27 +161,28 @@ void sched_clock()
 	if( info->clock <= 0 ){	//need scheduling
 		schedule();
 	}
-	local_irq_disable();
 }
 
+//调度函数，取调度列表的下一个。
 void schedule()
 {
 	THREAD* thr, *cur;
-	SCHEDULE_INFO* info;
 	uint flags;
 	cur = current_thread();
+	//禁止中断
 	local_irq_save(flags);
-	if( !cur ){
-		cur = tbox.running = tbox.ready;
-	}
 	//next one
 	thr = cur->sched_info.next;
 	if(!thr || thr->state!=TS_READY)	//one round finished...
 		thr = tbox.ready;
 	if( thr ){
+		thr->sched_info.clock = 1;
 		if( thr != cur ){
-			thr->sched_info.clock = 1;
-			switch_to( cur, thr );
+			// 指定下一个线程
+			tbox.next = thr;
+			// 非硬件中断下允许直接切换线程
+			if( !cur->interrupted )
+				switch_to( cur, thr );	//线程切换
 		}
 	}
 	//back to me

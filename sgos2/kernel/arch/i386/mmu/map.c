@@ -5,7 +5,9 @@
 #include <sgos.h>
 #include <arch.h>
 #include <debug.h>
-
+#include <string.h>
+#include <process.h>
+#include <thread.h>
 
 //映射一个临时页，虚拟地址是占用了进程页目录地址的
 uint map_temp_page( uint phys_addr )
@@ -44,7 +46,7 @@ void unmap_temp_page( uint vir_addr )
 // map only one page from virtual address to physical address
 void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 {
-	PAGE_DIR* de, *te, *temp;
+	PAGE_DIR* de, *te;
 	int newpage=0;
 	if( phys_addr%PAGE_SIZE || vir_addr%PAGE_SIZE ){
 		PERROR("## wrong vir_addr or phys_addr" );
@@ -86,7 +88,7 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 //取消一个页面的映射
 void unmap_one_page( uint dir, uint vir_addr )
 {
-	PAGE_DIR* de, *te, *temp;
+	PAGE_DIR* de, *te;
 	if( vir_addr%PAGE_SIZE ){
 		PERROR("## wrong vir_addr" );
 		return;

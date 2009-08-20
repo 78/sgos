@@ -6,7 +6,7 @@
 #include <mutex.h>
 #include <message.h>
 
-#define THREAD_KERNEL_STACK_SIZE (1024*7)
+#define THREAD_KERNEL_STACK_SIZE (1024*15)
 #define THREAD_STACK_SIZE (1<<20)	//1MB
 
 struct PROCESS;
@@ -30,6 +30,8 @@ typedef struct SCHEDULE_INFO{
 }SCHEDULE_INFO;
 
 typedef struct THREAD{
+	//线程运行时堆栈指针
+	uint				stack_pointer;	
 	//线程ID,用来给开发者定位线程
 	uint				tid;
 	//在修改线程资料时,一般要lock下面的mutex
@@ -49,14 +51,17 @@ typedef struct THREAD{
 	uint				entry_address;	//线程入口
 	uint				stack_address;	//线程运行时堆栈地址
 	uint				stack_size;	//线程运行时堆栈大小
-	uint				stack_pointer;	//线程运行时堆栈指针
 	uchar				kernel;		//判断是否是内核线程。
+	uchar				interrupted;	//是否在中断模式下。
 	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	//线程中断时堆栈
 }THREAD;
 
 //these threads on the same state are linked by schedule link
 typedef struct THREAD_BOX{
+	//下面两个仅作指针使用，不构成链表。
 	THREAD*			running;	//正在运行的线程
+	THREAD*			next;		//下一个调度的线程
+//--------------------我是可爱的分隔线----------------------------
 	THREAD*			ready;		//就绪的线程
 	THREAD*			sleep;		//睡眠的线程
 	THREAD*			paused;		//挂起的线程
@@ -64,11 +69,15 @@ typedef struct THREAD_BOX{
 	THREAD*			wait;		//等待的线程
 	mutex_t			mutex;		//未用...
 }THREAD_BOX;
+extern THREAD_BOX	tbox;	//线程盒子
 
+//函数定义
 THREAD* current_thread();
 THREAD* thread_create( struct PROCESS* proc, uint entry_addr );
 int thread_terminate( THREAD* thr, int code );
 int thread_wakeup( THREAD* thr );
+int thread_resume( THREAD* thr );
+int thread_suspend( THREAD* thr );
 int thread_wait( uint ms );
 int thread_sleep();
 void thread_init();
@@ -77,6 +86,6 @@ THREAD* thread_get( int tid );
 void schedule();
 void sched_clock();
 void sched_set_state( THREAD* thr, enum THREAD_STATE st );
-
+void sched_init();
 
 #endif

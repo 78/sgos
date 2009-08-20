@@ -17,6 +17,7 @@
 #include <string.h>
 #include <mutex.h>
 #include <allocator.h>
+#include <process.h>
 
 #define HASH_APPEND( i, l ) { \
 	i->hash_next = l;	i->hash_pre = NULL;	if(l) l->hash_pre = i; l=i;	}
@@ -94,99 +95,27 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 				HASH_APPEND( nod2, who->free_table[k] );
 				MAKE_FREE( nod2 );
 			}
-			//离开临界区
+			//离开分配器
 			in_allocator = 0;
+			//离开临界区
 			local_irq_restore(eflags);
 			return (void*)((size_t)nod + sizeof(node_t));
 		}
 		//没有可用块
 	}
+	//离开分配器
+	in_allocator = 0;	
 	//离开临界区
-	in_allocator = 0;	//离开分配器
-	PERROR("##failed to allocate memory for size: %x.", siz);
-	die(".");
 	local_irq_restore(eflags);
 	return NULL;
 }
 
-//指定分配地址分配，时间复杂度O(n)，希望不要存放太多块了，不过这个函数估计只在开始
-//时候使用一两次，这是完全没问题的 ！！
-/*
-void*	mm_alloc_ex(allocator_t* who, size_t addr, size_t siz )
-{
-	size_t k, a, j;
-	node_t* nod;
-	uint eflags;
-	if(!siz) return NULL;
-	//进入临界区
-	local_irq_save( eflags );
-	//在空闲块散列表中搜索合适的块
-	for( nod = who->first_node; nod; nod = nod->next ){
-		a = (uint)nod+sizeof(node_t);
-		if( IS_FREE_NODE(nod) && a <= addr && a+nod->size >= addr+siz ){
-			//good luck!!	//找到可用块，必须剪出来
-			//一般剪中间的一块占用，两边的是可用空闲
-			size_t left, middle, right;
-			node_t* nl, *nm, *nr, *opre, *onext;
-			//记下原来的左右节点
-			opre = nod->pre;
-			onext = nod->next;
-			//从空闲散列表中移除
-			j = calc_hash_index( nod->size + sizeof(node_t) );
-			HASH_DELETE( nod, who->free_table[j] );
-			//开始设置新的节点
-			nl = nod;	//左节点
-			nm = (node_t*)(addr-sizeof(node_t));	//中间节点
-			nr = (node_t*)(addr+siz);	//右节点
-			left = (size_t)nm - (size_t)nl; //左边剩余大小
-			right = (a+nod->size) - (addr+siz);
-			nm->size = siz;
-			if( left>=32 ){ //左边有空闲足够添加到散列表中 
-				nl->size = left - sizeof(node_t); //新大小
-				nl->next = nm; //右节点变了
-				nm->pre = nl; //调整中间的节点
-				//调整散列表
-				k = calc_hash_index( left );
-				HASH_APPEND( nl, who->free_table[k] );
-				//不用MAKEFREE了，本来就是free的
-			}else{	//如果不足够，则加入到中间
-				nm = nl; //吞并左节点
-				nm->size = left + siz;
-				nm->pre = opre;
-			}
-			if( right>=32 ){ //右边有空闲足够添加到散列表中 
-				nr->size = right - sizeof(node_t);
-				nr->pre = nm;
-				nr->next = onext;
-				nm->next = nr;
-				//调整散列表
-				k = calc_hash_index( right );
-				HASH_APPEND( nr, who->free_table[k] );
-				MAKE_FREE(nr);
-			}else{
-				nm->next = onext;
-				nm->size += right;
-			}
-			MAKE_OCCUPIED(nm);
-			//离开临界区
-			local_irq_restore(eflags);
-			return (void*)((size_t)nm + sizeof(node_t));
-		}
-	}
-	//没有合适块
-	//离开临界区
-	local_irq_restore(eflags);
-	PERROR("##failed to allocate memory at 0x%X.", addr);
-	return NULL;
-}
-*/
 
 //检查地址为addr的空间是否已被分配。
 int	mm_check_allocated(allocator_t* who, size_t addr )
 {
 	node_t* nod;
 	uint eflags;
-	uint nod_addr;
 	local_irq_save( eflags );
 	//这是例外情况。
 	if( in_allocator ){
@@ -234,7 +163,7 @@ size_t	mm_free(allocator_t* who, void* p)
 	node_t* nod;
 	uint eflags;
 	size_t siz;
-	if( !p ) return;
+	if( !p ) return 0;
 	nod = (node_t*)((size_t)p - sizeof(node_t));
 	//进入临界区
 	local_irq_save(eflags);
@@ -286,28 +215,6 @@ void	mm_init_block(allocator_t* who, size_t addr, size_t size)
 	who->first_node = nod;
 }
 
-//添加可用内存空间
-/* 以禁用此函数，理由：破坏pre和next的顺序。
-void	mm_insert_block(allocator_t* who, size_t addr, size_t size)
-{
-	//make a node
-	uint eflags;
-	node_t* nod = (node_t*)addr;
-	nod->pre = NULL;
-	nod->size = size - sizeof(node_t);
-	local_irq_save(eflags);
-	//insert
-	if( who->first_node )
-		who->first_node->pre = nod;
-	nod->next = who->first_node;
-	//attach it to free table
-	HASH_APPEND( nod, who->free_table[MAX_HASH_ENTRY-1] );
-	MAKE_FREE( nod );
-	who->first_node = nod;
-	//ok
-	local_irq_restore(eflags);
-}
-*/
 
 /***************** 以下为测试用代码 ******************/
 void	mm_print_block(allocator_t* who)
@@ -322,11 +229,11 @@ void	mm_print_block(allocator_t* who)
 	local_irq_save(eflags);
 	while( nod ){
 		if( IS_FREE_NODE(nod) ){
-			kprintf("[Free:%u]", nod->size+sizeof(node_t) );
+		//	kprintf("[Free:%u]", nod->size+sizeof(node_t) );
 			free_size += nod->size+sizeof(node_t);
 		}else{
-			kprintf("{Used:%u}", nod->size+sizeof(node_t) );
-			used_size += nod->size+sizeof(node_t);
+		//	kprintf("{Used:%u}", nod->size+sizeof(node_t) );
+				used_size += nod->size+sizeof(node_t);
 		}
 		nod = nod->next;
 	}
