@@ -3,6 +3,7 @@
 #include <sgos.h>
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 
 extern unsigned rtc_second;
 

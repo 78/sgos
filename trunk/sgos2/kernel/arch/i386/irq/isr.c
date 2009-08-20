@@ -87,51 +87,32 @@ static void *isr_routines[32] =
 // install a isr handler
 int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) )
 {
-    if( isr_routines[isr] ){
-        PERROR("ISR: %d is already installed.", isr );
+	if( isr_routines[isr] ){
+		PERROR("ISR: %d is already installed.", isr );
 		return -1;
 	}
-    isr_routines[isr] = handler;
+	isr_routines[isr] = handler;
 	return 0;
 }
 
 
 void isr_uninstall( int isr )
 {
-    isr_routines[isr] = NULL;
+	isr_routines[isr] = NULL;
 }
 
 
 void isr_dumpcpu( const I386_REGISTERS *r )
 {
-	THREAD* cur = current_thread();
-	kprintf("PID:%d Dump CPU:\ncs: 0x%X\teip: 0x%X\nss: 0x%X\tesp: 0x%X\tkesp: 0x%X\tused: 0x%X\n"
+	kprintf("pid:%d dump cpu:\ncs: 0x%X\teip: 0x%X\nss: 0x%X\tesp: 0x%X\tkesp: 0x%X\n"
 		"ds: 0x%X\tesi: 0x%X\nes: 0x%X\tedi: 0x%X\nfs: 0x%X\ngs: 0x%X\neax: 0x%X\tecx: 0x%X\tebx: 0x%X\t"
-		"edx: 0x%X\neflags: 0x%X\n", 0,r->cs, r->eip, r->ss, r->esp, r->kesp, (uint)cur+sizeof(THREAD)-r->kesp,
+		"edx: 0x%X\neflags: 0x%X\n", 0,r->cs, r->eip, r->ss, r->esp, r->kesp, 
 		r->ds, r->esi, r->es, r->edi, r->fs, r->gs, r->eax, r->ecx,
 		r->ebx, r->edx, r->eflags);
 
 }
 
-void isr_dumpstack( void* thr, const I386_REGISTERS *r )
-{
-	size_t start = r->kesp, end=(uint)thr+ sizeof(THREAD);
-	kprintf("tid: %d dump stcak: ", ((THREAD*)thr)->tid);
-	if( start>=(size_t)thr && start<=end-sizeof(size_t) )
-	{
-		size_t value;
-		char* name;
-		for( ; start<=end-sizeof(size_t); start+=sizeof(size_t) )
-		{
-			value = *((size_t*)start);
-			kprintf("0x%x ", value );
-		}
-	}
-	kprintf("\n");
-}
-// ptrace
 
-#define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )
 void isr_init()
 {
 	memsetd( isr_routines, 0, sizeof(isr_routines)>>2 );
@@ -151,9 +132,12 @@ void isr_init()
 	SET_TRAP_GATE(11, (void*)isr11);
 	SET_TRAP_GATE(12, (void*)isr12);
 	SET_TRAP_GATE(13, (void*)isr13);
-	SET_TRAP_GATE(14, (void*)isr14);
+	
+	//注意，页面异常处理时，在保存cr2之前禁止中断。
+	//也可以在中断时检查线程是否发生了页面异常。
+	SET_INTR_GATE(14, (void*)isr14);
+	
 	SET_TRAP_GATE(15, (void*)isr15);
-
 	SET_TRAP_GATE(16, (void*)isr16);
 	SET_TRAP_GATE(17, (void*)isr17);
 	SET_TRAP_GATE(18, (void*)isr18);
@@ -179,7 +163,6 @@ void isr_init()
 void isr_handler(const I386_REGISTERS *r)
 {
 	void (*handler)(int err_code, const I386_REGISTERS *r);
-
 	if ( r->int_no < 32 )
 	{
 		handler = isr_routines[r->int_no];
@@ -187,7 +170,9 @@ void isr_handler(const I386_REGISTERS *r)
 		{
 			handler(r->err_code, r);
 		}else{
-			kprintf("###### Unhandled Exception #######\nDescription: %s    Error Code: %d\n", exception_msg[ r->int_no ], r->err_code );
+			kprintf("###### Unhandled Exception #######\n"
+				"Description: %s    Error Code: %d\n", 
+				exception_msg[ r->int_no ], r->err_code );
 			isr_dumpcpu( r );
 			KERROR("Terminated!\n");
 		}

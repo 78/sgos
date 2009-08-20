@@ -9,6 +9,8 @@
 #include <process.h>
 #include <thread.h>
 #include <bxml.h>
+#include <mm.h>
+#include <stdlib.h>
 
 #define EQU( str_a, str_b ) ( strcmp(bxml_readstr(bxml, str_a), str_b)==0 )
 
@@ -34,6 +36,7 @@ int loader_load( PROCESS* proc, char* filename, MODULE** mod )
 	}
 */
 	die("not implemented.");
+	return 0;
 }
 
 // 处理加载过程，加载成功返回0。
@@ -43,7 +46,6 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	struct BXML_DATA* bxml;
 	MODULE* mod;
 	size_t load_addr, load_size;
-	uint old_page_dir = 0;
 	//parse bxml
 	bxml = bxml_parse( data );
 	if( !bxml ){
@@ -188,7 +190,6 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	//
 	if( mod->share ){
 		//若是共享库，则设置页面为只读，以便写时复制
-//		page_set_attr( mod->vir_addr, mod->vir_size, P_PRESENT|P_USER );
 		module_attach( proc, mod );
 	}
 	mod->reference = 1;

@@ -17,6 +17,7 @@
 #include <string.h>
 #include <mutex.h>
 #include <bigblock.h>
+#include <mm.h>
 
 #define HASH_APPEND( i, l ) { \
 	i->hash_next = l;	i->hash_pre = NULL;	if(l) l->hash_pre = i; l=i;	}
@@ -71,10 +72,7 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 	size_t k, i, j;
 	bnode_t* nod;
 	uint eflags;
-	if(!siz) {
-		PERROR("##trying to allocate 0 size memory");
-		return NULL;
-	}
+	if(!siz) return NULL;
 	i = calc_hash_index( siz );
 	//进入临界区
 	local_irq_save( eflags );
@@ -119,7 +117,6 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 	}
 	//离开临界区
 	local_irq_restore(eflags);
-	PERROR("##bb return NULL for size: 0x%X", siz );
 	return NULL;
 }
 
@@ -130,10 +127,7 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 	size_t k, j;
 	bnode_t* nod;
 	uint eflags;
-	if(!siz) {
-		PERROR("##trying to allocate 0 size memory");
-		return NULL;
-	}
+	if(!siz) return NULL;
 	//进入临界区
 	local_irq_save( eflags );
 	//在空闲块散列表中搜索合适的块
@@ -155,9 +149,8 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			nod->size = siz;
 			if( left>=PAGE_SIZE ){ //左边有空闲足够添加到散列表中 
 				nl = (bnode_t*)kmalloc(sizeof(bnode_t));
-				if( !nl ){ //
+				if( !nl )
 					KERROR("##memory used out.");
-				}
 				nl->size = left; //新大小
 				nl->addr = nod->addr;
 				nl->next = nod; //右节点变了
@@ -178,9 +171,8 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			}
 			if( right>=PAGE_SIZE ){ //右边有空闲足够添加到散列表中 
 				nr = (bnode_t*)kmalloc(sizeof(bnode_t));
-				if( !nr ){ //
+				if( !nr )
 					KERROR("##memory used out.");
-				}
 				nr->size = right;
 				nr->addr = addr + siz;
 				nr->pre = nod;
@@ -205,7 +197,6 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 	//没有合适块
 	//离开临界区
 	local_irq_restore(eflags);
-	PERROR("##failed to allocate memory at 0x%x(0x%x).", addr, siz );
 	return NULL;
 }
 
@@ -214,17 +205,14 @@ int	bb_check_allocated(bigblock_t* who, size_t addr )
 {
 	bnode_t* nod;
 	uint eflags;
-	uint nod_addr;
 	local_irq_save( eflags );
 	nod = who->first_node;
 	while( nod ){
 		//
 		if( nod->addr <= addr && nod->addr+nod->size > addr  ){
 			local_irq_restore(eflags);
-			if( IS_FREE_NODE(nod) ){
-				PERROR("##warning");
+			if( IS_FREE_NODE(nod) )
 				return 0;
-			}
 			return 1;
 		}
 		nod = nod->next;
@@ -258,7 +246,7 @@ size_t	bb_free(bigblock_t* who, void* p)
 	bnode_t* nod;
 	uint eflags;
 	size_t siz;
-	if( !p ) return;
+	if( !p ) return 0;
 	for( nod=who->first_node; nod; nod=nod->next ){
 		if(nod->addr == (size_t)p )
 			break;
@@ -290,11 +278,13 @@ size_t	bb_free(bigblock_t* who, void* p)
 	return siz;
 }
 
+// 单位分配
 void*	bb_calloc(bigblock_t* who, size_t c, size_t n)
 {
 	return bb_alloc( who, c*n );
 }
 
+// 重新分配
 void* 	bb_realloc(bigblock_t* who, void* p, size_t siz)
 {
 	bb_free(who, p);
@@ -353,8 +343,8 @@ void	bb_print_block(bigblock_t* who)
 	local_irq_restore(eflags);
 }
 
+// 释放所有块
 void	bb_free_all(bigblock_t * who)
 {
-	//
 	PERROR("not implemented.");
 }

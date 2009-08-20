@@ -61,7 +61,6 @@ void set_ldt_desc( SEGMENT_DESC *desc, uint base, uint limit, uint attribute )
 //保护模式编程
 void gdt_init()
 {
-	t_8 ptr[6];
 	idt_code_seg = 0x08;
 	// setup a new gdt
 	/* 但这里有必要再做一次这个工作，便于管理。 */

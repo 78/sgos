@@ -27,7 +27,7 @@ static void next_line()
 		scroll_up();
 	}
 }
-
+/*
 // move the cursor to a position
 static int gotoxy( int x, int y)
 {
@@ -36,7 +36,7 @@ static int gotoxy( int x, int y)
 	_x = x;
 	_y = y;
 	return 0;
-}
+}*/
 
 // move the cursor as you input a character
 static void move_cursor()

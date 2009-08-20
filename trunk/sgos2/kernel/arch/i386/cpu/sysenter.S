@@ -5,7 +5,6 @@
 ret_val:
 .long	0
 _sysenter_handler:
-	sti
 	pushal
 	pushl	%ds
 	pushl	%es
@@ -17,6 +16,7 @@ _sysenter_handler:
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
+	sti
 	call	*_syscall_table(,%eax,4)
 	addl	$12, %esp
 	movl	%eax, ret_val

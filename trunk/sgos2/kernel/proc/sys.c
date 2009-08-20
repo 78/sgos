@@ -81,12 +81,14 @@ int sys_dprint( const char* buf )
 int sys_msg_send( const char* buf, size_t len )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //接收消息
 int sys_msg_recv( char* buf, size_t buf_siz, uint flag )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //分配用户内存
@@ -135,12 +137,14 @@ int sys_thread_self()
 int sys_thread_detach( int tid )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //等待线程结束
 int sys_thread_join( int tid, int* code )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //线程睡眠一段时间
@@ -190,36 +194,42 @@ int sys_thread_terminate( int tid, int code )
 int sys_thread_set_priority( int tid, int pri )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //获取线程优先级
 int sys_thread_get_priority( int tid, int* pri )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //进程管理
 int sys_process_create( char* file, void* environment, void* create_info )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //结束进程
 int sys_process_terminate( int id, int code )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //挂起进程
 int sys_process_suspend( int id )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //启动进程
 int sys_process_resume( int id )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //当前进程ID
@@ -232,55 +242,65 @@ int sys_process_self()
 int sys_loader_load( char* file )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //卸载库
 int sys_loader_unload( int id )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //获得过程
 size_t sys_loader_get_proc( int id, char* name )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //命名空间
 int sys_namespace_register( int tid, char* name )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 int sys_namespace_unregister( int tid, char* name )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //返回io位图
 int sys_iomap_get( uchar* buf, size_t buf_size )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //设置io位图 
 int sys_iomap_set( uchar* buf, size_t buf_len  )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 //注册irq消息
 int sys_irq_register( int tid, int irq )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 int sys_irq_unregister( int tid, int irq )
 {
 	PERROR("not implemented.");
+	return 0;
 }
 
 int sys_virtual_map( size_t vaddr, size_t paddr, size_t map_size )
 {
 	PERROR("not implemented.");
+	return 0;
 }

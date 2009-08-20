@@ -26,7 +26,8 @@ static uint generate_tid()
 //初始化用户态线程信息块
 static void init_thread_info( THREAD* thr )
 {
-	if( thr->thread_info = umalloc(thr->process, PAGE_ALIGN(sizeof(THREAD_INFO))) ){
+	thr->thread_info = umalloc(thr->process, PAGE_ALIGN(sizeof(THREAD_INFO)));
+	if( thr->thread_info ){
 		THREAD_INFO* ti = thr->thread_info;
 		//清0操作，以免用户获得错误信息
 		memset( ti, 0, PAGE_ALIGN(sizeof(THREAD_INFO)) );
@@ -74,6 +75,7 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	THREAD* thr;
 	SCHEDULE_INFO* sched;
 	uint eflags;
+	//分配线程内存空间
 	thr = (THREAD*)kmalloc( sizeof(THREAD) );
 	if( thr == NULL ){
 		die("## kernel memory used out!!");
@@ -91,10 +93,10 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	thr->stack_size = THREAD_STACK_SIZE;
 	if( IS_USER_MEMORY( entry_addr ) ){//创建用户态线程？？
 		thr->kernel = 0;
+		//用户态线程堆栈
 		thr->stack_address = (uint)umalloc( proc, thr->stack_size );
 	}else{
 		thr->kernel = 1;
-	//	thr->stack_address = (uint)kmalloc( thr->stack_size );//内核堆栈(内核线程不需要这个堆栈)
 	}
 	//初始化用户态信息
 	if( thr->kernel == 0 ){
@@ -122,6 +124,7 @@ int thread_terminate( THREAD* thr, int code )
 {
 	PROCESS* proc;
 	proc = current_proc();
+	//设置状态为死亡
 	sched_set_state( thr, TS_DEAD );
 	//如果线程睡眠了
 	if( thr->state == TS_SLEEP && thr->sleepon ){
@@ -151,6 +154,7 @@ int thread_resume( THREAD* thr )
 	return 0;
 }
 
+//挂起线程
 int thread_suspend( THREAD* thr )
 {
 	sched_set_state( thr, TS_PAUSED );
@@ -159,6 +163,7 @@ int thread_suspend( THREAD* thr )
 	return 0;
 }
 
+//睡眠线程。注意，中断情况下不可以睡眠。
 int thread_sleep()
 {
 	sched_set_state( current_thread(), TS_SLEEP );
@@ -168,6 +173,7 @@ int thread_sleep()
 	return 0;
 }
 
+//线程挂起等待一段时间
 int thread_wait( uint ms )
 {
 	THREAD* cur = current_thread();
@@ -184,6 +190,7 @@ int thread_wait( uint ms )
 	return 0;
 }
 
+//唤醒线程
 int thread_wakeup( THREAD* thr )
 {
 	sched_set_state( thr, TS_READY );

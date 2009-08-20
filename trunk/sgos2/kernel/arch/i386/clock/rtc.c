@@ -24,10 +24,21 @@ void rtc_set_freq(unsigned freq)
 void rtc_interrupt(const I386_REGISTERS* r)
 {
 	rtc_time ++;
-	if( !(rtc_time % RTC_FREQUENCY) ){
+	//屏蔽时钟中断
+	irq_mask( RTC_INTERRUPT, 0 );
+	//EOI
+	out_byte( 0x20, 0x20);
+	//开启中断 
+	local_irq_enable();
+	//更新时间
+	if( !(rtc_time % RTC_FREQUENCY) )
 		rtc_second ++;
-	}
+	//调度时钟
 	sched_clock();
+	//关中断
+	local_irq_disable();
+	//允许时钟中断
+	irq_mask( RTC_INTERRUPT, 1 );
 }
 
 //实时钟初始化

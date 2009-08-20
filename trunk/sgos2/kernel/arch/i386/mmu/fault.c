@@ -17,7 +17,6 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 	//被访问或修改的内存地址
 	__asm__("movl %%cr2, %0" : "=r"( addr ) );
 	PROCESS* proc = current_proc();
-//	kprintf("page fault at 0x%X\n", addr );
 	if( !(err_code&P_PRESENT ) ){	//not present this page
 		if( IS_KERNEL_MEMORY( addr ) ){	//如果是在内核空间
 			//判断是否用户态违规访问。
@@ -26,10 +25,12 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			// !proc表示进程尚未初始化，此时无需检查边界
 			if( !proc || kcheck_allocated( addr ) ||
 				(addr>=PROC_PAGE_DIR_BASE && addr<PROC_PAGE_DIR_END) ){//是否允许？
+				// 分配物理页面
 				uint phys_addr = get_phys_page();
-				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 				if( !phys_addr )
 					KERROR("##no page for allocation.");
+				//可以用&优化
+				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 				//映射到分配的物理地址去。
 				map_one_page( kernel_page_dir, addr, phys_addr, P_WRITE );
 				return 0;
@@ -39,6 +40,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 		}else if( IS_USER_MEMORY( addr ) ){ //用户态
 			if( ucheck_allocated( proc, addr ) ){	//
 				MODULE* mod;
+				// 分配物理页面
 				uint phys_addr = get_phys_page();
 				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 				if( !phys_addr )
@@ -66,10 +68,8 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 	}
 	//未能处理，则BSOD
 	isr_dumpcpu( r );
-	isr_dumpstack( current_thread(), r );
-	PERROR("[%d:%d]##unhandled pagefault at 0x%X, err_code=0x%X", proc->pid, 
-		current_thread()->tid, addr, err_code );
-	die(".");
+	KERROR("[%d:%d]##unhandled pagefault at 0x%X, err_code=0x%X", proc?proc->pid:0, 
+		current_thread()?current_thread()->tid:0, addr, err_code );
 	return 0;
 }
 

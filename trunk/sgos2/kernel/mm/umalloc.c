@@ -8,7 +8,7 @@
 #include <process.h>
 #include <mm.h>
 
-
+// 用户空间内存初始化
 void umalloc_init( PROCESS* proc )
 {
 	bb_init_block( &proc->memory_info.umem_mgr, 
@@ -18,6 +18,7 @@ void umalloc_init( PROCESS* proc )
 	//
 }
 
+// 分配指定地址的用户态空间内存
 void*	umalloc_ex(PROCESS* proc, size_t addr, size_t siz)
 {
 	MEMORY_INFO* info;
@@ -36,11 +37,12 @@ void*	umalloc_ex(PROCESS* proc, size_t addr, size_t siz)
 	if( ret ){
 		return ret;
 	}
-	//no memory??
+	//no memory?? 分配失败就撤销增加
 	info->umem_size -= siz;
 	return NULL;
 }
 
+// 分配用户态空间的内存
 void*	umalloc(PROCESS* proc, size_t siz)
 {
 	MEMORY_INFO* info;
@@ -55,6 +57,7 @@ void*	umalloc(PROCESS* proc, size_t siz)
 		PERROR("##user memory used out!");
 		return NULL;
 	}
+	
 	ret = bb_alloc( &info->umem_mgr, siz );
 	if( ret )
 		return ret;
@@ -64,11 +67,15 @@ void*	umalloc(PROCESS* proc, size_t siz)
 	return NULL;
 }
 
+// 释放用户空间的内存
 void	ufree(PROCESS* proc, void* p)
 {
 	MEMORY_INFO* info;
 	size_t siz;
 	if( proc ){
+		//info之前忘了赋值。。。
+		//弄了乱出八糟的错误，调试了一天。。。
+		info = &proc->memory_info;
 		siz = bb_free( &info->umem_mgr, p );
 		//change some mem info
 		info = &proc->memory_info;
@@ -86,6 +93,7 @@ int	ucheck_allocated(PROCESS* proc, size_t addr)
 		info = &proc->memory_info;
 		return bb_check_allocated( &info->umem_mgr, addr );
 	}
+	return 0;
 }
 
 

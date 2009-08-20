@@ -4,7 +4,7 @@
 ARCH = i386
 
 ASFLAGS = -g
-CCFLAGS = -g -Werror -I../include -Iinclude -fno-builtin -ffreestanding -fleading-underscore
+CCFLAGS = -g -Werror -Wall -Wno-char-subscripts -I../include -Iinclude -fno-builtin -ffreestanding -fleading-underscore
 LDFLAGS =
 OCFLAGS = -Obinary
 ODFLAGS = -S
@@ -24,6 +24,7 @@ LD = ld $(LDFLAGS)
 OC = objcopy $(OCFLAGS)
 OD = objdump $(ODFLAGS)
 LD2 = ld2
+NM = nm
 WF = ../tools/wf/wf
 
 IMAGE = ../sgos2.img
@@ -59,14 +60,17 @@ all: kernel
 
 kernel: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$@
+	$(NM) $@ > $@.sym
 	$(OD) $@ > $@.dmp
 	$(OC) $@ $@.bin
 	$(WF) $(IMAGE) -src $@.bin -dest sgos2/$@.bin
+	$(WF) $(IMAGE) -src $@.sym -dest sgos2/$@.sym
 
 clean:
 	$(RM) $(OBJECTS) \
 		kernel.dmp \
 		kernel \
+		kernel.sym \
 		kernel.bin
 
 # Standard Procedures

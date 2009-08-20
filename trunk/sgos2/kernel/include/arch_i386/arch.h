@@ -29,6 +29,9 @@
 #define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_END )
 #define IS_USER_MEMORY(addr) ( addr <= PROC_PAGE_TABLE_MAP )
 
+#define GET_STACK_POINTER(stk) __asm__ __volatile__("movl %%esp, %%eax" :"=a"(stk):)
+#define SET_INTR_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
+#define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )
 
 struct THREAD;
 // gdt 
@@ -57,6 +60,7 @@ typedef struct GDT_ADDR {
 	t_32	addr __attribute__((packed));
 }GDT_ADDR;
 
+//Thread state segment
 typedef struct TSS {
 	t_32	back_link;
 	t_32	esp0;	//kernel esp
@@ -91,7 +95,7 @@ typedef struct I387_REGISTERS
 	t_32 st[20];
 }I387_REGISTERS;
 
-
+//i386寄存器，用于中断以及线程切换
 typedef struct I386_REGISTERS
 {
 	t_32	gs, fs, es, ds;
@@ -107,7 +111,6 @@ typedef struct I386_CONTEXT{
 }I386_CONTEXT;
 
 typedef struct ARCH_THREAD{
-//	TSS				tss;
 	I387_REGISTERS	i387;
 }ARCH_THREAD;
 
@@ -154,6 +157,7 @@ t_32 in_t_32( t_16 port );
 t_8 in_byte( t_16 port );
 
 //gdt
+void gdt_init();
 void set_gate( int vector, uchar desc_type, void* handle );
 void set_gdt_desc( int vector, uint base, uint limit, uint attribute );
 void set_idt_desc( int vector, uchar desc_type, void* handler );
@@ -163,7 +167,7 @@ void isr_init();
 void isr_dumpcpu( const I386_REGISTERS *r );
 void isr_uninstall( int isr );
 int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) );
-void isr_dumpstack( void* thr, const I386_REGISTERS *r );
+void isr_dumpstack( void* thr, uint stk );
 //irq
 void irq_init();
 void irq_mask( int irq, int enabled );
@@ -184,6 +188,7 @@ void reflush_pages();
 void load_page_dir(uint phys_addr);
 uint switch_page_dir(uint phys_addr);
 uint page_dir_phys_addr( uint vir_addr );
+void init_page_dir(uint );
 //map
 uint map_temp_page( uint phys_addr );
 void unmap_temp_page( uint vir_addr );
@@ -194,6 +199,7 @@ void unmap_pages( uint dir, uint vir_addr, uint size );
 //dir
 uint get_page_dir();
 void free_page_dir(uint addr);
+void dir_init();
 //rtc
 void rtc_init();
 //cpu
@@ -203,5 +209,7 @@ void switch_to( struct THREAD* cur, struct THREAD* thr );
 void start_threading();
 void fastcall_update_esp(uint kesp);
 void fastcall_init();
+void update_for_next_thread();
+void i386_switch( struct THREAD*, uint*, uint* );	//switch.S
 
 #endif

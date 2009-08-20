@@ -113,6 +113,7 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar share,
 MODULE* module_free( struct PROCESS* proc, MODULE* mod )
 {
 	die("not implemented.");
+	return NULL;
 }
 
 //添加到进程链表

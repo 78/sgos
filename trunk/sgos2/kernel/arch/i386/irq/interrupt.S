@@ -2,31 +2,46 @@
 ;//System call
 .extern _syscall_table
 .global _syscall_interrupt
-ret_val:
-.long	0
-
+;//系统调用返回值
+ret_val:.long	0
+;//系统调用中断底层处理函数
 _syscall_interrupt:
+	;//这里开启中断应该没问题，
+	;//当硬件中断发生时，会保存线程在内核下的上下文。
+	sti
 	pushl	$0	;//err_code
 	pushl	$0xA1	;//int_no
+	;//保护现场
 	pusha
 	push	%ds
 	push	%es
+	push	%fs
+	push	%gs
+	;//保存%eax, %eax里有调用号
 	pushl	%eax
 	;//use kernel segment selector
 	mov	$0x10, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
+	;//恢复%eax
 	popl	%eax
+	;//把调用参数压栈
+	pushl	%edi
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
 	call	*_syscall_table(,%eax,4)
-	addl	$12, %esp
+	addl	$14, %esp
+	;//保存返回值
 	movl	%eax, ret_val
+	;//恢复现场
+	pop	%gs
+	pop	%fs
 	pop	%es
 	pop	%ds
 	popa
 	addl	$8, %esp
+	;//取出返回值
 	movl	ret_val, %eax
 	iret
 
@@ -53,140 +68,139 @@ _syscall_interrupt:
 
 ;// 32: IRQ0
 _irq0:
-	cli
 	push	$0
 	push	$32
 	jmp		do_irq
 
 ;// 33: IRQ1
 _irq1:
-	cli
 	push	$0
 	push	$33
 	jmp		do_irq
 
 ;// 34: IRQ2
 _irq2:
-	cli
 	push	$0
 	push	$34
 	jmp		do_irq
 
 ;// 35: IRQ3
 _irq3:
-	cli
 	push	$0
 	push	$35
 	jmp		do_irq
 
 ;// 36: IRQ4
 _irq4:
-	cli
 	push	$0
 	push	$36
 	jmp		do_irq
 
 ;// 37: IRQ5
 _irq5:
-	cli
 	push	$0
 	push	$37
 	jmp		do_irq
 
 ;// 38: IRQ6
 _irq6:
-	cli
 	push	$0
 	push	$38
 	jmp		do_irq
 
 ;// 39: IRQ7
 _irq7:
-	cli
 	push	$0
 	push	$39
 	jmp		do_irq
 
 ;// 40: IRQ8
 _irq8:
-	cli
 	push	$0
 	push	$40
 	jmp		do_irq
 
 ;// 41: IRQ9
 _irq9:
-	cli
 	push	$0
 	push	$41
 	jmp		do_irq
 
 ;// 42: IRQ10
 _irq10:
-	cli
 	push	$0
 	push	$42
 	jmp		do_irq
 
 ;// 43: IRQ11
 _irq11:
-	cli
 	push	$0
 	push	$43
 	jmp		do_irq
 
 ;// 44: IRQ12
 _irq12:
-	cli
 	push	$0
 	push	$44
 	jmp		do_irq
 
 ;// 45: IRQ13
 _irq13:
-	cli
 	push	$0
 	push	$45
 	jmp		do_irq
 
 ;// 46: IRQ14
 _irq14:
-	cli
 	push	$0
 	push	$46
 	jmp		do_irq
 
 ;// 47: IRQ15
 _irq15:
-	cli
 	push	$0
 	push	$47
 	jmp		do_irq
 
-
+;// 底层中断处理句柄
 .extern _irq_handler
+.extern _tbox
 do_irq:
-	pusha
+	;//保护现场
+	pushal
 	pushl	%ds
 	pushl	%es
 	pushl	%fs
 	pushl	%gs
-
+	;//切换内核段寄存器
 	mov	$0x10, %ax
 	mov	%ax, %ds
 	mov	%ax, %es
-
-	movl	%esp, %eax
-
-	pushl	%eax
+	;//保存堆栈指针
+	movl	%esp, %edx
+	;//把堆栈指针压入栈
+	pushl	%edx
 	call	_irq_handler
-	popl	%eax
-
+	popl	%edx
+	;//处理完毕
+	test	%eax, %eax
+	je .restore
+	;//线程切换 
+	leal	_tbox, %edi
+	movl	(%edi), %eax	;//tbox.running
+	movl	4(%edi), %ebx	;//tbox.next
+	movl	%esp, (%eax)	;//save current pointer
+	movl	(%ebx), %esp	;//restore next pointer
+	movl	4(%edi), %eax	;//tbox.next
+	movl	%eax, (%edi)	;//tbox.running = tbox.next
+	movl	$0, 4(%edi)	;//tbox.next = 0
+.restore:
+	;//恢复现场
 	pop	%gs
 	pop	%fs
 	pop	%es
 	pop	%ds
-	popa
+	popal
 	addl	$8, %esp 
 	iret
 
@@ -232,218 +246,186 @@ do_irq:
 
 ;//  0: Divide By Zero Exception
 _isr0:
-    cli
     pushl	$0
     pushl	$0
     jmp		do_isr
 
 ;//  1: Debug Exception
 _isr1:
-    cli
     pushl	$0
     pushl	$1
     jmp		do_isr
 
 ;//  2: Non Maskable Interrupt Exception
 _isr2:
-    cli
     pushl	$0
     pushl	$2
     jmp		do_isr
 
 ;//  3: Int 3 Exception
 _isr3:
-    cli
     pushl	$0
     pushl	$3
     jmp		do_isr
 
 ;//  4: INTO Exception
 _isr4:
-    cli
     pushl	$0
     pushl	$4
     jmp		do_isr
 
 ;//  5: Out of Bounds Exception
 _isr5:
-    cli
     pushl	$0
     pushl	$5
     jmp		do_isr
 
 ;//  6: Invalid Opcode Exception
 _isr6:
-    cli
     pushl	$0
     pushl	$6
     jmp		do_isr
 
 ;//  7: Coprocessor Not Available Exception
 _isr7:
-    cli
     pushl	$0
     pushl	$7
     jmp		do_isr
 
 ;//  8: Double Fault Exception (With Error Code!)
 _isr8:
-    cli
     pushl	$8
     jmp		do_isr
 
 ;//  9: Coprocessor Segment Overrun Exception
 _isr9:
-    cli
     pushl	$0
     pushl	$9
     jmp		do_isr
 
 ;// 10: Bad TSS Exception (With Error Code!)
 _isr10:
-    cli
     pushl	$10
     jmp		do_isr
 
 ;// 11: Segment Not Present Exception (With Error Code!)
 _isr11:
-    cli
     pushl	$11
     jmp		do_isr
 
 ;// 12: Stack Fault Exception (With Error Code!)
 _isr12:
-    cli
     pushl	$12
     jmp		do_isr
 
 ;// 13: General Protection Fault Exception (With Error Code!)
 _isr13:
-    cli
     pushl	$13
     jmp		do_isr
 
 ;// 14: Page Fault Exception (With Error Code!)
 _isr14:
-    cli
     pushl	$14
     jmp		do_isr
 
 ;// 15: Reserved Exception
 _isr15:
-    cli
     pushl	$0
     pushl	$15
     jmp		do_isr
 
 ;// 16: Floating Point Exception
 _isr16:
-    cli
     pushl	$0
     pushl	$16
     jmp		do_isr
 
 ;// 17: Alignment Check Exception
 _isr17:
-    cli
     pushl	$0
     pushl	$17
     jmp		do_isr
 
 ;// 18: Machine Check Exception
 _isr18:
-    cli
     pushl	$0
     pushl	$18
     jmp		do_isr
 
 ;// 19: Reserved
 _isr19:
-    cli
     pushl	$0
     pushl	$19
     jmp		do_isr
 
 ;// 20: Reserved
 _isr20:
-    cli
     pushl	$0
     pushl	$20
     jmp		do_isr
 
 ;// 21: Reserved
 _isr21:
-    cli
     pushl	$0
     pushl	$21
     jmp		do_isr
 
 ;// 22: Reserved
 _isr22:
-    cli
     pushl	$0
     pushl	$22
     jmp		do_isr
 
 ;// 23: Reserved
 _isr23:
-    cli
     pushl	$0
     pushl	$23
     jmp		do_isr
 
 ;// 24: Reserved
 _isr24:
-    cli
     pushl	$0
     pushl	$24
     jmp		do_isr
 
 ;// 25: Reserved
 _isr25:
-    cli
     pushl	$0
     pushl	$25
     jmp		do_isr
 
 ;// 26: Reserved
 _isr26:
-    cli
     pushl	$0
     pushl	$26
     jmp		do_isr
 
 ;// 27: Reserved
 _isr27:
-    cli
     pushl	$0
     pushl	$27
     jmp		do_isr
 
 ;// 28: Reserved
 _isr28:
-    cli
     pushl	$0
     pushl	$28
     jmp		do_isr
 
 ;// 29: Reserved
 _isr29:
-    cli
     pushl	$0
     pushl	$29
     jmp		do_isr
 
 ;// 30: Reserved
 _isr30:
-    cli
     pushl	$0
     pushl	$30
     jmp		do_isr
 
 ;// 31: Reserved
 _isr31:
-    cli
     pushl	$0
     pushl	$31
     jmp		do_isr
@@ -452,27 +434,28 @@ _isr31:
 ;// isr handler
 .extern _isr_handler
 do_isr:
-	pusha
+	;//保护现场
+	pushal
 	pushl	%ds
 	pushl	%es
 	pushl	%fs
 	pushl	%gs
-
-	mov		$0x10, %ax
-	mov		%ax, %ds
-	mov		%ax, %es
-
+	;//使用内核段寄存器
+	mov	$0x10, %ax
+	mov	%ax, %ds
+	mov	%ax, %es
+	;//保存堆栈指针
 	movl	%esp, %eax
-
+	;//调用Trap处理函数
 	pushl	%eax
 	call	_isr_handler
 	popl	%eax
-
-	pop		%gs
-	pop		%fs
-	pop		%es
-	pop		%ds
-	popa
+	;//恢复现场
+	pop	%gs
+	pop	%fs
+	pop	%es
+	pop	%ds
+	popal
 	addl	$8, %esp
 	iret
 

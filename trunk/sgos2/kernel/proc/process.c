@@ -59,7 +59,12 @@ void process_init()
 //返回当前进程
 PROCESS* current_proc()
 {
-	return cur_proc;
+	THREAD* thr=current_thread();
+	if( thr ){
+		return thr->process;
+	}else{
+		return init_proc;
+	}
 }
 
 //创建进程
@@ -98,18 +103,21 @@ PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env )
 int process_suspend( PROCESS* proc )
 {
 	die("not implemented.");
+	return 0;
 }
 
 //结束进程
 int process_terminate( PROCESS* proc, int exit_code )
 {
 	die("not implemented.");
+	return 0;
 }
 
 //启动进程
 int process_resume( PROCESS* proc )
 {
 	die("not implemented.");
+	return 0;
 }
 
 

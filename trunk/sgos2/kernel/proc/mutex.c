@@ -6,13 +6,13 @@
 #include <string.h>
 #include <thread.h>
 #include <mutex.h>
+#include <mm.h>
+
 
 //尝试
 int mutex_trylock( mutex_t *mut )
 {	
 	uint eflags;
-	THREAD* thr;
-	THREAD_LIST* tl;
 	//we don't want to be interrupt
 	local_irq_save( eflags );
 	while( --mut->lock ){
