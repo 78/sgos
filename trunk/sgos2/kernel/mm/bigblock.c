@@ -15,7 +15,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <string.h>
-#include <mutex.h>
+#include <semaphore.h>
 #include <bigblock.h>
 #include <mm.h>
 
@@ -71,11 +71,10 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 {
 	size_t k, i, j;
 	bnode_t* nod;
-	uint eflags;
 	if(!siz) return NULL;
 	i = calc_hash_index( siz );
-	//进入临界区
-	local_irq_save( eflags );
+	//进入临界区，获取不到，线程将睡眠
+	down( &who->semaphore );
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
@@ -92,7 +91,7 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 				if(!nod2){
 					PERROR("##memory used out.");
 					//离开临界区
-					local_irq_restore(eflags);
+					up( &who->semaphore );
 					return (void*)(nod->addr);
 				}
 				nod2->size = rest;
@@ -110,13 +109,13 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 				MAKE_FREE( nod2 );
 			}
 			//离开临界区
-			local_irq_restore(eflags);
+			up( &who->semaphore );
 			return (void*)(nod->addr);
 		}
 		//没有可用块
 	}
 	//离开临界区
-	local_irq_restore(eflags);
+	up( &who->semaphore );
 	return NULL;
 }
 
@@ -126,10 +125,9 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 {
 	size_t k, j;
 	bnode_t* nod;
-	uint eflags;
 	if(!siz) return NULL;
 	//进入临界区
-	local_irq_save( eflags );
+	down( &who->semaphore );
 	//在空闲块散列表中搜索合适的块
 	for( nod = who->first_node; nod; nod = nod->next ){
 		if( IS_FREE_NODE(nod) && nod->addr <= addr && nod->addr+nod->size >= addr+siz ){
@@ -190,34 +188,34 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			}
 			MAKE_OCCUPIED(nod);
 			//离开临界区
-			local_irq_restore(eflags);
+			up( &who->semaphore );
 			return (void*)(nod->addr);
 		}
 	}
 	//没有合适块
 	//离开临界区
-	local_irq_restore(eflags);
+	up( &who->semaphore );
 	return NULL;
 }
 
 //检查地址为addr的空间是否已被分配。
+//注意，中断情况下不能调用此函数。
 int	bb_check_allocated(bigblock_t* who, size_t addr )
 {
 	bnode_t* nod;
-	uint eflags;
-	local_irq_save( eflags );
+	down( &who->semaphore );
 	nod = who->first_node;
 	while( nod ){
 		//
 		if( nod->addr <= addr && nod->addr+nod->size > addr  ){
-			local_irq_restore(eflags);
+			up( &who->semaphore );
 			if( IS_FREE_NODE(nod) )
 				return 0;
 			return 1;
 		}
 		nod = nod->next;
 	}
-	local_irq_restore(eflags);
+	up( &who->semaphore );
 	return 0;
 }
 
@@ -244,9 +242,10 @@ size_t	bb_free(bigblock_t* who, void* p)
 {
 	int k;
 	bnode_t* nod;
-	uint eflags;
 	size_t siz;
 	if( !p ) return 0;
+	//进入临界区
+	down( &who->semaphore );
 	for( nod=who->first_node; nod; nod=nod->next ){
 		if(nod->addr == (size_t)p )
 			break;
@@ -254,11 +253,9 @@ size_t	bb_free(bigblock_t* who, void* p)
 	if( !nod ){
 		PERROR("trying to free free memory at 0x%X", p);
 	}
-	//进入临界区
-	local_irq_save(eflags);
 	if( IS_FREE_NODE(nod) ){
 		PERROR("## cannot free free node.\n");
-		local_irq_restore(eflags);
+		up( &who->semaphore );
 		return 0;
 	}
 	MAKE_FREE(nod);
@@ -274,7 +271,7 @@ size_t	bb_free(bigblock_t* who, void* p)
 	k = calc_hash_index( nod->size );
 	HASH_APPEND(nod, who->free_table[k]);
 	//离开临界区
-	local_irq_restore(eflags);
+	up( &who->semaphore );
 	return siz;
 }
 
@@ -305,6 +302,8 @@ void	bb_init_block(bigblock_t* who, size_t addr, size_t size)
 	HASH_APPEND( nod, who->free_table[MAX_HASH_ENTRY-1] );
 	MAKE_FREE( nod );
 	who->first_node = nod;
+	//init semaphore
+	sema_init( &who->semaphore );
 }
 
 
@@ -314,11 +313,10 @@ void	bb_print_block(bigblock_t* who)
 	int i;
 	size_t used_size, free_size;
 	bnode_t * nod;
-	uint eflags;
 	kprintf("Search the link table:\n");
 	nod = who->first_node;
 	used_size=free_size=0;
-	local_irq_save(eflags);
+	down( &who->semaphore );
 	while( nod ){
 		if( IS_FREE_NODE(nod) ){
 			kprintf("[Free:%u]", nod->size );
@@ -340,7 +338,7 @@ void	bb_print_block(bigblock_t* who)
 		}
 		kprintf("\n");
 	}
-	local_irq_restore(eflags);
+	up( &who->semaphore );
 }
 
 // 释放所有块

@@ -4,17 +4,120 @@
 #include <mm.h>
 #include <debug.h>
 #include <message.h>
+#include <thread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <string.h>
 
-// system call: send
-uint sys_send( void* context, size_t len )
+// 删除一个消息
+static void message_delete(const void * p)
 {
-	return 0;
+	KMESSAGE* kmsg = (KMESSAGE*)p;
+	kfree( kmsg->content );
+	kfree( kmsg );
 }
 
-// system call: recv
-uint sys_recv( void* context, size_t buf_size )
+// 给出source线程查找一个消息
+static int message_search(const void * p, const void *q )
 {
-	return 0;
+	if( ((KMESSAGE*)p)->source == q )
+		return 1;
+	return 0;	//search next
 }
 
+// 线程消息初始化
+void message_init( struct THREAD* thr )
+{
+	char tmp[16];
+	sprintf( tmp, "msgQue:%x", thr->tid );
+	queue_create( &thr->message_queue, MAX_MESSAGES_IN_QUEUE, message_delete, tmp );
+}
+
+// 释放消息队列占用的空间
+void message_destroy( struct THREAD* thr )
+{
+	queue_cleanup( &thr->message_queue );
+}
+
+// Send a message to another thread.
+int send( session_t* session, void* content, size_t len, uint flag )
+{
+	THREAD* thr_dest;
+	KMESSAGE* kmsg;
+	thr_dest = (THREAD*)session->thread;
+	down( &thr_dest->semaphore );
+	/* 在睡眠醒来后，目的线程可能已经终止，所以要检查状态 */
+	if( thr_dest->state == TS_DEAD || thr_dest->state == TS_INIT )
+		return -ERR_WRONGARG;
+	kmsg = kmalloc( sizeof(KMESSAGE) );
+	if( !kmsg )
+		return -ERR_NOMEM;
+	//copy arguments
+	kmsg->session = *session;
+	kmsg->length = len;
+	kmsg->dest = thr_dest;
+	kmsg->source = current_thread();
+	kmsg->flag = flag;
+	kmsg->content = kmalloc( len );
+	if( !kmsg->content ){
+		kfree(kmsg);
+		return -ERR_NOMEM;
+	}
+	//copy from the caller's memory space
+	memcpy( kmsg->content, content, len );
+	//insert message queue
+	queue_push_to_tail( &thr_dest->message_queue, kmsg );
+	//finished
+	up( &thr_dest->semaphore );
+	//wake up the thread
+	if( thr_dest->state == TS_SLEEP )
+		thread_wakeup( thr_dest );
+	return 0;	//success
+}
+
+// Receive a message
+int recv( session_t* session, void* content, size_t* len, uint flag )
+{
+	THREAD* thr_src, * thr_cur;
+	KMESSAGE* kmsg;
+	int ret;
+	thr_src = (THREAD*)session->thread;
+	thr_cur = current_thread();
+_recv_search:
+	if( thr_src )	//specify the thread
+		kmsg = queue_search( &thr_cur->message_queue, thr_src,
+			message_search );
+	else
+		kmsg = queue_pop_from_head( &thr_cur->message_queue );
+	if( !kmsg ){
+		if( flag&MSG_PENDING ){
+			thread_sleep();
+			goto _recv_search;
+		}
+		return -ERR_NONE;
+	}
+	//check user space
+	if( kmsg->length > *len ){
+		*len = kmsg->length;
+		return -ERR_NOMEM;
+	}
+	//set return value
+	ret = kmsg->length;
+	//copy to user space
+	memcpy( content, kmsg->content, ret );
+	//check flag
+	if( thr_src ){
+		if( !(flag&MSG_KEEP ) ){
+			queue_remove( &thr_cur->message_queue, kmsg );
+			message_delete( kmsg );
+		}
+	}else{
+		if( flag&MSG_KEEP )
+			queue_push_to_head( &thr_cur->message_queue, kmsg );
+		else
+			message_delete( kmsg );
+	}
+	session->thread = (uint)kmsg->source;
+	return kmsg->length;
+}
 

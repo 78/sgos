@@ -3,15 +3,18 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <mutex.h>
+#include <semaphore.h>
 #include <message.h>
+#include <queue.h>
 
+#define THREAD_MAGIC	0xFF0B45FC
 #define THREAD_KERNEL_STACK_SIZE (1024*15)
 #define THREAD_STACK_SIZE (1<<20)	//1MB
 
 struct PROCESS;
 struct THREAD;
 
+//线程状态
 typedef enum THREAD_STATE{
 	TS_INIT = 0,			//线程初始化中
 	TS_READY,			//线程就绪，可能在running中，也可能是等待run
@@ -22,6 +25,7 @@ typedef enum THREAD_STATE{
 	TS_DEAD				//线程死亡,等待回收.
 }THREAD_STATE;
 
+//调度信息
 typedef struct SCHEDULE_INFO{
 	//clock在线程状态为running时候,它是计算剩余运行时间,wait时候是等待运行时间
 	int				clock;		
@@ -29,31 +33,48 @@ typedef struct SCHEDULE_INFO{
 	uint				cpu;		//running by which cpu??
 }SCHEDULE_INFO;
 
+// 内核线程结构体
 typedef struct THREAD{
-	//线程运行时堆栈指针
+	//线程运行时堆栈指针，修改此变量位置需要调整interrupt.S的线程切换处
 	uint				stack_pointer;	
 	//线程ID,用来给开发者定位线程
-	uint				tid;
-	//在修改线程资料时,一般要lock下面的mutex
-	mutex_t				mutex;
-	//线程正在睡眠时,sleepon指向等待唤醒的mutex
-	mutex_t*			sleepon;
+	int				tid;
+	//在修改线程资料时使用
+	sema_t				semaphore;
+	//线程正在睡眠时,sleepon指向等待唤醒的锁
+	void*				sleepon;
 	//拥有该线程的进程指针
 	struct PROCESS*			process;
+	//线程列表，仅进程内部
 	struct THREAD*			pre, *next;	//thread link
-	enum THREAD_STATE		state;		//thread state
-	struct ARCH_THREAD		arch;		//schedule information
-	//run time, clock, read or write information, message information
-	THREAD_INFO*			thread_info;		//Thread Information Block，用户态线程才有。
-	MESSAGE_QUEUE			message_queue;		//消息链
-	SCHEDULE_INFO			sched_info;		//调度信息,调度链表 时间片之类的.
-	uint				exit_code;		//线程退出码
-	uint				entry_address;	//线程入口
-	uint				stack_address;	//线程运行时堆栈地址
-	uint				stack_size;	//线程运行时堆栈大小
-	uchar				kernel;		//判断是否是内核线程。
-	uchar				interrupted;	//是否在中断模式下。
-	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	//线程中断时堆栈
+	//线程标记，用来验证线程结构
+	uint				magic;
+	//thread state
+	enum THREAD_STATE		state;	
+	//schedule information such as I387
+	struct ARCH_THREAD		arch;		
+	/*run time, read or write information, message information*/
+	void*				load_info;
+	//Thread Information Block，用户态线程才有。
+	THREAD_INFO*			thread_info;
+	//消息队列
+	queue_t				message_queue;
+	//调度信息,调度链表 时间片之类的.
+	SCHEDULE_INFO			sched_info;
+	//线程退出码
+	uint				exit_code;		
+	//线程入口
+	uint				entry_address;	
+	//线程运行时堆栈地址
+	uint				stack_address;	
+	//线程运行时堆栈大小
+	uint				stack_size;	
+	//判断是否是内核线程。
+	uchar				kernel;		
+	//是否在中断模式下。
+	uchar				interrupted;	
+	//线程内核堆栈
+	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	
 }THREAD;
 
 //these threads on the same state are linked by schedule link
@@ -67,7 +88,7 @@ typedef struct THREAD_BOX{
 	THREAD*			paused;		//挂起的线程
 	THREAD*			dead;		//死亡的线程
 	THREAD*			wait;		//等待的线程
-	mutex_t			mutex;		//未用...
+	sema_t			semaphore;	//未用...
 }THREAD_BOX;
 extern THREAD_BOX	tbox;	//线程盒子
 

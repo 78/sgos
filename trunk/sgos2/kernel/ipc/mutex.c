@@ -32,7 +32,6 @@ void mutex_lock( mutex_t *mut )
 	THREAD_LIST* tl, *tl2;
 	//we don't want to be interrupt
 	local_irq_save( eflags );
-//	kprintf("{%d come}", current_thread()->id );
 	while( --mut->lock ){
 		mut->lock ++;
 		tl = (THREAD_LIST*)kmalloc(sizeof(THREAD_LIST));
@@ -49,11 +48,8 @@ void mutex_lock( mutex_t *mut )
 		tl->next = NULL;
 		local_irq_restore(eflags);
 		thr->sleepon = mut;
-//		kprintf("[%d sleep]", thr->id );
 		thread_sleep();
-//		kprintf("[%d wokeup]", thr->id );
 		//已经有人帮我们从mut的线程列表里拆除了
-		//back
 		local_irq_save( eflags );
 	}
 	local_irq_restore(eflags);
@@ -81,7 +77,6 @@ void mutex_unlock( mutex_t *mut )
 		kfree( tl );
 	}
 	local_irq_restore( eflags );
-//	kprintf("{%d lev}", current_thread()->id );
 	mut->lock ++;
 	if( thr ){
 		thr->sleepon = NULL;

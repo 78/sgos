@@ -143,7 +143,12 @@ void sched_clock()
 	for( thr=tbox.wait; thr; thr=thr->sched_info.next ){
 		thr->sched_info.clock -= ms;
 		if( thr->sched_info.clock<=0 ){
+			THREAD* pre = thr->sched_info.pre;
 			sched_set_state( thr, TS_READY );
+			if( pre )
+				thr = pre;
+			else
+				thr = tbox.wait;
 		}
 	}
 	//允许中断

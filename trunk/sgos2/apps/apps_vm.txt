@@ -1,0 +1,12 @@
+# 动态链接库虚拟内存加载地址登记
+# 使用不同的加载地址可以减少重定位消耗的CPU cycles
+# DLL Virtual Address Registration
+# Used for reducing unnecessary CPU cycles
+
+
+Library		LoadAddress		Description
+
+api		0x7FF00000		System Calls & Program Entrance
+libc		0x7FE00000		Standard C Library
+msg		0x7FD00000		Easy Message Library
+

@@ -19,12 +19,25 @@ static int generate_pid()
 	return pid;
 }
 
+PROCESS* process_get( int pid )
+{
+	PROCESS* proc;
+	if( init_proc->pid == pid )
+		return init_proc;
+	//all processes are the direct childron of init_proc?? Absolutely not.
+	for( proc=init_proc->child; proc; proc=proc->next ){
+		if( proc->pid == pid )
+			return proc;
+	}
+	return NULL;
+}
+
 //设置进程基本信息
 static void process_init_basicinfo( PROCESS* proc )
 {
 	MEMORY_INFO* mem_info;
 	proc->pid = generate_pid();
-	mutex_init( &proc->mutex );
+	sema_init( &proc->semaphore );
 	mem_info = &proc->memory_info;
 	//进程用户态内存
 	mem_info->max_umem = 1<<30;		//1GB !!!
@@ -38,6 +51,7 @@ static void process_init_basicinfo( PROCESS* proc )
 void process_init()
 {
 	THREAD* init_thr;
+	process_id = 0;
 	init_proc = (PROCESS*)kmalloc( sizeof(PROCESS) );
 	memset( init_proc, 0, sizeof(PROCESS) );
 	// init process name

@@ -3,10 +3,11 @@
 
 #include <sgos.h>
 #include <thread.h>
-#include <mutex.h>
+#include <semaphore.h>
 #include <bigblock.h>
 #include <message.h>
 #include <module.h>
+#include <queue.h>
 
 #define MAX_PROCESS_NUM	1024
 
@@ -21,6 +22,7 @@ typedef struct ENVIRONMENT{
 // 物理内存使用信息
 typedef struct PAGE_INFO{
 	struct PAGE_INFO*	next;
+	struct PAGE_INFO*	pre;
 	uint			phys_addr;	//物理内存地址
 	time_t			ctime;		//create time.
 }PAGE_INFO;
@@ -38,15 +40,15 @@ typedef struct MEMORY_INFO{
 
 // 内核进程结构体。
 typedef struct PROCESS{
-	uint				pid;		//进程标识
-	mutex_t				mutex;	
+	int				pid;		//进程标识
+	sema_t				semaphore;	
 	uint				uid;		//用户
 	struct PROCESS*			pre, *next;	//进程链表，兄弟关系
 	struct PROCESS*			parent, *child;	//父子进程
 	struct THREAD*			thread;		//第一个线程
 	struct THREAD*			main_thread;	//主线程
 	struct MEMORY_INFO		memory_info;	//内存信息
-	struct MESSAGE_QUEUE		message;	//消息
+	queue_t				message_queue;	//消息
 	char				name[PROCESS_NAME_LEN];	//进程名称
 	PROCESS_INFO*			process_info;		//用户空间信息
 	uint				page_dir;	//page_dir
@@ -62,5 +64,7 @@ void process_init();
 PROCESS* current_proc();
 //创建进程
 PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env );
+//由id获取进程
+PROCESS* process_get( int pid );
 
 #endif

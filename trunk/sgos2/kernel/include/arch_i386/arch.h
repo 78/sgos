@@ -6,6 +6,8 @@
 #include <lock.h>
 #include <msr.h>
 
+#define RTC_FREQUENCY	200	//200Hz  这是时钟频率，具体在arch/i386/clock/rtc.c
+
 #define SYSTEM_INTERRUPT 0xA1
 #define PAGEFAULT_INTERRUPT 14
 #define RTC_INTERRUPT		0

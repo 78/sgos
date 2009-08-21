@@ -8,6 +8,8 @@
 #include <module.h>
 #include <mm.h>
 #include <loader.h>
+#include <message.h>
+#include <stdlib.h>
 
 //内核初始化入口
 extern PROCESS* cur_proc;
@@ -83,12 +85,39 @@ static void kinit_halt()
 		halt();
 }
 
+static void test()
+{
+	THREAD* cur = current_thread();
+	THREAD* dest = NULL;
+	char buf[256];
+	while( !dest || dest->state==TS_INIT || dest->state==TS_DEAD ){
+		thread_wait(100);
+		dest = thread_get( cur->tid-1 );
+		if( !dest )
+			dest = thread_get( cur->tid+1 );
+	}
+	session_t s;
+	s.thread = (uint)dest;
+	int recv_len = 256;
+	//test message
+	if( recv( &s, buf, &recv_len, 0 )>0 ){
+		kprintf("[%d] got message: %s\n", cur->tid, buf );
+	}
+	sprintf( buf, "hello, im %d", cur->tid ); 
+	send( &s, buf, strlen(buf)+1, 0 );
+	//sleep for reply
+	recv( &s, buf, &recv_len, MSG_PENDING );
+	kprintf("[%d] got message reply: %s\n", cur->tid, buf );
+	thread_terminate( cur, 0 );
+}
+
 //加载模块
 static void kinit_process_start()
 {
 	PROCESS* proc;
 	MODULE* mod, *mod_api;
 	THREAD* main;
+	test();
 	proc = current_proc();	//当前进程
 	if( proc->environment ){
 		//根据环境信息加载程序。
@@ -172,11 +201,8 @@ void kinit_resume()
 					THREAD* thr;
 					//创建进程
 					int i;
-					kprintf("[K_TEST] The kernel will run 1000 processes(hello.run) "
-						"for stability test in 10 seconds.");
-					thread_wait( 10000 );	//5 seconds.
-					//测试：创建1000个hello.run进程
-					for (i=0; i<1000; i++ ){
+					//测试：创建300个hello.run进程
+					for (i=0; i<300; i++ ){
 						proc = process_create( current_proc(), NULL );
 						proc->module_addr = mod->mod_start;
 						strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
