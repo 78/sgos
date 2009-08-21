@@ -2,13 +2,9 @@
 #define _MUTEX_H_
 
 #include <sgos.h>
+#include <semaphore.h>
 
 struct THREAD;
-
-typedef struct THREAD_LIST{
-	struct THREAD*		thread;
-	struct THREAD_LIST*	next;
-}THREAD_LIST;
 
 typedef struct MUTEX{
 	struct THREAD_LIST*	list;

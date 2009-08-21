@@ -33,7 +33,7 @@ check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
-	qemu -no-kqemu -m 512 -L ./qemu sgos2.img -serial file:qemu.log
+	qemu -no-kqemu -m 512 -L ./qemu sgos2.img
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc
@@ -44,7 +44,6 @@ bochs:
 windbg:
 	start insight kernel/kernel &
 	start qemu -no-kqemu -m 512 -s -S -L ./qemu sgos2.img &
-#	gdb --command scripts/gdb kernel/kernel
 
 debug:
 	qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &

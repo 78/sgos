@@ -11,7 +11,6 @@
 
 #define PROCESS_NAME_LEN	128
 
-#define RTC_FREQUENCY	1000	//1000Hz  这是时钟频率，具体在arch/i386/clock/rtc.c
 #ifndef NULL
 #define NULL		((void*)0)	//
 #endif
@@ -45,5 +44,21 @@ typedef struct THREAD_INFO{
 	int			errno;			//2C 错误号
 	time_t			time;			//30 当前时间
 }THREAD_INFO;
+
+//消息机制会话信息
+typedef struct _SESSION{
+	uint	thread;
+	uint	sequence;
+}session_t;
+#define	MSG_SEND_TO_ALL		0
+#define MSG_PENDING		0x80000000
+#define MSG_KEEP		0x40000000
+
+//系统错误号
+#define ERR_NOMEM	1	//No memory
+#define ERR_NOIMP	2	//Not implemented
+#define ERR_WRONGARG	3	//Wrong argument
+#define	ERR_NONE	4	//No results
+#define ERR_UNKNOWN	5	//Unknown error
 
 #endif //__SGOS__H__

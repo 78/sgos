@@ -1,6 +1,6 @@
 // time structures
-#ifndef __MICRON_KERNEL_TIME_H__
-#define __MICRON_KERNEL_TIME_H__
+#ifndef __TIME_H__
+#define __TIME_H__
 
 #include <sgos.h>
 

@@ -5,11 +5,13 @@
 
 #include <types.h>
 
+#define ASSERT(condition) assert_err( (char*)__FILE__, (char*)__FUNCTION__, __LINE__, condition )
 #define PERROR(args ...) print_err( (char*)__FILE__, (char*)__FUNCTION__, __LINE__, ##args )
 #define KERROR(args ...) kernel_err( (char*)__FILE__, (char*)__FUNCTION__, __LINE__, ##args )
 
 void print_err(char* file, char* function, int line, const char *fmt, ...);
 void kernel_err(char* file, char* function, int line, const char *fmt, ...);
+void assert_err(char* file, char* function, int line, int b);
 void die( const char *s );	//内核死亡
 void kprintf(const char *fmt, ...);	//打印字符信息
 int debug_print( char *buf );	//同上,只是不能格式化字符串

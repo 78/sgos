@@ -37,3 +37,17 @@ void kernel_err(char* file, char* function, int line, const char *fmt, ...)
 		die("System halted.");
 }
 
+void assert_err(char* file, char* function, int line, int b )
+{
+	THREAD* thr;
+	if( b )
+		return;
+	kprintf("[%s]%s(%d): Assertion failed.\n", file, function, line );
+	thr = current_thread();
+	if( thr ){
+		kprintf("Terminated. tid:%d pid:%d\n", thr->tid, thr->process->pid );
+		thread_terminate( thr, -1 );
+	}else
+		die("System halted.");
+}
+

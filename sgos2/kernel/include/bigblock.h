@@ -4,7 +4,7 @@
 //类型定义
 //typedef unsigned long size_t;
 #include <sgos.h>
-#include <mutex.h>
+#include <semaphore.h>
 
 #define FREE_NODE 0x00000001
 
@@ -24,8 +24,9 @@ typedef struct bnode{
 }bnode_t;
 
 typedef struct bigblock{
-	struct bnode* first_node;	//used for debugging.
-	struct bnode* free_table[MAX_HASH_ENTRY];
+	struct bnode*	first_node;	//used for debugging.
+	struct bnode*	free_table[MAX_HASH_ENTRY];
+	sema_t		semaphore;
 }bigblock_t;
 
 

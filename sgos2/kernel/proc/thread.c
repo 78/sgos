@@ -8,16 +8,19 @@
 #include <string.h>
 #include <mm.h>
 
-static uint thread_id = 1;
+// useless at the present
+static int thread_id = 1;
 
+// thread management.
 void thread_init()
 {
 	thread_id = 1;
 }
 
-static uint generate_tid()
+// just for fun :-)
+static int generate_tid()
 {
-	uint tid = thread_id;
+	int tid = thread_id;
 	if( (++thread_id)%4 == 0 )
 		++thread_id;
 	return tid;
@@ -65,6 +68,15 @@ THREAD* thread_get( int tid )
 			return thr;
 		}
 	}
+	//搜索所有进程
+	for( proc=process_get(0)->child; proc; proc=proc->next ){
+		for( thr=proc->thread; thr; thr=thr->next ){
+			if( thr->tid == tid ){
+				local_irq_restore(flags);
+				return thr;
+			}
+		}
+	}
 	local_irq_restore(flags);
 	return NULL;
 }
@@ -78,11 +90,14 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	//分配线程内存空间
 	thr = (THREAD*)kmalloc( sizeof(THREAD) );
 	if( thr == NULL ){
-		die("## kernel memory used out!!");
+		PERROR("## kernel memory used out!!");
+		return NULL;
 	}
 	memset( thr, 0, sizeof(THREAD) );
-	//初始化mutex
-	mutex_init( &thr->mutex );
+	//初始化线程信号量
+	sema_init( &thr->semaphore );
+	//初始化消息队列
+	message_init( thr );
 	//调度信息
 	sched = &thr->sched_info;
 	//线程基本信息
@@ -115,7 +130,7 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	local_irq_restore( eflags );
 	//添加到thread_box
 	sched_set_state( thr, TS_PAUSED );
-	//
+	//return the pointer
 	return thr;
 }
 
@@ -124,13 +139,16 @@ int thread_terminate( THREAD* thr, int code )
 {
 	PROCESS* proc;
 	proc = current_proc();
+	//如果线程睡眠了，怎么办？
 	//设置状态为死亡
 	sched_set_state( thr, TS_DEAD );
-	//如果线程睡眠了
-	if( thr->state == TS_SLEEP && thr->sleepon ){
-		mutex_remove_thread(thr->sleepon, thr);
-	}
-	//向各服务发送线程结束消息
+	//线程退出码
+	thr->exit_code = code;
+	//
+	message_destroy( thr );
+	//Wakeup all related sleeping threads
+	sema_destroy( &thr->semaphore );
+	//向各系统服务发送线程结束消息
 	
 	//回收资源
 	/*
@@ -168,8 +186,7 @@ int thread_sleep()
 {
 	sched_set_state( current_thread(), TS_SLEEP );
 	schedule();
-	if( current_thread()->state == TS_SLEEP )
-		KERROR("##impossible.");
+	ASSERT( current_thread()->state != TS_SLEEP );
 	return 0;
 }
 
@@ -185,16 +202,18 @@ int thread_wait( uint ms )
 	sched_set_state( cur, TS_WAIT );
 	local_irq_restore( flags );
 	schedule();
-	if( cur->state == TS_WAIT )
-		KERROR("##impossible.");
+	ASSERT( cur->state != TS_WAIT );
 	return 0;
 }
 
 //唤醒线程
 int thread_wakeup( THREAD* thr )
 {
-	sched_set_state( thr, TS_READY );
-	return 0;
+	if( thr->state == TS_SLEEP ){
+		sched_set_state( thr, TS_READY );
+		return 0;
+	}
+	return -ERR_UNKNOWN;
 }
 
 //引发一个事件，让线程从内核态返回用户态后执行。
