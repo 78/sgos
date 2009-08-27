@@ -19,14 +19,14 @@ typedef struct _QUEUE{
 	char		name[QUEUE_NAME_LEN];	//used for debugging.
 }queue_t;
 
-int queue_create( queue_t* l, int size, queue_delete_func del, char* name );
+int queue_create( queue_t* l, int size, queue_delete_func del, const char* name );
 void* queue_pop_from_tail( queue_t* l );
 void* queue_pop_from_head( queue_t* l );
-int queue_push_to_head( queue_t* l, void* data );
-int queue_push_to_tail( queue_t* l, void* data );
-void* queue_search( queue_t* l, void*, queue_search_func search );
+int queue_push_to_head( queue_t* l, const void* data );
+int queue_push_to_tail( queue_t* l, const void* data );
+void* queue_search( queue_t* l, const void*, queue_search_func search );
 void queue_cleanup( queue_t* l );
 int queue_is_empty( queue_t* l );
-void queue_remove( queue_t* l, void* data );
+void queue_remove( queue_t* l, const void* data );
 
 #endif

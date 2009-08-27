@@ -162,16 +162,14 @@ void isr_init()
 //异常处理入口。
 void isr_handler(const I386_REGISTERS *r)
 {
-	void (*handler)(int err_code, const I386_REGISTERS *r);
+	int (*handler)(int err_code, const I386_REGISTERS *r);
 	if ( r->int_no < 32 )
 	{
 		handler = isr_routines[r->int_no];
-		if (handler)
-		{
-			handler(r->err_code, r);
-		}else{
-			kprintf("###### Unhandled Exception #######\n"
-				"Description: %s    Error Code: %d\n", 
+		if (!handler ||
+			!handler(r->err_code, r) ){
+			kprintf("## Unhandled Exception ##\t"
+				"Description: %s\tCode: %d\n", 
 				exception_msg[ r->int_no ], r->err_code );
 			isr_dumpcpu( r );
 			KERROR("Terminated!\n");

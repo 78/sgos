@@ -39,7 +39,7 @@ free_table[8]	8192字节空闲块
 free_table[9]	超大空闲块
 */
 //标识当前是否运行在mm_alloc中
-static int in_allocator = 0;
+int in_allocator = 0;
 
 //从大小得到散列表索引号
 static int calc_hash_index(size_t k)

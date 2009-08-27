@@ -4,11 +4,12 @@
 #include <sgos.h>
 #include <process.h>
 
+#define MODULE_MAGIC	0xFF0B47FC
+
 #define MODULE_NAME_LEN		32
 
-
 // 动态链接库可加载在0x10000000 - 0x80000000之间
-#define SYMBOL_NAME_LEN		32
+#define SYMBOL_NAME_LEN		128
 
 //for export and import
 typedef struct SYMBOL_ENTRY{
@@ -27,6 +28,7 @@ struct MODULE_LINK;
 typedef struct MODULE{
 	char*		name;		//以 '\0' 结尾的字符串
 	struct MODULE*	pre, *next;	//pre & next module，链表
+	uint		magic;		//模块标识
 	uchar		share;		//share??
 	ushort		reference;	//引用的进程计数，当引用减为0时，可以卸载该模块，
 					//初始化过程中也为0，避免未初始化完毕就被使用。

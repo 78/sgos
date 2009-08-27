@@ -22,6 +22,7 @@ OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/cpu/switch.o \
 	arch/i386/cpu/lock.o \
 	arch/i386/cpu/fastcall.o \
+	arch/i386/cpu/vm86.o \
 	arch/i386/irq/irq.o \
 	arch/i386/irq/isr.o \
 	arch/i386/irq/interrupt.o

@@ -40,18 +40,22 @@ void message_destroy( struct THREAD* thr )
 }
 
 // Send a message to another thread.
-int send( session_t* session, void* content, size_t len, uint flag )
+int message_send( session_t* session, void* content, size_t len, uint flag )
 {
 	THREAD* thr_dest;
 	KMESSAGE* kmsg;
 	thr_dest = (THREAD*)session->thread;
 	down( &thr_dest->semaphore );
 	/* 在睡眠醒来后，目的线程可能已经终止，所以要检查状态 */
-	if( thr_dest->state == TS_DEAD || thr_dest->state == TS_INIT )
+	if( thr_dest->state == TS_DEAD || thr_dest->state == TS_INIT ){
+		up( &thr_dest->semaphore );
 		return -ERR_WRONGARG;
+	}
 	kmsg = kmalloc( sizeof(KMESSAGE) );
-	if( !kmsg )
+	if( !kmsg ){
+		up( &thr_dest->semaphore );
 		return -ERR_NOMEM;
+	}
 	//copy arguments
 	kmsg->session = *session;
 	kmsg->length = len;
@@ -61,6 +65,7 @@ int send( session_t* session, void* content, size_t len, uint flag )
 	kmsg->content = kmalloc( len );
 	if( !kmsg->content ){
 		kfree(kmsg);
+		up( &thr_dest->semaphore );
 		return -ERR_NOMEM;
 	}
 	//copy from the caller's memory space
@@ -76,13 +81,14 @@ int send( session_t* session, void* content, size_t len, uint flag )
 }
 
 // Receive a message
-int recv( session_t* session, void* content, size_t* len, uint flag )
+int message_recv( session_t* session, void* content, size_t* len, uint flag )
 {
 	THREAD* thr_src, * thr_cur;
 	KMESSAGE* kmsg;
 	int ret;
 	thr_src = (THREAD*)session->thread;
 	thr_cur = current_thread();
+	thr_src = NULL;
 _recv_search:
 	if( thr_src )	//specify the thread
 		kmsg = queue_search( &thr_cur->message_queue, thr_src,
@@ -99,6 +105,9 @@ _recv_search:
 	//check user space
 	if( kmsg->length > *len ){
 		*len = kmsg->length;
+		//恢复
+		if(!thr_src )
+			queue_push_to_head( &thr_cur->message_queue, kmsg );
 		return -ERR_NOMEM;
 	}
 	//set return value

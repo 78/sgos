@@ -59,10 +59,8 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 		de->v = get_phys_page();
 		if( !de->v )
 			return;
-		if( attr&P_USER )
-			de->a.user = 1;
-		if( attr&P_WRITE )
-			de->a.write = 1;
+		de->a.user = 1;
+		de->a.write = 1;
 		de->a.present = 1;
 	}
 	// get page table entry
@@ -72,8 +70,8 @@ void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
 		memsetd( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>22)<<10),
 			 0, PAGE_SIZE>>2 );
 	}
-//	if( te->v )	//remap??
-//		free_phys_page( (uint)(te->a.phys_addr<<12) );
+	if( te->v && te->a.phys_addr!=(phys_addr>>12) )
+		PERROR("## Leaking memory at 0x%X", vir_addr );
 	//设置新的值
 	te->v = phys_addr;
 	if( attr&P_USER )
@@ -90,7 +88,7 @@ void unmap_one_page( uint dir, uint vir_addr )
 {
 	PAGE_DIR* de, *te;
 	if( vir_addr%PAGE_SIZE ){
-		PERROR("## wrong vir_addr" );
+		PERROR("## wrong vir_addr: 0x%X", vir_addr );
 		return;
 	} 
 	// get page directory entry

@@ -22,7 +22,7 @@
 #include <debug.h>
 
 //创建循环队列
-int queue_create( queue_t* q, int size, queue_delete_func del, char* name )
+int queue_create( queue_t* q, int size, queue_delete_func del, const char* name )
 {
 	q->size = size;
 	q->head = q->tail = 0;
@@ -36,7 +36,7 @@ int queue_create( queue_t* q, int size, queue_delete_func del, char* name )
 }
 
 //加到尾
-int queue_push_to_tail( queue_t* q, void* data )
+int queue_push_to_tail( queue_t* q, const void* data )
 {
 	sema_down( &q->semaphore );
 	if( (q->tail+1)%q->size == q->head ){
@@ -46,14 +46,14 @@ int queue_push_to_tail( queue_t* q, void* data )
 		q->head = (q->head+1)%q->size;
 		
 	}
-	q->items[q->tail] = data;
+	q->items[q->tail] = (void*)data;
 	q->tail = (q->tail+1)%q->size;
 	sema_up( &q->semaphore );
 	return 0;
 }
 
 //加到头
-int queue_push_to_head( queue_t* q, void* data )
+int queue_push_to_head( queue_t* q, const void* data )
 {
 	sema_down( &q->semaphore );
 	if( (q->size+q->head-1)%q->size == q->tail ){
@@ -65,7 +65,7 @@ int queue_push_to_head( queue_t* q, void* data )
 	}
 	q->head = (q->size+q->head-1)%q->size;
 	ASSERT( q->head >= 0 );
-	q->items[q->head] = data;
+	q->items[q->head] = (void*)data;
 	sema_up( &q->semaphore );
 	return 0;
 }
@@ -98,7 +98,7 @@ void* queue_pop_from_tail( queue_t* q )
 
 //如果用链表，会快很多的。
 //可以做很多优化
-void queue_remove( queue_t* q, void* data )
+void queue_remove( queue_t* q, const void* data )
 {
 	int i;
 	sema_down( &q->semaphore );
@@ -116,7 +116,7 @@ void queue_remove( queue_t* q, void* data )
 	sema_up( &q->semaphore );
 }
 
-void* queue_search( queue_t* q, void* v, queue_search_func search )
+void* queue_search( queue_t* q, const void* v, queue_search_func search )
 {
 	int i;
 	sema_down( &q->semaphore );

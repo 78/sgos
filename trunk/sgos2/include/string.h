@@ -6,7 +6,16 @@
 #endif
 
 
+
+
+#ifdef __cplusplus 
+extern "C" char * strerror(int errno);
+extern "C" char * ___strtok;
+extern "C" {
+#else
 extern char * strerror(int errno);
+extern char * ___strtok;
+#endif
 
 char * strcpy(char * dest,const char *src);
 char * strncpy(char * dest,const char *src,int count);
@@ -23,7 +32,6 @@ char * strstr(const char * cs,const char * ct);
 char * strlwr(char * str);
 int strlen(const char * s);
 
-extern char * ___strtok;
 char * strtok(char * s,const char * ct);
 void * memcpy(void * dest,const void * src, int n);
 void * memcpyw(void * dest,const void * src, int n);
@@ -37,5 +45,9 @@ void * memsetd(void * s,int n,int count);
 
 int strnicmp(char * s1, char * s2, int len);
 int stricmp(char * s1, char * s2);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif

@@ -23,7 +23,8 @@ int __offtime (const time_t *t, long int offset, struct tm *tp);
 time_t time(time_t *tloc)
 {
 	if(tloc != 0) {
-		*tloc = sys_clock();
+		THREAD_INFO* ti = thread_info();
+		*tloc = ti->time;
 	}
 	return *tloc;
 }

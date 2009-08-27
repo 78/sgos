@@ -10,6 +10,13 @@
 #include <loader.h>
 #include <module.h>
 #include <message.h>
+#include <namespace.h>
+#include <semaphore.h>
+
+#define IS_THREAD( thr ) ( ((THREAD*)thr)->magic == THREAD_MAGIC )
+#define IS_MODULE( mod ) ( ((MODULE*)mod)->magic == MODULE_MAGIC )
+#define IS_PROCESS( proc ) (((PROCESS*)proc)->magic == PROCESS_MAGIC )
+#define IS_WRITABLE( proc, addr, size ) ( ucheck_allocated( proc, (uint)addr ) )
 
 #define SYSCALL0(id, type, name) static type sys_##name()
 #define SYSCALL1(id, type, name, atype, a) static type sys_##name( atype a )
@@ -21,10 +28,10 @@
 
 void* syscall_table[] = {
 	//0-4
-	sys_clock,
+	sys_test,
 	sys_dprint,
-	sys_msg_send,
-	sys_msg_recv,
+	sys_send,
+	sys_recv,
 	sys_virtual_alloc,
 	//5-9
 	sys_virtual_free,
@@ -41,9 +48,9 @@ void* syscall_table[] = {
 	//15-19
 	sys_thread_set_priority,
 	sys_thread_get_priority, 
-	NULL,
-	NULL,
-	NULL,
+	sys_thread_semget,
+	sys_thread_semop,
+	sys_thread_semctl,
 	//20-24
 	sys_process_create,
 	sys_process_terminate,
@@ -57,18 +64,25 @@ void* syscall_table[] = {
 	sys_namespace_register,
 	sys_namespace_unregister,
 	//30-34
+	sys_namespace_match,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	//35-39
 	sys_iomap_get,
 	sys_iomap_set,
 	sys_irq_register,
 	sys_irq_unregister,
-	sys_virtual_map
+	sys_vm_map
 };
+ 
 
-//返回时钟计数
-uint sys_clock()
+//返回计数
+uint sys_test()
 {
-	extern unsigned rtc_second;    //unit: s
-	return rtc_second;
+	static unsigned counter=0; 
+	return counter++;
 }
 
 //输出调试信息
@@ -78,23 +92,40 @@ int sys_dprint( const char* buf )
 }
  
 //发送消息
-int sys_msg_send( const char* buf, size_t len )
+int sys_send( void* session, void* content, size_t len, uint flag )
 {
-	PERROR("not implemented.");
-	return 0;
+	THREAD* dest;
+	if( !IS_USER_MEMORY((uint)content) || !IS_USER_MEMORY((uint)content+len) )
+		return -ERR_WRONGARG;
+	dest = (THREAD*)((session_t*)session)->thread;
+	if( !IS_THREAD(dest) )
+		return -ERR_WRONGARG;
+	return message_send( session, content, len, flag );
 }
 
 //接收消息
-int sys_msg_recv( char* buf, size_t buf_siz, uint flag )
+int sys_recv( void* session, void* content, size_t* len, uint flag )
 {
-	PERROR("not implemented.");
-	return 0;
+	THREAD* dest;
+	PROCESS* proc;
+	proc = current_proc();
+	if( !IS_WRITABLE(proc, session, sizeof(session_t)) ||
+		!IS_WRITABLE(proc, content, *len) || 
+		!IS_WRITABLE(proc, len, sizeof(size_t)) ){
+		return -ERR_WRONGARG;
+	}
+	dest = (THREAD*)((session_t*)session)->thread;
+	if( dest && !IS_THREAD(dest) )
+		return -ERR_WRONGARG;
+	return message_recv( session, content, len, flag );
 }
 
 //分配用户内存
 void* sys_virtual_alloc( size_t siz )
 {
-	return umalloc( current_proc(), siz );
+	void* addr;
+	addr = umalloc( current_proc(), siz );
+	return addr;
 }
 
 //释放内存
@@ -110,40 +141,46 @@ void sys_thread_exit( int code )
 	THREAD* thr;
 	thr = current_thread();
 	if( current_proc()->main_thread == thr ){
+		//terminate the process
 		kprintf("Program %s exited with code 0x%X\n", current_proc()->name, code );
 	}
 	thread_terminate( thr, code );
+	//process_terminate
 }
 
 //创建线程
-int sys_thread_create( size_t addr )
+int sys_thread_create( size_t addr, uint* ret )
 {
 	THREAD* thr;
-	if( IS_USER_MEMORY(addr) ){
+	if( IS_USER_MEMORY(addr) &&
+		IS_WRITABLE( current_proc(), ret, sizeof(uint)) ){
 		thr = thread_create( current_proc(), addr );
-		if( thr )
-			return thr->tid;
+		if( thr ){
+			*ret = (uint)thr;
+			return 0;
+		}
+		return -ERR_UNKNOWN;
 	}
-	return -1;
+	return -ERR_WRONGARG;
 }
 
 //返回当前线程ID
-int sys_thread_self()
+uint sys_thread_self()
 {
-	return current_thread()->tid;
+	return (uint)current_thread();
 }
 
 //脱离线程
-int sys_thread_detach( int tid )
+int sys_thread_detach( uint thread )
 {
-	PERROR("not implemented.");
+	PERROR("##not implemented.");
 	return 0;
 }
 
 //等待线程结束
-int sys_thread_join( int tid, int* code )
+int sys_thread_join( uint thread, int* code )
 {
-	PERROR("not implemented.");
+	PERROR("##not implemented.");
 	return 0;
 }
 
@@ -155,121 +192,209 @@ int sys_thread_wait( time_t ms )
 }
 
 //挂起线程
-int sys_thread_suspend( int tid )
+int sys_thread_suspend( uint thread )
 {
 	THREAD* thr;
-	thr = thread_get( tid );
-	if( thr ){
-		thread_suspend( thr );
-		return 0;
-	}
-	return -1;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	thread_suspend( thr );
+	return 0;
 }
 
 //启动线程
-int sys_thread_resume( int tid )
+int sys_thread_resume( uint thread )
 {
 	THREAD* thr;
-	thr = thread_get( tid );
-	if( thr ){
-		thread_resume( thr );
-		return 0;
-	}
-	return -1;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	thread_resume( thr );
+	return 0;
 }
 
 //结束线程
-int sys_thread_terminate( int tid, int code )
+int sys_thread_terminate( uint thread, int code )
 {
 	THREAD* thr;
-	thr = thread_get( tid );
-	if( thr ){
-		thread_terminate( thr, code );
-		return 0;
-	}
-	return -1;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	thread_terminate( thr, code );
+	return 0;
 }
 
 //设置线程优先级
-int sys_thread_set_priority( int tid, int pri )
+int sys_thread_set_priority( uint thread, int pri )
 {
-	PERROR("not implemented.");
+	THREAD* thr;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	if( thr->process != current_proc() )
+		return -ERR_LOWPRI;
+	if( pri<1 || pri>4 )
+		return -ERR_WRONGARG;
+	if( pri == PRI_REALTIME )
+		thr->process->realtime_thread = thr;
+	else{
+		if( thr->priority == PRI_REALTIME )
+			thr->process->realtime_thread = NULL;
+	}
+	thr->priority = pri;
 	return 0;
 }
 
 //获取线程优先级
-int sys_thread_get_priority( int tid, int* pri )
+int sys_thread_get_priority( uint thread, int* pri )
 {
-	PERROR("not implemented.");
-	return 0;
+	THREAD* thr;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	return thr->priority;
+}
+
+//返回一个空闲的信号量
+int sys_thread_semget(int value)
+{
+	PROCESS* proc;
+	int i;
+	proc = current_proc();
+	down( &proc->semaphore );
+	for(i=0; i<MAX_SEM_NUM; i++ )
+		if( proc->sem_array[i]==NULL ){
+			proc->sem_array[i] = kmalloc(sizeof(sema_t));
+			up( &proc->semaphore );
+			sema_init_ex( proc->sem_array[i], value );
+			return i;
+		}
+	up( &proc->semaphore );
+	return -ERR_NOMEM;
+}
+
+int sys_thread_semop( int i, int op )
+{
+	PROCESS* proc;
+	proc = current_proc();
+	if( i<0 || i>=MAX_SEM_NUM || !proc->sem_array[i] )
+		return -ERR_WRONGARG;
+	switch( op ){
+	case SEMOP_DOWN:
+		sema_down( proc->sem_array[i] );
+		return 0;
+	case SEMOP_UP:
+		sema_up( proc->sem_array[i] );
+		return 0;
+	case SEMOP_TRYDOWN:
+		return sema_trydown( proc->sem_array[i] );
+	}
+	return -ERR_WRONGARG;
+}
+
+int sys_thread_semctl( int i, int cmd )
+{
+	PROCESS* proc;
+	proc = current_proc();
+	if( i<0 || i>=MAX_SEM_NUM || !proc->sem_array[i] )
+		return -ERR_WRONGARG;
+	switch( cmd ){
+	case SEMCTL_FREE:
+		sema_destroy( proc->sem_array[i] );
+		kfree( proc->sem_array[i] );
+		proc->sem_array[i] = NULL;
+		break;
+	}
+	return -ERR_WRONGARG;
 }
 
 //进程管理
-int sys_process_create( char* file, void* environment, void* create_info )
+int sys_process_create( char* file, void* environment, void* create_info, uint* ret_proc )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //结束进程
-int sys_process_terminate( int id, int code )
+int sys_process_terminate( uint proc, int code )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //挂起进程
-int sys_process_suspend( int id )
+int sys_process_suspend( uint proc)
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //启动进程
-int sys_process_resume( int id )
+int sys_process_resume( uint proc )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //当前进程ID
-int sys_process_self()
+uint sys_process_self()
 {
-	return current_proc()->pid;
+	return (uint)current_proc();
 }
 
 //加载器 返回加载id
-int sys_loader_load( char* file )
+int sys_loader_load( char* file, uint* ret_mod )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //卸载库
-int sys_loader_unload( int id )
+int sys_loader_unload( uint mod )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //获得过程
-size_t sys_loader_get_proc( int id, char* name )
+size_t sys_loader_get_proc( uint mod, char* name )
 {
 	PERROR("not implemented.");
 	return 0;
 }
 
 //命名空间
-int sys_namespace_register( int tid, char* name )
+int sys_namespace_register( uint thread, char* name )
 {
-	PERROR("not implemented.");
-	return 0;
+	THREAD* thr;
+	int ret;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	if( thr->process != current_proc() )
+		return -ERR_LOWPRI;
+	ret = name_insert( thr, name );
+	return ret;
 }
 
-int sys_namespace_unregister( int tid, char* name )
+int sys_namespace_unregister( uint thread, char* name )
 {
-	PERROR("not implemented.");
-	return 0;
+	THREAD* thr;
+	int ret;
+	if( !IS_THREAD(thread) )
+		return -ERR_WRONGARG;
+	thr = (THREAD*)thread;
+	if( thr->process != current_proc() )
+		return -ERR_LOWPRI;
+	ret = name_remove( thr, name );
+	return ret;
+}
+
+uint sys_namespace_match( char* name )
+{
+	uint thread;
+	thread = (uint)name_match( name );
+	return thread;
 }
 
 //返回io位图
@@ -299,7 +424,7 @@ int sys_irq_unregister( int tid, int irq )
 	return 0;
 }
 
-int sys_virtual_map( size_t vaddr, size_t paddr, size_t map_size )
+int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size )
 {
 	PERROR("not implemented.");
 	return 0;

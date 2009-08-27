@@ -43,6 +43,7 @@ typedef struct node{
 
 static node_t* free_table[MAX_HASH_ENTRY] = {NULL,};
 static node_t* first_node = NULL;	//used for debugging.
+static int	mutex;
 /*  sizeof(node_t)=20  最小分配单元为12字节
 free_table[0]	32<=m<64
 free_table[1]	64<=m<s128
@@ -72,7 +73,22 @@ static int calc_hash_index(size_t k)
 	return i;
 }
 
-void  init_allocation();
+// 模拟实现lock和nlock功能
+static void	lock()
+{
+	while(--mutex){
+		mutex++;
+		//让出cpu
+		sys_thread_wait(1);
+	}
+}
+
+static void	unlock()
+{
+	mutex++;
+}
+
+void	__allocation_init();
 //基本分配函数
 //时间复杂度分析：最坏情况W(n)  一般情况O(1)
 void*	malloc(size_t siz)
@@ -80,15 +96,17 @@ void*	malloc(size_t siz)
 	size_t m, k, i, j;
 	node_t* nod;
 	if(!siz) return NULL;
-	if(!first_node) init_allocation();
+	if(!first_node) __allocation_init();
+	if(siz<8) siz=8;
 	m = siz + sizeof(node_t);
 	i = calc_hash_index( m );
 	//进入临界区
+	lock();
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = free_table[j];
 		//patched by Huang Guan. added "&& nod->size!=siz"
-		while( nod && nod->size < m && nod->size!=siz )
+		while( nod && nod->size<siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块
 			size_t rest = nod->size + sizeof(node_t) - m;	//rest大小不包括分配描述符大小
@@ -111,11 +129,13 @@ void*	malloc(size_t siz)
 				MAKE_FREE( nod2 );
 			}
 			//离开临界区
+			unlock();
 			return (void*)((size_t)nod + sizeof(node_t));
 		}
 		//没有可用块
 	}
 	//离开临界区
+	unlock();
 	return NULL;
 }
 
@@ -149,6 +169,7 @@ void	free(void* p)
 	}
 	MAKE_FREE(nod);
 	//进入临界区
+	lock();
 	if( nod->pre && IS_FREE_NODE(nod->pre) ){
 		//和前面一块空闲块合并，
 		nod = merge(nod->pre, nod, nod->pre);
@@ -160,6 +181,7 @@ void	free(void* p)
 	k = calc_hash_index( nod->size+sizeof(node_t) );
 	HASH_APPEND(nod, free_table[k]);
 	//离开临界区
+	unlock();
 }
 
 void*	alloc(size_t c, size_t n)
@@ -174,7 +196,7 @@ void* 	realloc(void* p, size_t siz)
 }
 
 //获取可用内存空间
-void init_allocation()
+void __allocation_init()
 {
 	size_t size = 256*1024*1024;
 	void* p = sys_virtual_alloc( size );
@@ -191,6 +213,8 @@ void init_allocation()
 	HASH_APPEND( nod, free_table[MAX_HASH_ENTRY-1] );
 	MAKE_FREE( nod );
 	first_node = nod;
+	//init mutex
+	mutex = 1;
 }
 
 /***************** 以下为测试用代码 ******************/

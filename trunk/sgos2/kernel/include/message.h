@@ -20,7 +20,7 @@ typedef struct KMESSAGE{
 
 //发送消息
 //发送成功返回消息序号，发送失败返回负值
-int	send( 
+int	message_send( 
 	session_t*	session, 	//会话信息
 	void*		content, 	//消息正文
 	size_t		len, 		//消息正文长度
@@ -30,7 +30,7 @@ int	send(
 //接收消息
 //接收成功返回消息长度，失败返回负值
 //如果是因为缓冲区太小而失败，会修改消息缓冲区长度为恰当大小。
-int	recv(
+int	message_recv(
 	session_t*	session,	//发送者信息
 	void*		buf,		//消息正文缓冲区
 	size_t*		siz,		//消息正文缓冲区长度

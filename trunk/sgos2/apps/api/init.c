@@ -10,10 +10,14 @@ THREAD_INFO* thread_info()
 		"movl %%fs:(0x18), %%eax"
 		: "=a" (addr) : ); 
 	return (THREAD_INFO*) addr; \
-} 
+}
 
-//线程用户态入口点
-//内核会把用户态入口地址放在ebx寄存器里。(x86)
+PROCESS_INFO* process_info()
+{
+	return thread_info()->process_info;
+}
+
+//进程主线程用户态入口点
 void _program_entry_()
 {
 	int (*func)();

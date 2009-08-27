@@ -47,7 +47,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	MODULE* mod;
 	size_t load_addr, load_size;
 	//parse bxml
-	bxml = bxml_parse( data );
+	bxml = bxml_parse( (char*)data );
 	if( !bxml ){
 		PERROR("##not an executable bxml file.");
 		return -0x11;	//not an executable
@@ -91,9 +91,9 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 						//没有读取任何数据，则做清0操作
 						memset( (void*)addr, 0, siz );
 					}
-				//	PERROR("load section: %s at %x", name, addr );
+//					PERROR("load section: %s at %x", name, addr );
 				}else{
-					PERROR("## out of boundary.");
+					PERROR("## out of boundary addr:0x%X size:0x%X.", addr, siz);
 				}
 			}while(bxml_movenext(bxml));
 		}

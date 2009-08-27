@@ -47,7 +47,6 @@ void module_attach( struct PROCESS* proc, MODULE* mod )
 		if( mod->page_table[i] )
 			map_one_page( proc->page_dir, mod->vir_addr + (i<<PAGE_SIZE_BITS), 
 				mod->page_table[i], attr );
-//	PERROR("attach %s ok", mod->name );
 }
 
 //取消映射
@@ -149,7 +148,16 @@ MODULE* module_get_by_name( struct PROCESS* proc, char* name )
 	if( !mod ){
 		//查找
 		for( mod=g_mods.module; mod; mod=mod->next ){
-			if( mod->share && strcmp(name, mod->name)==0 ){
+			if( mod->share && strcmp(name, mod->name)==0 &&
+				mod->reference>0 ){
+				//尝试申请虚拟内存地址
+				if( umalloc_ex( proc, mod->vir_addr, mod->vir_size ) == NULL ){
+					//需要重定位
+					PERROR("need relocation.");
+					PERROR("##not implemented.");
+					mutex_unlock( &g_mods.mutex );
+					return NULL;
+				}
 				mod->reference ++;
 				mutex_unlock( &g_mods.mutex );
 				//连接该模块到进程
