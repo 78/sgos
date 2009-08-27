@@ -41,8 +41,9 @@ typedef struct BXML_DATA{
 	unsigned short		version;		//XML Version
 	unsigned char		flag;
 	unsigned char		error;
+	unsigned int		cur_size;		
 //	mutex_t			mutex;			//wo don't need it in kernel mode.
-}BXMLData;
+}BXML_DATA, bxml_t;
 
 //XML
 struct BXML_DATA*		bxml_load( const char* filename );	//load xml data from a file
@@ -53,6 +54,8 @@ int 				bxml_redirect( struct BXML_DATA* bxml, const char* path, int create_if_n
 char* 				bxml_readstr( struct BXML_DATA* bxml, const char* path );	//read a string
 void 				bxml_writestr( struct BXML_DATA* bxml, const char* path, const char* str );	//write a stringcurrent path
 int 				bxml_movenext( struct BXML_DATA* bxml );	//读取下一个项目
+int 				bxml_mknode( struct BXML_DATA* bxml, const char* name );	//创建 下一个项目
+char*				bxml_readname( struct BXML_DATA* xml, const char* path );	//读取节点名	
 //BXML
 //加载接口
 int 				bxml_save( struct BXML_DATA* bxml, const char* filename );	//save bxml data to a file
@@ -60,6 +63,7 @@ int 				bxml_build( struct BXML_DATA* bxml, char* mem, int mem_size );	//build x
 void 				bxml_free( struct BXML_DATA* bxml );	//free bxml data
 int 				bxml_read( struct BXML_DATA* bxml, const char* path, void* buf, unsigned int buf_size );	//read 
 void 				bxml_write( struct BXML_DATA* bxml, const char* path, const void* buf, unsigned int buf_size );	//write 
+size_t 				bxml_buffer_size( struct BXML_DATA* xml );
 //操作接口
 //
 const char*			bxml_lasterr();

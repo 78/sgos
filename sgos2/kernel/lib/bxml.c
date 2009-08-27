@@ -543,8 +543,12 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 	struct BXML_NODE* nod;
 	nod = parent->node_child;
 	if( !condition ){
-		//upper  specail one
-		if( strcmp( name, ".." )==0 ){
+		if( strcmp(name, "..." )==0 ){
+			if( nod )
+				return nod;
+			else
+				return parent;
+		}else if( strcmp( name, ".." )==0 ){
 			if( parent->node_parent )
 				return parent->node_parent;
 			else

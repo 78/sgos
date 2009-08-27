@@ -17,7 +17,10 @@ P_WRITE=				0x02
 P_USER=					0x04
 
 ;//在这里设置一个页目录，这里改动了，在page.c里也要改。
-PDE_ADDR=				0x10000
+PDE_ADDR=				0x00300000
+PTE_ADDR=				0x00301000
+MAP_PAGE_NUM=				1024
+K_STACK_ADDR=				0x00303000
 
 ;//multiboot defines
 MULTIBOOT_PAGE_ALIGN=	(1 << 0)	;//modules are page aligned
@@ -61,29 +64,29 @@ multiboot_entry:
 	/* save multiboot info */
 	movl	%ebx, (multiboot_info - K_VIR_ADDR)
 	;//分页的目的是让内核能在0xC0000000的虚拟地址运行。
-	;//借助物理地址 [0x10000,0x13000) 来做一个临时分页表，当内存模块初始化之后，这里作废。
+	;//借助物理地址 [0x00301000,0x00302000) 来做一个临时分页表，当内存模块初始化之后，这里作废。
 	;//填充1个页表，映射物理内存前4MB
 	movl	$0x3, %eax		;//P_PRESENT | P_WRITE
-	movl	$(1024 * 1), %ecx
-	movl	$0x11000, %edi
+	movl	$MAP_PAGE_NUM, %ecx
+	movl	$PTE_ADDR, %edi
 MAP_PTE:
 	stosl
-	add		$PAGE_SIZE, %eax
+	add	$PAGE_SIZE, %eax
 	loop	MAP_PTE
 
 	;//虚拟地址 [0,0x400000)
-	movl	$(0x11000 | P_PRESENT | P_WRITE), PDE_ADDR
+	movl	$(PTE_ADDR | P_PRESENT | P_WRITE), PDE_ADDR
 	
 	;//[0xC0000000,0xC0400000)
-	movl	$(0x11000 | P_PRESENT | P_WRITE), PDE_ADDR + (K_VIR_ADDR >> 20) 
+	movl	$(PTE_ADDR | P_PRESENT | P_WRITE), PDE_ADDR + (K_VIR_ADDR >> 20) 
 	
 	;//设置当前页目录
-	movl	$0x10000, %eax
+	movl	$PDE_ADDR, %eax
 	movl	%eax, %cr3
 
 	;//开启分页
 	movl	%cr0, %eax
-	orl		$0x80000000, %eax ;//PG|WP
+	orl	$0x80000000, %eax ;//PG|WP
 	movl	%eax, %cr0
 	
 	;//加载gdt
@@ -98,7 +101,7 @@ MAP_PTE:
 	movw	%ax, %gs
 	movw	%ax, %ss
 	;//设置内核堆栈
-	movl	$0xC0010000, %esp
+	movl	$K_STACK_ADDR, %esp
 	;//mbi信息
 	movl	multiboot_info, %ebx
 	pushl	%ebx

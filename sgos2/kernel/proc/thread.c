@@ -94,6 +94,8 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 		return NULL;
 	}
 	memset( thr, 0, sizeof(THREAD) );
+	//线程标识
+	thr->magic = THREAD_MAGIC;
 	//初始化线程信号量
 	sema_init( &thr->semaphore );
 	//初始化消息队列
@@ -104,6 +106,7 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	thr->tid = generate_tid();
 	thr->process = proc;
 	thr->state = TS_INIT;
+	thr->priority = PRI_NORMAL;
 	thr->entry_address = entry_addr;
 	thr->stack_size = THREAD_STACK_SIZE;
 	if( IS_USER_MEMORY( entry_addr ) ){//创建用户态线程？？

@@ -31,7 +31,7 @@ _syscall_interrupt:
 	pushl	%ecx
 	pushl	%ebx
 	call	*_syscall_table(,%eax,4)
-	addl	$14, %esp
+	addl	$16, %esp
 	;//保存返回值
 	movl	%eax, ret_val
 	;//恢复现场

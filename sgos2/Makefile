@@ -22,6 +22,7 @@ endef
 .PHONY : all check run bochsdbg bochs windbg debug clean
 # Target
 all: check grub
+	make -C crt
 	make -C kernel
 	make -C apps
 	@echo OK!
@@ -33,7 +34,7 @@ check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
-	qemu -no-kqemu -m 512 -L ./qemu sgos2.img
+	qemu -no-kqemu -m 512 -L ./qemu sgos2.img -soundhw pcspk
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc
@@ -50,6 +51,7 @@ debug:
 	gdb --command scripts/gdb kernel/kernel
 
 clean:
+	make -C crt clean
 	make -C kernel clean
 	make -C apps clean
 

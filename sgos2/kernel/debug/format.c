@@ -35,6 +35,8 @@ void kernel_err(char* file, char* function, int line, const char *fmt, ...)
 		thread_terminate( thr, -1 );
 	}else
 		die("System halted.");
+	if( printbuf[0]=='#' )
+		die(".");
 }
 
 void assert_err(char* file, char* function, int line, int b )

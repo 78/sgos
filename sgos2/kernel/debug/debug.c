@@ -12,6 +12,8 @@
 #include <mm.h>
 #include <thread.h>
 
+//#define KEEP_INTEGRAL_INFO
+
 static int putstr(const char* str);
 static char* ksyms;
 static int (*printer)(const char*);
@@ -81,9 +83,18 @@ void kprintf(const char *fmt, ...)
 	char printbuf[256];
 	va_list args;
 	int i;
+#ifdef KEEP_INTEGRAL_INFO
+	uint flags;
+	va_start(args, fmt);
+	i=vsprintf( printbuf, fmt, args );
+	local_irq_save(flags);
+	printer( printbuf );
+	local_irq_restore(flags);
+#else
 	va_start(args, fmt);
 	i=vsprintf( printbuf, fmt, args );
 	printer( printbuf );
+#endif
 	va_end(args);
 }
 

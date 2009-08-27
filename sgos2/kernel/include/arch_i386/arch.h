@@ -5,11 +5,13 @@
 #include <gdt_const.h>
 #include <lock.h>
 #include <msr.h>
+#include <io.h>
 
 #define RTC_FREQUENCY	200	//200Hz  这是时钟频率，具体在arch/i386/clock/rtc.c
 
 #define SYSTEM_INTERRUPT 0xA1
 #define PAGEFAULT_INTERRUPT 14
+#define GPF_INTERRUPT 13
 #define RTC_INTERRUPT		0
 
 #define GD_KERNEL_CODE	0x08
@@ -35,6 +37,17 @@
 #define SET_INTR_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
 #define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )
 
+/* VM86 */
+#define MAKE_FARPTR(seg,off)	(((uint)(seg)<<16)|(ushort)(off))
+#define FARPTR_SEG(fp)	(((uint) fp) >> 16)
+#define FARPTR_OFF(fp)	(((uint) fp) & 0xffff)
+#define FARPTR_TO_LINEAR(seg,off)	\
+	((uint) ((((ushort)(seg)) << 4) + ((ushort)off)))
+uint LINEAR_TO_FARPTR(size_t ptr);	//vm86.c
+#define EFLAG_IOPL3	0x3000
+#define EFLAG_VM	(1<<17)
+#define EFLAG_IF	(1<<9)
+	
 struct THREAD;
 // gdt 
 // segment
@@ -114,6 +127,12 @@ typedef struct I386_CONTEXT{
 
 typedef struct ARCH_THREAD{
 	I387_REGISTERS	i387;
+	// in_vm86=1时，在线程创建时会初始化vm86寄存器
+	int		in_vm86;
+	// vmflags
+	uint		vmflags;
+	// interrupt bit
+	int		vmflag_if;
 }ARCH_THREAD;
 
 //paging
@@ -139,24 +158,6 @@ typedef union PAGE_TABLE{
 #define P_ACCESS	(1<<5)	//页面被访问过
 
 #define halt() __asm__("hlt")
-// (端口, 数据)
-#define out_byte_wait(port,data) \
-__asm__ __volatile__ ( "out %%al , %%dx\n\tjmp 1f\n1:\tjmp 1f\n1:" : : "a"( data ) , "d"( port ) );
-#define out_word_wait(port,data) \
-__asm__ __volatile__ ( "out %%ax , %%dx\n\tjmp 1f\n1:\tjmp 1f\n1:" : : "a"( data ) , "d"( port ) );
-#define out_byte(port,data) \
-__asm__ __volatile__ ( "out %%al , %%dx" : : "a"( data ) , "d"( port ) );
-#define out_word(port,data) \
-__asm__ __volatile__ ( "out %%ax , %%dx" : : "a"( data ) , "d"( port ) );
-#define out_t_32(port,data) \
-__asm__ __volatile__ ( "out %%eax , %%dx" : : "a"( data ) , "d"( port ) );
-
-
-
-// port.c
-t_16 in_word( t_16 port );
-t_32 in_t_32( t_16 port );
-t_8 in_byte( t_16 port );
 
 //gdt
 void gdt_init();
@@ -189,7 +190,7 @@ uint get_phys_page();
 void reflush_pages();
 void load_page_dir(uint phys_addr);
 uint switch_page_dir(uint phys_addr);
-uint page_dir_phys_addr( uint vir_addr );
+uint vir_to_phys( uint vir_addr );
 void init_page_dir(uint );
 //map
 uint map_temp_page( uint phys_addr );
@@ -213,5 +214,6 @@ void fastcall_update_esp(uint kesp);
 void fastcall_init();
 void update_for_next_thread();
 void i386_switch( struct THREAD*, uint*, uint* );	//switch.S
+void vm86_init();	//vm86.c
 
 #endif

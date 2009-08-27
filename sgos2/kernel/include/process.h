@@ -9,7 +9,10 @@
 #include <module.h>
 #include <queue.h>
 
+#define PROCESS_MAGIC	0xFF0B46FC
+
 #define MAX_PROCESS_NUM	1024
+#define MAX_SEM_NUM	64
 
 #define IS_KERNEL_PROCESS( p ) (p->user)
 
@@ -43,10 +46,12 @@ typedef struct PROCESS{
 	int				pid;		//进程标识
 	sema_t				semaphore;	
 	uint				uid;		//用户
+	uint				magic;		//进程标识
 	struct PROCESS*			pre, *next;	//进程链表，兄弟关系
 	struct PROCESS*			parent, *child;	//父子进程
 	struct THREAD*			thread;		//第一个线程
 	struct THREAD*			main_thread;	//主线程
+	struct THREAD*			realtime_thread;	//实时线程
 	struct MEMORY_INFO		memory_info;	//内存信息
 	queue_t				message_queue;	//消息
 	char				name[PROCESS_NAME_LEN];	//进程名称
@@ -56,6 +61,9 @@ typedef struct PROCESS{
 	ENVIRONMENT*			environment;	//process startup environment
 	MODULE_LINK*			module_link;	//module informations
 	size_t				module_addr;	//这个设置了，表示模块数据的内存地址
+	size_t				module_size;	//模块数据的内存大小
+	sema_t*				sem_array[MAX_SEM_NUM];	//信号量集
+	int				bios_mode;	//是否使用VM86模式
 }PROCESS;
 
 //第一个进程初始化

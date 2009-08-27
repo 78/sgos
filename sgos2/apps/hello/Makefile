@@ -1,21 +1,22 @@
-#sgos api
+#sgos apps
 
-CCFLAGS = -g -Werror -I../include -I../../include -fno-builtin -ffreestanding -fleading-underscore
-LDFLAGS = 
+CXXFLAGS = -g -Werror -I../../include/c++ -I../../include -nostdlib -fleading-underscore --no-exceptions
+LDFLAGS = -shared
 ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = hello
-LDFLAGS += ../libc/libc.dll ../api/api.dll -e_entry
+LDFLAGS += ../../crt/crt.a
+LDFLAGS += ../libc/libc.dll ../system/system.dll
 
-CC = gcc $(CCFLAGS)
+CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)
 OD = objdump $(ODFLAGS)
-LD2 = ld2
+LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
-OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c))
+OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp))
 
 all: $(PROGRAM).run
 
@@ -26,8 +27,8 @@ $(PROGRAM).run: $(OBJECTS)
 	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
-.c.o:
-	$(CC) -c -o $@ $<
+.cpp.o:
+	$(CXX) -c -o $@ $<
 
 clean:
 	$(RM) $(OBJECTS)

@@ -54,6 +54,7 @@ void process_init()
 	process_id = 0;
 	init_proc = (PROCESS*)kmalloc( sizeof(PROCESS) );
 	memset( init_proc, 0, sizeof(PROCESS) );
+	init_proc->magic = PROCESS_MAGIC;
 	// init process name
 	strcpy( init_proc->name, "init" );
 	// use kernel page directory
@@ -92,6 +93,8 @@ PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env )
 	if( proc == NULL )
 		return NULL;
 	memset( proc, 0, sizeof(PROCESS) );
+	// 进程标识
+	proc->magic = PROCESS_MAGIC;
 	// allocate a page_dir
 	proc->page_dir = get_page_dir();
 	// 映射内核空间 

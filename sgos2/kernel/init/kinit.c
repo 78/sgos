@@ -10,6 +10,7 @@
 #include <loader.h>
 #include <message.h>
 #include <stdlib.h>
+#include <namespace.h>
 
 //内核初始化入口
 extern PROCESS* cur_proc;
@@ -68,6 +69,8 @@ void kinit( uint boot_info )
 	process_init();
 	//init module management.
 	module_init();
+	//init name space
+	name_init();
 	//set running thread
 	//设置当前运行的线程
 	tbox.running = current_proc()->thread;
@@ -85,39 +88,12 @@ static void kinit_halt()
 		halt();
 }
 
-static void test()
-{
-	THREAD* cur = current_thread();
-	THREAD* dest = NULL;
-	char buf[256];
-	while( !dest || dest->state==TS_INIT || dest->state==TS_DEAD ){
-		thread_wait(100);
-		dest = thread_get( cur->tid-1 );
-		if( !dest )
-			dest = thread_get( cur->tid+1 );
-	}
-	session_t s;
-	s.thread = (uint)dest;
-	int recv_len = 256;
-	//test message
-	if( recv( &s, buf, &recv_len, 0 )>0 ){
-		kprintf("[%d] got message: %s\n", cur->tid, buf );
-	}
-	sprintf( buf, "hello, im %d", cur->tid ); 
-	send( &s, buf, strlen(buf)+1, 0 );
-	//sleep for reply
-	recv( &s, buf, &recv_len, MSG_PENDING );
-	kprintf("[%d] got message reply: %s\n", cur->tid, buf );
-	thread_terminate( cur, 0 );
-}
-
 //加载模块
 static void kinit_process_start()
 {
 	PROCESS* proc;
 	MODULE* mod, *mod_api;
 	THREAD* main;
-	test();
 	proc = current_proc();	//当前进程
 	if( proc->environment ){
 		//根据环境信息加载程序。
@@ -153,10 +129,27 @@ static void kinit_process_start()
 	//设置主线程
 	proc->main_thread = main;
 	if( proc->process_info )
-		proc->process_info->main_thread = main->tid;
+		proc->process_info->main_thread = (uint)main;
 	thread_resume( main );
 	thread_terminate(current_thread(), 0);
 }
+
+static void kinit_bios_mode()
+{
+	PROCESS* proc;
+	THREAD* main;
+	proc = current_proc();	//当前进程
+	//映射前1MB
+	map_pages( proc->page_dir, 0, 0, 1<<20, P_USER|P_WRITE );
+	proc->bios_mode = 1;	//这样创建的线程就是16位的。
+	//now copy program
+	memcpy( (void*)0x10100, (void*)proc->module_addr, proc->module_size );
+	//创建进程主线程
+	main = thread_create( proc, 0x10100 );
+	thread_resume( main );
+	thread_terminate(current_thread(), 0);
+}
+
 
 //线程0执行hlt指令，线程1继续内核初始化。
 void kinit_resume()
@@ -200,16 +193,24 @@ void kinit_resume()
 					PROCESS* proc;
 					THREAD* thr;
 					//创建进程
-					int i;
-					//测试：创建300个hello.run进程
-					for (i=0; i<300; i++ ){
-						proc = process_create( current_proc(), NULL );
-						proc->module_addr = mod->mod_start;
-						strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
-						//为该进程创建一个内核线程来加载模块
-						thr = thread_create( proc, (uint)kinit_process_start );
-						thread_resume( thr );
-					}
+					proc = process_create( current_proc(), NULL );
+					proc->module_addr = mod->mod_start;
+					proc->module_size = mod->mod_end - mod->mod_start;
+					strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
+					//为该进程创建一个内核线程来加载模块
+					thr = thread_create( proc, (uint)kinit_process_start );
+					thread_resume( thr );
+				}else if( strcmp(ext,".com")==0 ){//执行16位文件
+					PROCESS* proc;
+					THREAD* thr;
+					//创建进程
+					proc = process_create( current_proc(), NULL );
+					proc->module_addr = mod->mod_start;
+					proc->module_size = mod->mod_end - mod->mod_start;
+					strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
+					//为该进程创建一个内核线程来加载模块
+					thr = thread_create( proc, (uint)kinit_bios_mode );
+					thread_resume( thr );
 				}
 			}
 		}

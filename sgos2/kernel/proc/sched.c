@@ -8,15 +8,17 @@
 #include <debug.h>
 
 //线程调度方式
-#define SCHED_FIFO
+//#define SCHED_FIFO
 
 THREAD_BOX tbox = {NULL, };
 static const unsigned ms = 1000/RTC_FREQUENCY;
+int sched_off;
 
 // 调度初始化
 void sched_init()
 {
 	memset( &tbox, 0, sizeof(THREAD_BOX) );
+	sched_off = 0;
 }
 
 // 返回当前线程
@@ -103,8 +105,7 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 	//put to link
 	link = get_thread_link( st );
 	if(link){
-#ifndef SCHED_FIFO
-//		抢占式。。。。
+#ifdef SCHED_FIFO
 		if( *link ){
 			THREAD* t2;
 			t2 = *link;
@@ -117,7 +118,7 @@ void sched_set_state( THREAD* thr, enum THREAD_STATE st )
 		}
 		info->next = NULL;
 #else
-		//先来先服务
+//		抢占式。。。。
 		info->next = *link;
 		if( *link )
 			(*link)->sched_info.pre = thr;
@@ -147,8 +148,9 @@ void sched_clock()
 			sched_set_state( thr, TS_READY );
 			if( pre )
 				thr = pre;
-			else
+			else 
 				thr = tbox.wait;
+			if(!thr) break;  //##important
 		}
 	}
 	//允许中断
@@ -163,7 +165,7 @@ void sched_clock()
 	//获取调度信息
 	info = &thr->sched_info;
 	--info->clock;
-	if( info->clock <= 0 ){	//need scheduling
+	if( info->clock <= 0 && sched_off==0 ){	//need scheduling
 		schedule();
 	}
 }
@@ -185,6 +187,7 @@ void schedule()
 		if( thr != cur ){
 			// 指定下一个线程
 			tbox.next = thr;
+//			kprintf("[%d]", thr->tid );
 			// 非硬件中断下允许直接切换线程
 			if( !cur->interrupted )
 				switch_to( cur, thr );	//线程切换

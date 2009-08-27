@@ -28,7 +28,7 @@ typedef enum THREAD_STATE{
 //调度信息
 typedef struct SCHEDULE_INFO{
 	//clock在线程状态为running时候,它是计算剩余运行时间,wait时候是等待运行时间
-	int				clock;		
+	int				clock;
 	struct THREAD*			pre, *next;	//schedule link
 	uint				cpu;		//running by which cpu??
 }SCHEDULE_INFO;
@@ -59,6 +59,8 @@ typedef struct THREAD{
 	THREAD_INFO*			thread_info;
 	//消息队列
 	queue_t				message_queue;
+	//线程优先级 1~4
+	int				priority;
 	//调度信息,调度链表 时间片之类的.
 	SCHEDULE_INFO			sched_info;
 	//线程退出码
@@ -108,5 +110,8 @@ void schedule();
 void sched_clock();
 void sched_set_state( THREAD* thr, enum THREAD_STATE st );
 void sched_init();
+extern int sched_off;
+#define sched_state_save(s) {s=sched_off;sched_off=1;}
+#define sched_state_restore(s) sched_off=s
 
 #endif

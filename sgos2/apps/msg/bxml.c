@@ -3,6 +3,8 @@
  *	  Huang Guan (gdxxhg@gmail.com)
  *	2009年7月26日 星期日 Created.
  *	2009年8月9日 星期日 ported to SGOS2.
+ *	20090823 mk_node()
+ *	20090827 readname()
  *  
  */
 
@@ -20,24 +22,16 @@ static void seterr( struct BXML_DATA* xml, const char* str )
 	xml->error = 1;
 }
 
-/*
-static void* safe_malloc( struct BXML_DATA* xml, uint size )
+
+static void* safe_malloc( uint size )
 {
-	if( !xml )
-		return NULL;
-	xml->cur_size += size;
-	if( xml->cur_size > xml->max_size )
-		return NULL;
 	return malloc( size );
 }
 
-static void safe_free( struct BXML_DATA* xml, void* p )
+static void safe_free( void* p )
 {
-	if( !xml )
-		return;
 	free( p );
 }
-*/
 
 // it's no use in kernel mode, but keep it
 const char* bxml_lasterr()
@@ -49,7 +43,7 @@ const char* bxml_lasterr()
 static struct BXML_NODE* create_node( struct BXML_DATA* xml )
 {
 	struct BXML_NODE* nod;
-	nod = (struct BXML_NODE*) malloc( sizeof(struct BXML_NODE) );
+	nod = (struct BXML_NODE*) safe_malloc( sizeof(struct BXML_NODE) );
 	if( !nod ){
 		seterr( xml, "no memory to allocate node.");
 		return NULL;
@@ -175,7 +169,7 @@ static void parse_xml_node( struct BXML_DATA* xml, const char* mem )
 					int len = (p-v);
 					if( len > 0 ){
 						cur->name_len = len;
-						cur->name = (char*)malloc( cur->name_len+1 );
+						cur->name = (char*)safe_malloc( cur->name_len+1 );
 						if( cur->name ){
 							memcpy( cur->name, v, len );
 							cur->name[cur->name_len] = '\0';
@@ -197,7 +191,7 @@ static void parse_xml_node( struct BXML_DATA* xml, const char* mem )
 					int len = (p-v);
 					if( len > 0 ){
 						cur->value_len = len;
-						cur->value = (char*)malloc( cur->value_len+1 );
+						cur->value = (char*)safe_malloc( cur->value_len+1 );
 						if( cur->value ){
 							memcpy( cur->value, v, len );
 							cur->value[cur->value_len] = '\0';
@@ -231,7 +225,7 @@ static void parse_xml_node( struct BXML_DATA* xml, const char* mem )
 					if( !cur ) return;
 					if( len > 0 ){
 						cur->name_len = len;
-						cur->name = (char*)malloc( cur->name_len+1 );
+						cur->name = (char*)safe_malloc( cur->name_len+1 );
 						if( cur->name ){
 							memcpy( cur->name, v, len );
 							cur->name[cur->name_len] = '\0';
@@ -262,7 +256,7 @@ static void parse_xml_node( struct BXML_DATA* xml, const char* mem )
 					int len = (p-v);
 					if( len > 0 ){
 						cur->value_len = len;
-						cur->value = (char*)malloc( cur->value_len+1 );
+						cur->value = (char*)safe_malloc( cur->value_len+1 );
 						if( cur->value ){
 							memcpy( cur->value, v, len );
 							cur->value[cur->value_len] = '\0';
@@ -299,7 +293,7 @@ static const void* parse_bxml_node( struct BXML_DATA* xml, const void* mem, int 
 		return NULL;
 	cur->name_len = *(unsigned char*)p;		//节点名长度
 	p++;
-	cur->name = (char*)malloc( cur->name_len+1 );
+	cur->name = (char*)safe_malloc( cur->name_len+1 );
 	if( cur->name ){
 		memcpy( cur->name, p, cur->name_len );	//节点名
 		cur->name[cur->name_len] = '\0';
@@ -312,7 +306,7 @@ static const void* parse_bxml_node( struct BXML_DATA* xml, const void* mem, int 
 	cur->value_len = *(unsigned int*)p;		//值长度
 	p+=sizeof(unsigned int);
 	if( cur->value_len > 0 ){
-		cur->value = (char*)malloc( cur->value_len+1 );
+		cur->value = (char*)safe_malloc( cur->value_len+1 );
 		if( cur->value ){
 			memcpy( cur->value, p, cur->value_len );	//值
 			cur->value[cur->value_len] = '\0';
@@ -320,12 +314,12 @@ static const void* parse_bxml_node( struct BXML_DATA* xml, const void* mem, int 
 		p+=cur->value_len;
 	}
 	//读下一个节点
-	for( i=0; i<attr_count, p; i++ ){
+	for( i=0; i<attr_count&& p; i++ ){
 		p = parse_bxml_node( xml, p, BTYPE_ATTRIBUTE );
 		if( xml->node_cur )
 			xml->node_cur = xml->node_cur->node_parent;
 	}
-	for( i=0; i<child_count, p; i++ ){
+	for( i=0; i<child_count&& p; i++ ){
 		p = parse_bxml_node( xml, p, BTYPE_NODE );
 		if( xml->node_cur )
 			xml->node_cur = xml->node_cur->node_parent;
@@ -337,7 +331,7 @@ static const void* parse_bxml_node( struct BXML_DATA* xml, const void* mem, int 
 struct BXML_DATA* bxml_parse( const char* mem )
 {
 	struct BXML_DATA* xml;
-	xml = (struct BXML_DATA*) malloc( sizeof(struct BXML_DATA) );
+	xml = (struct BXML_DATA*) safe_malloc( sizeof(struct BXML_DATA) );
 	if( !xml ){
 		seterr( xml, "no memory to allocate for xml");
 		return NULL;
@@ -415,6 +409,24 @@ int bxml_buildxml( struct BXML_DATA* xml, char* mem, int mem_size )
 	//build xml body
 	len = build_xml_node( xml->node_root, 0, mem, mem_size );
 	return (mem_size-len);
+}
+
+//calc the size of a node(including its children & attribute nodes )
+static size_t calc_node_size( struct BXML_NODE* nod )
+{
+	struct BXML_NODE* p;
+	size_t len = 0;
+	len = 8 + nod->name_len + nod->value_len;
+	for( p=nod->node_attr;p;p=p->node_next)
+		len += calc_node_size( p );
+	for( p=nod->node_child;p;p=p->node_next )
+		len += calc_node_size( p );
+	return len;
+}
+
+size_t bxml_buffer_size( struct BXML_DATA* xml )
+{
+	return sizeof(struct BXML_HEADER)+calc_node_size( xml->node_root );
 }
 
 static int build_bxml_node( struct BXML_NODE* nod, char* mem, int mem_size )
@@ -496,12 +508,12 @@ static void free_node( struct BXML_DATA* xml, struct BXML_NODE* nod )
 		if( nod->node_child )
 			free_node( xml, nod->node_child );
 		if( nod->value )
-			free( nod->value );
+			safe_free( nod->value );
 		if( nod->node_next ){
 			nod = nod->node_next;
-			free( nod->node_pre );
+			safe_free( nod->node_pre );
 		}else{
-			free( nod );
+			safe_free( nod );
 			nod = NULL;
 		}
 	}
@@ -511,7 +523,7 @@ static void free_node( struct BXML_DATA* xml, struct BXML_NODE* nod )
 void bxml_free( struct BXML_DATA* xml )
 {
 	free_node( xml, xml->node_root );
-	free( xml );
+	safe_free( xml );
 }
 
 static struct BXML_NODE* get_attrnode( struct BXML_DATA* xml, struct BXML_NODE* parent, 
@@ -528,7 +540,7 @@ static struct BXML_NODE* get_attrnode( struct BXML_DATA* xml, struct BXML_NODE* 
 	if( create ){
 		nod = create_attrnode( xml, parent );
 		nod->name_len = strlen( name );
-		nod->name = (char*)malloc( nod->name_len+1 );
+		nod->name = (char*)safe_malloc( nod->name_len+1 );
 		if( nod->name ){
 			memcpy( nod->name, name, nod->name_len );
 			nod->name[nod->name_len] = '\0';
@@ -545,8 +557,13 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 	struct BXML_NODE* nod;
 	nod = parent->node_child;
 	if( !condition ){
-		//upper  specail one
-		if( strcmp( name, ".." )==0 ){
+		//specail one
+		if( strcmp(name, "..." )==0 ){
+			if( nod )
+				return nod;
+			else
+				return parent;
+		}else if( strcmp( name, ".." )==0 ){
 			if( parent->node_parent )
 				return parent->node_parent;
 			else
@@ -564,7 +581,7 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 		if( create ){
 			nod = create_childnode( xml, parent );
 			nod->name_len = strlen( name );
-			nod->name = (char*)malloc( nod->name_len+1 );
+			nod->name = (char*)safe_malloc( nod->name_len+1 );
 			if( nod->name ){
 				memcpy( nod->name, name, nod->name_len );
 				nod->name[nod->name_len] = '\0';
@@ -613,7 +630,7 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 		if( create ){
 			nod = create_childnode( xml, parent );
 			nod->name_len = strlen( name );
-			nod->name = (char*)malloc( nod->name_len+1 );
+			nod->name = (char*)safe_malloc( nod->name_len+1 );
 			if( nod->name ){
 				memcpy( nod->name, name, nod->name_len );
 				nod->name[nod->name_len] = '\0';
@@ -624,7 +641,7 @@ static struct BXML_NODE* get_childnode( struct BXML_DATA* xml, struct BXML_NODE*
 				if( !nod_attr )
 					break;
 				nod_attr->value_len = strlen(conds[j][1]);
-				nod_attr->value = (char*)malloc( nod_attr->value_len+1);
+				nod_attr->value = (char*)safe_malloc( nod_attr->value_len+1);
 				strcpy( nod_attr->value, conds[j][1] );
 			}
 			return nod;
@@ -671,7 +688,7 @@ static struct BXML_NODE* parse_path( struct BXML_DATA *xml, const char* path, in
 					m = strchr( tmp, ':' );
 					if( m ){
 						*m = '\0';
-						if( *tmp )
+						if( *tmp ) // if tmp != m
 							nod = get_childnode( xml, nod, tmp, NULL, create );
 						if( nod )
 							nod = get_attrnode( xml, nod, m+1, create );
@@ -725,11 +742,23 @@ void bxml_write( struct BXML_DATA* xml, const char* path, const void* buf, unsig
 	nod = parse_path( xml, path, 1 );
 	if( nod ){
 		if( nod->value )
-			free( nod->value );
+			safe_free( nod->value );
 		nod->value_len = buf_size;
-		nod->value = (char*)malloc( nod->value_len );
+		nod->value = (char*)safe_malloc( nod->value_len );
 		if( nod->value )
 			memcpy( nod->value, buf, nod->value_len );
+	}
+}
+
+//read a name of a node
+char* bxml_readname( struct BXML_DATA* xml, const char* path )	
+{
+	struct BXML_NODE* nod;
+	nod = parse_path( xml, path, 0 );
+	if( nod && nod->name ){
+		return nod->name;
+	}else{
+		return NULL;	//temporary do this.
 	}
 }
 
@@ -752,9 +781,9 @@ void bxml_writestr( struct BXML_DATA* xml, const char* path, const char* str )
 	nod = parse_path( xml, path, 1 );
 	if( nod ){
 		if( nod->value )
-			free( nod->value );
+			safe_free( nod->value );
 		nod->value_len = strlen(str);
-		nod->value = (char*)malloc( nod->value_len+1 );
+		nod->value = (char*)safe_malloc( nod->value_len+1 );
 		if( nod->value )
 			strcpy( nod->value, str );
 	}
@@ -776,3 +805,24 @@ int bxml_movenext( struct BXML_DATA* xml )
 	}
 }
 
+//创建 下一个项目
+int bxml_mknode( struct BXML_DATA* xml, const char* name )
+{
+	struct BXML_NODE* nod;
+	if( !xml->node_cur ) 
+		return -1;
+	//create one
+	nod = create_nextnode( xml, xml->node_cur );
+	if( nod ){
+		nod->name_len = strlen(name);		//节点名长度
+		nod->name = (char*)safe_malloc( nod->name_len+1 );
+		if( nod->name ){
+			memcpy( nod->name, name, nod->name_len );	//节点名
+		nod->name[nod->name_len] = '\0';
+	}
+		xml->node_cur = nod;
+		return 1;
+	}else{
+		return 0;
+	}
+}		

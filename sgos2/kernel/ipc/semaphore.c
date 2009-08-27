@@ -50,7 +50,6 @@ void sema_down( sema_t *sem )
 			sem->list = tl;
 		}
 		tl->next = NULL;
-		local_irq_restore(eflags);
 		thread_sleep();
 		//now, we have it!!
 	}
@@ -62,6 +61,13 @@ void sema_init( sema_t *sem )
 {
 	memset( sem, 0, sizeof(sema_t) );
 	sem->value = 1;
+}
+
+//初始化
+void sema_init_ex( sema_t *sem, int v )
+{
+	memset( sem, 0, sizeof(sema_t) );
+	sem->value = v;
 }
 
 //V

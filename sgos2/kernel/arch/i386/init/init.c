@@ -23,6 +23,7 @@ int machine_init()
 	gdt_init();	//重新设置gdt
 	isr_init();	//设置isr，捕获各种机器异常
 	irq_init();	//设置irq，捕获硬、软件中断
+	vm86_init();	//vm86
 	//设置软中断
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
 	//初始化fastcall

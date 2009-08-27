@@ -38,6 +38,8 @@ title SGOS2
 	module /sgos2/api.bxm
 	module /sgos2/libc.bxm
 	module /sgos2/msg.bxm
+	module /sgos2/system.bxm
+	module /sgos2/speaker.run
 	module /sgos2/hello.run
 
 # Halt the machine

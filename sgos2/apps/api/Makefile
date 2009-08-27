@@ -11,7 +11,7 @@ LDFLAGS += --image-base 0x7FF00000
 CC = gcc $(CCFLAGS)
 LD = ld $(LDFLAGS)
 OD = objdump $(ODFLAGS)
-LD2 = ld2
+LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 

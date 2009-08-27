@@ -7,7 +7,7 @@ megs: 128
 
 # filename of ROM images
 romimage: file=qemu/bios.bin #BIOS-bochs-latest
-vgaromimage: file=qemu/vgabios-cirrus.bin #VGABIOS-lgpl-latest
+vgaromimage: file=qemu/vgabios.bin #VGABIOS-lgpl-latest
 
 # what disk images will be used 
 floppya: 1_44=floppya.img, status=inserted
@@ -29,6 +29,8 @@ boot: c
 
 # where do we send log messages?
 #log: bochsout.txt
+
+sb16: midimode=1, midi=/dev/midi00, wavemode=1, wave=/dev/dsp, loglevel=2, dmatimer=600000
 
 # disable the mouse, since DLX is text only
 mouse: enabled=0

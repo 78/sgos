@@ -22,6 +22,7 @@ void sema_remove_thread( sema_t* mut, struct THREAD* thr );
 int sema_trydown( sema_t *mut );
 void sema_down( sema_t *mut );
 void sema_init( sema_t *mut );
+void sema_init_ex( sema_t *mut, int value );
 void sema_up( sema_t *mut );
 void sema_destroy( sema_t *mut );
 

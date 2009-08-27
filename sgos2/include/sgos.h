@@ -9,12 +9,24 @@
 
 #include <types.h>
 
+#ifdef __cplusplus 
+#define EXTERN extern "C" 
+#else
+#define EXTERN extern
+#endif
+
+// 系统账号
+#define ADMIN_USER	0
+
 #define PROCESS_NAME_LEN	128
 
 #ifndef NULL
 #define NULL		((void*)0)	//
 #endif
 #define FILE_NAME_LEN	128
+#define NAME_LEN	64		//NameSpace
+
+typedef unsigned int thread_t;
 
 //进程信息块
 typedef struct PROCESS_INFO{
@@ -26,6 +38,7 @@ typedef struct PROCESS_INFO{
 	int			parent;			//父进程id
 	size_t			entry_address;		//程序入口
 	int			main_thread;		//主线程id
+	void*			global_storage;		//进程变量存储地址
 }PROCESS_INFO;
 
 //线程信息块
@@ -43,6 +56,7 @@ typedef struct THREAD_INFO{
 	void*			local_storage;		//28 线程局部变量存储地址
 	int			errno;			//2C 错误号
 	time_t			time;			//30 当前时间
+	void*			messenger;		//34 线程消息投递员
 }THREAD_INFO;
 
 //消息机制会话信息
@@ -60,5 +74,20 @@ typedef struct _SESSION{
 #define ERR_WRONGARG	3	//Wrong argument
 #define	ERR_NONE	4	//No results
 #define ERR_UNKNOWN	5	//Unknown error
+#define ERR_LOWPRI	6	//Low privilege
+#define ERR_NOINIT	7	//Not initialized
+#define ERR_NODEST	8	//No destination or wrong destination
+
+//线程优先级
+#define PRI_REALTIME	1	//单线程独占模式
+#define PRI_HIGH	2	//高优先级
+#define PRI_NORMAL	3	//一般优先级
+#define PRI_LOW		4	//最低优先级
+
+#define SEMOP_DOWN	1	//P操作
+#define SEMOP_UP	2	//V操作
+#define SEMOP_TRYDOWN	3
+
+#define SEMCTL_FREE	1	//释放信号灯
 
 #endif //__SGOS__H__

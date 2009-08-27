@@ -6,12 +6,12 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = msg
-LDFLAGS += --image-base 0x7FD00000 ../libc/libc.dll
+LDFLAGS += --image-base 0x7FC00000 ../libc/libc.dll ../api/api.dll
 
 CC = gcc $(CCFLAGS)
 LD = ld $(LDFLAGS)
 OD = objdump $(ODFLAGS)
-LD2 = ld2
+LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 

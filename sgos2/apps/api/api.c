@@ -1,6 +1,6 @@
 //API for SGOS2
 
-#define __FASTCALL
+//#define __FASTCALL
 
 #ifdef __FASTCALL
 
