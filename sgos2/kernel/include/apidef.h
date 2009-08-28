@@ -11,7 +11,7 @@ SYSCALL1( 1, int, dprint, const char*, buf );
 SYSCALL4( 2, int, send, void*, session, void*, content, size_t, len, uint, flag );
 SYSCALL4( 3, int, recv, void*, session, void*, content, size_t*, siz, uint, flag );
 //内存管理
-SYSCALL1( 4, void*, virtual_alloc, size_t, siz );
+SYSCALL3( 4, void*, virtual_alloc, size_t, siz, size_t, addr, uint, flag );
 SYSCALL1( 5, void, virtual_free, void*, p );
 //线程管理
 SYSCALL1( 6, void, thread_exit, int, code );	//退出当前线程
@@ -49,6 +49,6 @@ SYSCALL2( 35, int, iomap_get, uchar*, buf, size_t, buf_size );
 SYSCALL2( 36, int, iomap_set, uchar*, buf, size_t, buf_len  );
 SYSCALL2( 37, int, irq_register, int, tid, int, irq );
 SYSCALL2( 38, int, irq_unregister, int, tid, int, irq );
-SYSCALL3( 39, int, vm_map, size_t, vaddr, size_t, paddr, size_t, map_size );
+SYSCALL4( 39, int, vm_map, size_t, vaddr, size_t, paddr, size_t, map_size, uint, flag );
 
 #endif //_APIDEF_H_

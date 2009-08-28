@@ -1,6 +1,6 @@
 
-extern void* malloc(unsigned int );
-extern void free(void*p);
+extern "C" void* malloc(unsigned int );
+extern "C" void free(void*p);
 
 void * operator new (unsigned int size)
 {

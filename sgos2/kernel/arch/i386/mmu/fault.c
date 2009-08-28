@@ -108,7 +108,6 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			//映射到分配的物理地址去。
 			map_one_page( proc->page_dir, addr, phys_addr, P_WRITE | P_USER );
 			sched_state_restore(state);
-			PERROR("!!copy on write at 0x%X", addr );
 			return 1;
 		}else{
 			PERROR("##kernel try to access read only page at 0x%X.", addr );

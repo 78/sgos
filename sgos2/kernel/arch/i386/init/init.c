@@ -34,7 +34,6 @@ int machine_init()
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
 	//初始化fastcall
 	fastcall_init();
-	kprintf("Protect mode was controled successfully.\n");
 	//Real time clock
 	rtc_init();
 	return 0;

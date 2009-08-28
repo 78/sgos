@@ -199,7 +199,7 @@ void* 	realloc(void* p, size_t siz)
 void __allocation_init()
 {
 	size_t size = 256*1024*1024;
-	void* p = sys_virtual_alloc( size );
+	void* p = sys_virtual_alloc( size, 0, 0 );
 	if( p == NULL ){
 		printf("Memory is not enough.\n");
 		//should do something here....

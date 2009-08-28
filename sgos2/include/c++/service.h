@@ -8,6 +8,8 @@ namespace Service{
 	void outbyte( ushort port, uchar v );
 	void outword( ushort port, ushort v );
 	void outdword( ushort port, uint v );
+	int MapMemory( size_t vaddr, size_t paddr, size_t siz, uint flag );
+	int UnmapMemory( size_t vaddr, size_t siz );
 };
 
 #endif
