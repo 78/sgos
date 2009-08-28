@@ -156,7 +156,6 @@ void isr_init()
 	SET_TRAP_GATE(30, (void*)isr30);
 	SET_TRAP_GATE(31, (void*)isr31);
 	
-	PERROR("ok");
 }
 
 //异常处理入口。
@@ -172,7 +171,6 @@ void isr_handler(const I386_REGISTERS *r)
 				"Description: %s\tCode: %d\n", 
 				exception_msg[ r->int_no ], r->err_code );
 			isr_dumpcpu( r );
-			KERROR("Terminated!\n");
 		}
 	}
 }

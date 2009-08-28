@@ -32,7 +32,6 @@ void module_init()
 {
 	memset( &g_mods, 0, sizeof(g_mods) );
 	mutex_init( &g_mods.mutex );
-	PERROR("ok");
 }
 
 //映射进程地址到模块处

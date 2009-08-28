@@ -58,7 +58,7 @@ int page_init(uint mem_size)
 	//设置isr
 	isr_install( PAGEFAULT_INTERRUPT, (void*)pagefault_handler );
 	//分配所有的共享页表 3G-4G  大概需要2MB
-	kprintf("Allocating tables for kernel space.\n");
+	// Allocating tables for kernel space
 	dir_entry = (PAGE_DIR*)0xC0300000;
 	//内核进程页目录
 	kernel_page_dir = get_page_dir();
@@ -71,7 +71,7 @@ int page_init(uint mem_size)
 	memsetd( dir_entry+1, 0, 768-1 );
 	
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
-	kprintf("Mapping tables for kernel process\n");
+	// kprintf("Mapping tables for kernel process\n");
 	i = PROC_PAGE_TABLE_MAP>>22;	//767
 	dir_entry[i].v = 0x00300000|P_PRESENT|P_WRITE;
 	reflush_pages();

@@ -121,11 +121,15 @@ int sys_recv( void* session, void* content, size_t* len, uint flag )
 }
 
 //分配用户内存
-void* sys_virtual_alloc( size_t siz )
+void* sys_virtual_alloc( size_t siz, size_t addr, uint flag )
 {
-	void* addr;
-	addr = umalloc( current_proc(), siz );
-	return addr;
+	void* ptr;
+	if( flag & ALLOC_WITH_ADDR ){
+		ptr = umalloc_ex( current_proc(), addr, siz );
+	}else{
+		ptr = umalloc( current_proc(), siz );
+	}
+	return ptr;
 }
 
 //释放内存
@@ -424,8 +428,23 @@ int sys_irq_unregister( int tid, int irq )
 	return 0;
 }
 
-int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size )
+// 进程虚拟内存映射到物理地址
+int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
 {
-	PERROR("not implemented.");
+	//检查参数是否页对齐
+	if( vaddr%PAGE_SIZE || paddr%PAGE_SIZE || map_size%PAGE_SIZE )
+		return -ERR_WRONGARG;
+	//不允许映射内核空间
+	if( !IS_USER_MEMORY(vaddr) || !IS_USER_MEMORY(vaddr+map_size-1) )
+		return -ERR_WRONGARG;
+	if( current_thread()->process->uid != ADMIN_USER )
+		return -ERR_LOWPRI;
+	if( flag & MAP_UNMAP ){
+		unmap_pages( vaddr, paddr, map_size );
+	}
+	if( flag & MAP_READONLY )
+		map_pages( current_proc()->page_dir, vaddr, paddr, map_size, P_USER );
+	else
+		map_pages( current_proc()->page_dir, vaddr, paddr, map_size, P_USER | P_WRITE );
 	return 0;
 }

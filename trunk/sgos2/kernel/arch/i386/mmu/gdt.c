@@ -86,6 +86,5 @@ void gdt_init()
 	idt_ptr.addr = (t_32)idt;
 	// 内嵌汇编载入 idt 表描述符
 	__asm__ __volatile__  ( "lidt %0" : "=m"( idt_ptr ) ) ; //
-	PERROR("ok");
 }
 

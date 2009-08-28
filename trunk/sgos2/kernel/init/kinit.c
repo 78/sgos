@@ -31,14 +31,12 @@ void kinit( uint boot_info )
 	if ( CHECK_FLAG (mbi->flags, 6) ) 
 	{
 		memory_map_t *mmap; 
-		kprintf ("mmap_addr = 0x%x, mmap_length = 0x%x\n", 
-			mbi->mmap_addr, mbi->mmap_length); 
 		mbi->mmap_addr += KERNEL_BASE;
 		for ( mmap = (memory_map_t *) mbi->mmap_addr; 
 			(uint) mmap < mbi->mmap_addr + mbi->mmap_length; 
 			mmap = (memory_map_t *) ((uint) mmap + mmap->size + sizeof (mmap->size))
 		){
-			kprintf ("size = 0x%x, base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x\n", 
+			kprintf ("size = 0x%02x, base = 0x%04x%08x, len = 0x%04x%08x, type = 0x%x\n", 
 				mmap->size, 
 				mmap->base_addr_high, 
 				mmap->base_addr_low, 
@@ -78,14 +76,6 @@ void kinit( uint boot_info )
 	start_threading();
 	//never return here
 	KERROR("##Warning: kernel not ready.");
-}
-
-//halt thread, did nothing, for cpu idle
-static void kinit_halt()
-{
-	kprintf("halt thread started.\n");
-	while(1)
-		halt();
 }
 
 //加载模块
@@ -154,26 +144,17 @@ static void kinit_bios_mode()
 //线程0执行hlt指令，线程1继续内核初始化。
 void kinit_resume()
 {
-	//create a halt thread
-	THREAD* thr;
-	thr = thread_create( current_proc(), (uint)kinit_halt );
-	thread_resume( thr );
-	
 	//check module   内核需要加载的基本服务信息   
 	if (CHECK_FLAG (mbi->flags, 3)) 
 	{ 
 		module_t *mod; 
 		int i; 
 		char* ext;
-		kprintf ("mods_count = %d, mods_addr = 0x%x\n", 
-			(int) mbi->mods_count, (int) mbi->mods_addr ); 
 		mbi->mods_addr += KERNEL_BASE;	//修正地址
 		for (i = 0, mod = (module_t *) mbi->mods_addr; 
 			i < mbi->mods_count; i++, mod ++) {
-			kprintf ("mod_start = 0x%x, mod_end = 0x%x, string = %s\n", 
-				mod->mod_start, 
-				mod->mod_end, 
-				(char *) mod->string ); 
+			kprintf ("Loading %s (0x%x)\n", 
+				(char *) mod->string, mod->mod_start ); 
 			//修正地址
 			mod->mod_start += KERNEL_BASE;
 			mod->mod_end += KERNEL_BASE;
@@ -215,11 +196,7 @@ void kinit_resume()
 			}
 		}
 	} 
-	
+	//becomes an idle thread.
 	//do something boring currently
-	kprintf("display a point every second.\n");
-	while(1){
-		kprintf(".");
-		thread_wait(1000 );
-	}
+	for(;;) halt();
 }

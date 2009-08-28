@@ -64,9 +64,16 @@ typedef struct _SESSION{
 	uint	thread;
 	uint	sequence;
 }session_t;
+
+//API 
 #define	MSG_SEND_TO_ALL		0
 #define MSG_PENDING		0x80000000
 #define MSG_KEEP		0x40000000
+
+#define ALLOC_WITH_ADDR		1
+
+#define MAP_UNMAP		1
+#define MAP_READONLY		2
 
 //系统错误号
 #define ERR_NOMEM	1	//No memory
