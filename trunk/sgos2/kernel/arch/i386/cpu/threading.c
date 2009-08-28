@@ -50,7 +50,8 @@ void update_for_next_thread()
 	//如果改变了进程，页目录也会随着变化
 	if( current_proc() != next->process )
 		load_page_dir( next->process->page_dir );
-	
+	//检查数学协处理器
+	fpu_check_and_save( tbox.running );
 }
 
 //线程切换
@@ -107,5 +108,15 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 		r->esp = stack_addr;	//一般运行时堆栈
 		r->eip = entry_addr;	//入口
 		thr->stack_pointer = (t_32)r;	//中断时堆栈
+	}
+}
+
+//释放线程使用的资源，例如fpu
+void arch_thread_cleanup( THREAD* thr )
+{
+	if(thr->arch.fsave){
+		kfree(thr->arch.fsave);
+		thr->arch.fsave = NULL;
+		thr->used_math = 0;
 	}
 }

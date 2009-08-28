@@ -85,7 +85,7 @@ int	msg_send( messenger_t* msger, uint flag )
 	dest_name = bxml_readstr( msger->bxml, ":to" );
 	if( !dest_name )
 		return -ERR_NODEST;
-	if( strcmp(msger->dest_name, dest_name )!=0 ){
+	if( !(*msger->dest_name) || strcmp(msger->dest_name, dest_name )!=0 ){
 		//get the thread
 		msger->dest_thread = sys_namespace_match( (char*)dest_name );
 		if( !msger->dest_thread )

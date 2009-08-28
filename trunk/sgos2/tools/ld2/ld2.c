@@ -65,7 +65,7 @@ static int translate_pe( const char* buf )
 		bxml_redirect( bxml, tmp, 1 );
 		unsigned int addr = sec_hdr[i].ulVAddr;
 		bxml_write( bxml, ":virtual_address", &addr, sizeof(addr) );
-		bxml_write( bxml, ":virtual_size", &sec_hdr[i].ulSize, sizeof(sec_hdr[i].ulVSize) );
+		bxml_write( bxml, ":virtual_size", &sec_hdr[i].ulVSize, sizeof(sec_hdr[i].ulVSize) );
 		//段数据
 		bxml_write( bxml, ".", buf+sec_hdr[i].ulSecOffset, sec_hdr[i].ulSize );
 		memcpy( image+addr, buf+sec_hdr[i].ulSecOffset, sec_hdr[i].ulSize );

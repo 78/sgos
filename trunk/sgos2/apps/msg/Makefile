@@ -6,7 +6,7 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = msg
-LDFLAGS += --image-base 0x7FC00000 ../libc/libc.dll ../api/api.dll
+LDFLAGS += --image-base 0x7FD00000 ../libc/libc.dll ../api/api.dll
 
 CC = gcc $(CCFLAGS)
 LD = ld $(LDFLAGS)

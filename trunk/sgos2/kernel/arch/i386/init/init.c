@@ -20,10 +20,16 @@ void multiboot_init( uint info_addr )
 int machine_init()
 {
 	//init i386
-	gdt_init();	//重新设置gdt
-	isr_init();	//设置isr，捕获各种机器异常
-	irq_init();	//设置irq，捕获硬、软件中断
-	vm86_init();	//vm86
+	//重新设置gdt
+	gdt_init();
+	//设置isr，捕获各种机器异常
+	isr_init();
+	//设置irq，捕获硬、软件中断
+	irq_init();
+	//i387数学协处理器
+	fpu_init();
+	//vm86
+	vm86_init();
 	//设置软中断
 	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
 	//初始化fastcall

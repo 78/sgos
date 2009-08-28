@@ -127,6 +127,6 @@ _recv_search:
 			message_delete( kmsg );
 	}
 	session->thread = (uint)kmsg->source;
-	return kmsg->length;
+	return ret;
 }
 

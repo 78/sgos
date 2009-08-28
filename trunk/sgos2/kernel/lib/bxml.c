@@ -708,13 +708,13 @@ int bxml_redirect( struct BXML_DATA* xml, const char* path, int create_if_not_ex
 //read 
 int bxml_read( struct BXML_DATA* xml, const char* path, void* buf, unsigned int buf_size )
 {
+	uint read;
 	struct BXML_NODE* nod;
 	nod = parse_path( xml, path, 0 );
 	if( nod && nod->value ){
-		if( nod->value_len > buf_size )
-			return -BXML_BUFF_TOO_SMALL;
-		memcpy( buf, nod->value, nod->value_len );
-		return nod->value_len;
+		read = nod->value_len > buf_size ? buf_size : nod->value_len;
+		memcpy( buf, nod->value, read );
+		return read;
 	}else{
 		return -1;	//temporary do this.
 	}

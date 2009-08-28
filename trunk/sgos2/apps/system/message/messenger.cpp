@@ -1,6 +1,6 @@
 #include <sgos.h>
 #include <string.h>
-#include <stdlib.h>
+#include <stdio.h>
 #include <system.h>
 
 namespace System{
@@ -61,10 +61,11 @@ namespace System{
 	// 接收消息
 	int Messenger::receive(bool pending)
 	{
-		if( pending )
+		if( pending ){
 			return msg_recv( &msg, flag|MSG_PENDING );
-		else
+		}else{
 			return msg_recv( &msg, flag );
+		}
 	}
 
 	// 读操作
@@ -76,7 +77,8 @@ namespace System{
 	// 读节点名操作
 	const char* Messenger::readName( const char* path )
 	{
-		return msg_readname( &msg, path );
+		const char* ret = msg_readname( &msg, path );
+		return ret;
 	}
 
 	// 写操作

@@ -13,7 +13,7 @@ void umalloc_init( PROCESS* proc )
 {
 	bb_init_block( &proc->memory_info.umem_mgr, 
 		0x00100000,		//address
-		0x80000000		//size
+		0x7FF00000		//size
 		);
 	//
 }
