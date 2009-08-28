@@ -9,10 +9,11 @@
 
 #define RTC_FREQUENCY	200	//200Hz  这是时钟频率，具体在arch/i386/clock/rtc.c
 
-#define SYSTEM_INTERRUPT 0xA1
-#define PAGEFAULT_INTERRUPT 14
-#define GPF_INTERRUPT 13
+#define SYSTEM_INTERRUPT	0xA1
+#define PAGEFAULT_INTERRUPT	14
+#define GPF_INTERRUPT		13
 #define RTC_INTERRUPT		0
+#define FPU_INTERRUPT		7
 
 #define GD_KERNEL_CODE	0x08
 #define GD_KERNEL_DATA	0x10
@@ -126,9 +127,12 @@ typedef struct I386_CONTEXT{
 }I386_CONTEXT;
 
 typedef struct ARCH_THREAD{
-	I387_REGISTERS	i387;
+	// 在第一次使用时由内核分配
+	I387_REGISTERS*	fsave;
+	// 当前是否使用了fpu
+	uchar		used_fpu;
 	// in_vm86=1时，在线程创建时会初始化vm86寄存器
-	int		in_vm86;
+	uchar		in_vm86;
 	// vmflags
 	uint		vmflags;
 	// interrupt bit
@@ -158,6 +162,8 @@ typedef union PAGE_TABLE{
 #define P_ACCESS	(1<<5)	//页面被访问过
 
 #define halt() __asm__("hlt")
+#define stts() __asm__ __volatile__("movl %cr0, %eax; orl $8, %eax; movl %eax, %cr0")
+#define clts() __asm__ __volatile__("clts")
 
 //gdt
 void gdt_init();
@@ -208,6 +214,7 @@ void rtc_init();
 //cpu
 void init_thread_regs( struct THREAD* thr, struct THREAD* parent,
 	void* context, uint entry_addr, uint stack_addr );
+void arch_thread_cleanup( struct THREAD* thr );
 void switch_to( struct THREAD* cur, struct THREAD* thr );
 void start_threading();
 void fastcall_update_esp(uint kesp);
@@ -215,5 +222,8 @@ void fastcall_init();
 void update_for_next_thread();
 void i386_switch( struct THREAD*, uint*, uint* );	//switch.S
 void vm86_init();	//vm86.c
+//fpu
+void fpu_check_and_save( struct THREAD* thr );
+void fpu_init();
 
 #endif

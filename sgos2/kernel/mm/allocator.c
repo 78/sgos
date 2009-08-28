@@ -27,6 +27,7 @@
 	}
 
 /*  sizeof(node_t)=20  最小分配单元为12字节
+ *  返回的地址应该是32字节对齐的。
 free_table[0]	32<=m<64
 free_table[1]	64<=m<s128
 free_table[2]	128字节空闲块

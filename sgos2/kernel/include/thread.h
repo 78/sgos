@@ -74,7 +74,9 @@ typedef struct THREAD{
 	//判断是否是内核线程。
 	uchar				kernel;		
 	//是否在中断模式下。
-	uchar				interrupted;	
+	uchar				interrupted;
+	//是否使用了数学协处理器
+	uchar				used_math;
 	//线程内核堆栈
 	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	
 }THREAD;

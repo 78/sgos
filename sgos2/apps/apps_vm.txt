@@ -9,5 +9,5 @@ Library		LoadAddress		Description
 api		0x7FF00000		System Calls & Program Entrance
 libc		0x7FE00000		Standard C Library
 msg		0x7FD00000		Easy Message Library
-messenger	0x7FC00000		C++ Message Library
+system		0x7FC00000		C++ System Library
 

@@ -79,7 +79,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 		if( bxml_redirect(bxml, "/program/section_table/section", 0) ){
 			do{
 				char* name;
-				size_t addr, siz;
+				size_t addr, siz, ret;
 				//read section attributes
 				name = bxml_readstr(bxml, ":name");
 				bxml_read(bxml, ":virtual_address", &addr, sizeof(addr));
@@ -87,11 +87,16 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 				addr += load_addr;
 				//保证不会越界
 				if( addr+siz <= load_addr+load_size ){
-					if( bxml_read(bxml, ".", (void*)addr, siz ) == 0 ){
-						//没有读取任何数据，则做清0操作
+					if( strcmp(name, ".bss")==0 ){
 						memset( (void*)addr, 0, siz );
+					}else{
+						ret = bxml_read(bxml, ".", (void*)addr, siz );
+						if( ret<siz ){
+							//没有读取完整数据，则做清0操作
+							memset( (void*)((size_t)addr+ret), 0, siz-ret );
+						}
 					}
-//					PERROR("load section: %s at %x", name, addr );
+//					PERROR("load section %s at 0x%X siz:%X", name, addr, siz );
 				}else{
 					PERROR("## out of boundary addr:0x%X size:0x%X.", addr, siz);
 				}

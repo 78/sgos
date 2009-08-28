@@ -154,6 +154,7 @@ int thread_terminate( THREAD* thr, int code )
 	//向各系统服务发送线程结束消息
 	
 	//回收资源
+	arch_thread_cleanup( thr );
 	/*
 	if( !thr->kernel ){//用户态线程？？
 		ufree( proc, thr->stack_pointer );

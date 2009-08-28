@@ -4,7 +4,10 @@ using namespace System::Service;
 
 static void startSound(unsigned int freq)
 {
-	unsigned int Divisor = 1193180 / freq;
+	unsigned int Divisor;
+	if( freq==0 )
+		return;
+	Divisor= 1193180 / freq;
 
 	outbyte(0x43, 0xB6);
 	outbyte(0x42, Divisor & 0xFF);
@@ -47,5 +50,5 @@ void test()
 
 void beep()
 {
-	play(391.995,100); //G4
+	play(392,100); //G4
 }

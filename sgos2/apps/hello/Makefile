@@ -1,7 +1,7 @@
 #sgos apps
 
 CXXFLAGS = -g -Werror -I../../include/c++ -I../../include -nostdlib -fleading-underscore --no-exceptions
-LDFLAGS = -shared
+LDFLAGS = 
 ODFLAGS = -S
 
 #here defines the program information

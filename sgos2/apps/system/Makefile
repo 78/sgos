@@ -6,7 +6,7 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = system
-LDFLAGS += --image-base 0x7FD00000 ../libc/libc.dll ../msg/msg.dll ../api/api.dll
+LDFLAGS += --image-base 0x7FC00000 ../libc/libc.dll ../msg/msg.dll ../api/api.dll
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)
