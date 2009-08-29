@@ -9,23 +9,34 @@
 = Details =
 
 下面介绍的是Windows上的编写方法。
+
 首先要下载sgos2_bin编译环境，然后建立一个hello.cpp
+
 输入以下内容：
 
 #include <stdio.h>
 
 int main()
 {
+
   printf("Hello world.\n");
+
   return 0;
+
 }
 
 把libc.dll(/apps/libc)和crt.a(/crt)复制到当前目录下。
+
 在命令行里编译
+
 g++ hello.cpp -c -nostdlib -o hello.o
+
 ld hello.o crt.a libc.dll -o hello.exe
+
 ld2 hello.exe hello.run
+
 接着把hello.run导入到镜像文件中去
+
 wf hd.img -src hello.run -dest sgos/hello.run
 
 然后编辑scripts/menu.lst，添加加载模块
