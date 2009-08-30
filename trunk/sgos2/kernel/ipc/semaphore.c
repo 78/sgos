@@ -64,8 +64,9 @@ void sema_up( sema_t *sem )
 	thr = queue_pop_back( &sem->wait_queue );
 	local_irq_restore( eflags );
 	sem->value ++;
-	if( thr )
+	if( thr ){
 		thread_wakeup( thr );
+	}
 }
 
 //释放一个sema

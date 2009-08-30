@@ -17,6 +17,7 @@ OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/mmu/map.o \
 	arch/i386/mmu/fault.o \
 	arch/i386/clock/rtc.o \
+	arch/i386/debug/dbgx86.o \
 	arch/i386/cpu/threading.o \
 	arch/i386/cpu/sysenter.o \
 	arch/i386/cpu/switch.o \

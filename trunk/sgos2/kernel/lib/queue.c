@@ -223,7 +223,8 @@ void queue_cleanup( queue_t* q )
 		while(!queue_is_empty(q))
 			q->del_func(queue_pop_back(q));
 	else
-		queue_pop_back(q);
+		while(!queue_is_empty(q))
+			queue_pop_back(q);
 	if(q->use_sem){
 		sema_destroy(q->semaphore);
 		kfree(q->semaphore);

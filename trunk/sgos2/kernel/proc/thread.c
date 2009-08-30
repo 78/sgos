@@ -147,26 +147,31 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr, int flag )
 int thread_terminate( THREAD* thr, int code )
 {
 	PROCESS* proc;
+	uint flags;
 	proc = current_proc();
 	//如果线程睡眠了，怎么办？
-	//设置状态为死亡
-	sched_set_state( thr, TS_DEAD );
+	down( &thr->semaphore );
 	//线程退出码
 	thr->exit_code = code;
 	//清空消息队列
 	message_destroy( thr );
+	//向各系统服务发送线程结束消息
+	//....
+	//回收资源
+	arch_thread_cleanup( thr );
+	//回收堆栈
+	if( !thr->kernel )//用户态线程？？
+		ufree( proc, (void*)thr->stack_address );
+	//禁止切换线程，因为当状态为死亡后，被时钟切换后就再也回不来了
+	local_irq_save(flags);
+	//设置状态为死亡
+	sched_set_state( thr, TS_DEAD );
 	//Wakeup all related sleeping threads
 	sema_destroy( &thr->semaphore );
 	//唤醒所有join线程
 	sema_destroy( &thr->sem_join );
-	//向各系统服务发送线程结束消息
-	
-	//回收资源
-	arch_thread_cleanup( thr );
-	/*
-	if( !thr->kernel ){//用户态线程？？
-		ufree( proc, thr->stack_pointer );
-	}*/
+	local_irq_restore(flags);
+	//线程切换
 	schedule();
 	return 0;
 }

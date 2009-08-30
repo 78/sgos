@@ -18,12 +18,11 @@ void start_threading()
 	memset(&g_tss, 0, sizeof(TSS) );
 	g_tss.ss0 = GD_KERNEL_DATA;
 	g_tss.esp0 = 0;
-	g_tss.iobase = sizeof(TSS);
+	g_tss.iobase = (uint)g_tss.iomap - (uint)&g_tss;//sizeof(TSS);
 	//设置TSS描述符
 	set_gdt_desc( GD_TSS_INDEX, (t_32)&g_tss, sizeof(TSS)-1, DA_386TSS );
 	//加载TSS和LDT
-	__asm__ __volatile__("mov $0x28, %bx\n\t"
-		"ltr %bx\n\t");
+	__asm__ __volatile__("mov $0x28, %bx; ltr %bx");
 	//进入线程模式
 	enter_threading_mode((size_t)(current_thread())+sizeof(THREAD));
 	//开启中断，引发线程切换
@@ -101,7 +100,7 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 		r->eflags = 0x202;	//标志寄存器
 		if( thr->process->uid == ADMIN_USER ){
 			//允许系统进程使用IO
-			r->eflags |= EFLAG_IOPL3;
+			//r->eflags |= EFLAG_IOPL3;
 		}
 		r->esp = stack_addr;	//一般运行时堆栈
 		r->eip = entry_addr;	//入口

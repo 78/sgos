@@ -9,7 +9,7 @@ pop	ds
 popa
 db	0xCD
 int_no
-db	0x03
+db	0xFB
 ; save
 pusha
 push	ds

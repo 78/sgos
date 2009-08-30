@@ -8,7 +8,7 @@ int main()
 	Messenger sender;
 	THREAD_CONTEXT tc;
 	int oldMode;
-	printf("[Hello]Now tests the speaker service!\n");
+	printf("[Hello]Now tests the BIOS Call & speaker service!\n");
 	Thread::Sleep(2000);
 	//映射前1MB
 	Service::MapMemory( 0, 0, 1<<20, 0 );
@@ -18,14 +18,14 @@ int main()
 	Service::CallBIOS( 0x10, &tc );
 	if( tc.eax != 0x4F )
 		printf("[Hello]Failed to get current resolution.\n");
+	Thread::Sleep(1000);
 	oldMode = tc.ebx;
 	//设置分辨率为640*480*16
 	tc.eax = 0x4F02;
 	tc.ebx = 0x111;
-//	Service::CallBIOS( 0x10, &tc );
-//	if( tc.eax != 0x4F )
-//		printf("[Hello]Failed to change resolution.\n");
-	
+	Service::CallBIOS( 0x10, &tc );
+	if( tc.eax != 0x4F )
+		printf("[Hello]Failed to change resolution.\n");
 	Thread::Sleep(2000);
 	tc.eax = 0x4F02;
 	tc.ebx = oldMode;

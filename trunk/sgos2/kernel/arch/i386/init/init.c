@@ -26,6 +26,8 @@ int machine_init()
 	isr_init();
 	//设置irq，捕获硬、软件中断
 	irq_init();
+	//调试器
+	dbg_init();
 	//i387数学协处理器
 	fpu_init();
 	//vm86
