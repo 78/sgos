@@ -2,19 +2,15 @@
 #define _SEMAPHORE_H_
 
 #include <sgos.h>
+#include <queue.h>
 
 #define	down(a)	sema_down(a)
 #define up(a)	sema_up(a)
 
 struct THREAD;
 
-typedef struct THREAD_LIST{
-	struct THREAD*		thread;
-	struct THREAD_LIST*	next;
-}THREAD_LIST;
-
 typedef struct SEMAPHORE{
-	struct THREAD_LIST*	list;
+	queue_t			wait_queue;
 	uint			value;
 }sema_t;
 
@@ -25,5 +21,6 @@ void sema_init( sema_t *mut );
 void sema_init_ex( sema_t *mut, int value );
 void sema_up( sema_t *mut );
 void sema_destroy( sema_t *mut );
+
 
 #endif

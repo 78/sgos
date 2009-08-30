@@ -22,6 +22,7 @@ title SGOS2
 	module /sgos2/speaker.run
 	module /sgos2/hd.run
 	module /sgos2/hello.run
+	module /sgos2/vm86.com
 
 # Halt the machine
 title Turn off power!

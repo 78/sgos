@@ -10,6 +10,7 @@ typedef struct MESSENGER{
 	bxml_t*	bxml;
 	char	dest_name[NAME_LEN];
 	uint	dest_thread;
+	uint	recv_thread;
 	char*	buffer;
 	size_t	buffer_size;
 }messenger_t;
@@ -29,6 +30,8 @@ void	msg_init( messenger_t * msger );
 int	msg_parse( messenger_t * msger, const char* str );
 // 创建一个路径，并且转到创建的路径
 int	msg_mkdir( messenger_t * msger, const char* path );
+// 追加一个节点
+int	msg_append( messenger_t * msger, const char* name );
 // 重定位当前路径
 int	msg_redir( messenger_t * msger, const char* path );
 // 移动到下一项

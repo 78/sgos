@@ -2,31 +2,38 @@
 #define _QUEUE_H
 
 
-#include <semaphore.h>
-
 #define QUEUE_NAME_LEN	16
 
 typedef int (*queue_search_func)(const void *, const void *);
 typedef void (*queue_delete_func)(const void *);
 
+typedef struct QUEUE_NODE{
+	struct QUEUE_NODE	*pre, *next;
+	void*			v;
+}QUEUE_NODE, qnode_t;
+
 typedef struct _QUEUE{
-	sema_t		semaphore;	//这里用spin_lock好
-	int		size;
-	int		head;
-	int		tail;
-	void**		items;		//使用数组进行保存
-	queue_delete_func	del_func;	//溢出时，是否删除
+	void*		semaphore;	//这里用spin_lock好不?
+	int		cur_num;	//当前链表元素个数
+	int		max_num;	//最大允许元素个数
+	QUEUE_NODE	*front;		//头节点
+	QUEUE_NODE	*back;		//尾节点
 	char		name[QUEUE_NAME_LEN];	//used for debugging.
+	queue_delete_func del_func;
+	char		use_sem;
 }queue_t;
 
-int queue_create( queue_t* l, int size, queue_delete_func del, const char* name );
-void* queue_pop_from_tail( queue_t* l );
-void* queue_pop_from_head( queue_t* l );
-int queue_push_to_head( queue_t* l, const void* data );
-int queue_push_to_tail( queue_t* l, const void* data );
-void* queue_search( queue_t* l, const void*, queue_search_func search );
+#define QUEUE_UNINTERRUPTABLE	1
+
+int queue_create( queue_t* l, int size, queue_delete_func del, const char* name, int use_sem );
+void* queue_pop_back( queue_t* l );
+void* queue_pop_front( queue_t* l );
+int queue_push_front( queue_t* l, void* data );
+int queue_push_back( queue_t* l, void* data );
+void* queue_search( queue_t* l, void*, queue_search_func search, qnode_t** ret_nod );
+void* queue_quick_search( queue_t* l, void*, qnode_t** ret_nod );
 void queue_cleanup( queue_t* l );
 int queue_is_empty( queue_t* l );
-void queue_remove( queue_t* l, const void* data );
+void queue_remove( queue_t* l, QUEUE_NODE* data );
 
 #endif

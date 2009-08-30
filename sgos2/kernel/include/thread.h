@@ -59,6 +59,8 @@ typedef struct THREAD{
 	THREAD_INFO*			thread_info;
 	//消息队列
 	queue_t				message_queue;
+	//等待线程结束队列
+	sema_t				sem_join;
 	//线程优先级 1~4
 	int				priority;
 	//调度信息,调度链表 时间片之类的.
@@ -77,6 +79,8 @@ typedef struct THREAD{
 	uchar				interrupted;
 	//是否使用了数学协处理器
 	uchar				used_math;
+	//是否在BIOS模式下
+	uchar				bios_mode;
 	//线程内核堆栈
 	uchar				kernel_stack[THREAD_KERNEL_STACK_SIZE];	
 }THREAD;
@@ -96,15 +100,19 @@ typedef struct THREAD_BOX{
 }THREAD_BOX;
 extern THREAD_BOX	tbox;	//线程盒子
 
+#define BIOS_THREAD	0x1
+#define KERNEL_THREAD	0x2
+
 //函数定义
 THREAD* current_thread();
-THREAD* thread_create( struct PROCESS* proc, uint entry_addr );
+THREAD* thread_create( struct PROCESS* proc, uint entry_addr, int flag );
 int thread_terminate( THREAD* thr, int code );
 int thread_wakeup( THREAD* thr );
 int thread_resume( THREAD* thr );
 int thread_suspend( THREAD* thr );
 int thread_wait( uint ms );
 int thread_sleep();
+void thread_join( THREAD* thr );
 void thread_init();
 THREAD* thread_get( int tid );
 //sched.c

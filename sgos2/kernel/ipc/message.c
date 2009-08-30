@@ -30,7 +30,7 @@ void message_init( struct THREAD* thr )
 {
 	char tmp[16];
 	sprintf( tmp, "msgQue:%x", thr->tid );
-	queue_create( &thr->message_queue, MAX_MESSAGES_IN_QUEUE, message_delete, tmp );
+	queue_create( &thr->message_queue, MAX_MESSAGES_IN_QUEUE, message_delete, tmp, 1 );
 }
 
 // 释放消息队列占用的空间
@@ -71,7 +71,7 @@ int message_send( session_t* session, void* content, size_t len, uint flag )
 	//copy from the caller's memory space
 	memcpy( kmsg->content, content, len );
 	//insert message queue
-	queue_push_to_tail( &thr_dest->message_queue, kmsg );
+	queue_push_front( &thr_dest->message_queue, kmsg );
 	//finished
 	up( &thr_dest->semaphore );
 	//wake up the thread
@@ -85,6 +85,7 @@ int message_recv( session_t* session, void* content, size_t* len, uint flag )
 {
 	THREAD* thr_src, * thr_cur;
 	KMESSAGE* kmsg;
+	qnode_t* nod;
 	int ret;
 	thr_src = (THREAD*)session->thread;
 	thr_cur = current_thread();
@@ -92,9 +93,9 @@ int message_recv( session_t* session, void* content, size_t* len, uint flag )
 _recv_search:
 	if( thr_src )	//specify the thread
 		kmsg = queue_search( &thr_cur->message_queue, thr_src,
-			message_search );
+			message_search, &nod );
 	else
-		kmsg = queue_pop_from_head( &thr_cur->message_queue );
+		kmsg = queue_pop_back( &thr_cur->message_queue );
 	if( !kmsg ){
 		if( flag&MSG_PENDING ){
 			thread_sleep();
@@ -107,7 +108,7 @@ _recv_search:
 		*len = kmsg->length;
 		//恢复
 		if(!thr_src )
-			queue_push_to_head( &thr_cur->message_queue, kmsg );
+			queue_push_back( &thr_cur->message_queue, kmsg );
 		return -ERR_NOMEM;
 	}
 	//set return value
@@ -117,12 +118,12 @@ _recv_search:
 	//check flag
 	if( thr_src ){
 		if( !(flag&MSG_KEEP ) ){
-			queue_remove( &thr_cur->message_queue, kmsg );
+			queue_remove( &thr_cur->message_queue, nod );
 			message_delete( kmsg );
 		}
 	}else{
 		if( flag&MSG_KEEP )
-			queue_push_to_head( &thr_cur->message_queue, kmsg );
+			queue_push_back( &thr_cur->message_queue, kmsg );
 		else
 			message_delete( kmsg );
 	}

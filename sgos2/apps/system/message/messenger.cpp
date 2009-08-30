@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <system.h>
+#include <msg.h>
 
 namespace System{
 	Messenger::Messenger()
@@ -20,6 +21,21 @@ namespace System{
 	Messenger::~Messenger()
 	{
 		msg_cleanup( &msg );
+	}
+	
+	// 回复
+	Messenger Messenger::reply()
+	{
+		Messenger m;
+		m.msg.recv_thread = this->msg.recv_thread;
+		return m;
+	}
+	
+	//
+	Messenger& Messenger::append( const char* name )
+	{
+		msg_append( &msg, name );
+		return *this;
 	}
 
 	// 解析一个消息文本

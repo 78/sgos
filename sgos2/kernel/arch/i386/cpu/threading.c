@@ -70,14 +70,12 @@ void switch_to( THREAD* cur, THREAD* next )
 void init_thread_regs( THREAD* thr, THREAD* parent,
 	void* context, uint entry_addr, uint stack_addr )
 {
-	PROCESS* proc;
 	I386_REGISTERS *r;
 	if( !parent )
 		return;
-	proc = thr->process;
 	//获取堆栈的寄存器帧，通过设置这里的数据改变返回地址和返回后的寄存器
 	r = GET_THREAD_REGS(thr);	
-	if( proc->bios_mode ){	//VM86...
+	if( thr->bios_mode ){	//VM86 线程
 		uint far_ptr;
 		ARCH_THREAD* arch;
 		arch = &thr->arch;
@@ -86,7 +84,7 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 		far_ptr = LINEAR_TO_FARPTR( entry_addr );
 		r->cs = r->ss = FARPTR_SEG(far_ptr);
 		r->eip = FARPTR_OFF(far_ptr);
-		r->esp = 0xFFFF;	//the end of 64KB
+		r->esp = 0xFFE0;	//the end of 64KB
 		r->eflags = 0x202|EFLAG_VM|EFLAG_IF;	//VM|IF
 		thr->stack_pointer = (t_32)r;	//中断时堆栈
 	}else{	//32位保护模式

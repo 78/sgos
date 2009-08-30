@@ -61,6 +61,14 @@ int	msg_movenext( messenger_t * msger )
 	return bxml_movenext( msger->bxml );
 }
 
+// 追加一个节点
+int	msg_append( messenger_t * msger, const char* name )
+{
+	if(!msger->bxml)
+		return 0; //也是没有下一项
+	return bxml_mknode( msger->bxml, name );
+}
+
 // 提交一个同步请求
 int	msg_request( messenger_t * msger )
 { 
@@ -83,14 +91,17 @@ int	msg_send( messenger_t* msger, uint flag )
 	if(!msger->bxml)
 		return -ERR_NOINIT;
 	dest_name = bxml_readstr( msger->bxml, ":to" );
-	if( !dest_name )
-		return -ERR_NODEST;
-	if( !(*msger->dest_name) || strcmp(msger->dest_name, dest_name )!=0 ){
-		//get the thread
-		msger->dest_thread = sys_namespace_match( (char*)dest_name );
-		if( !msger->dest_thread )
-			return -ERR_NODEST;
-		strcpy( msger->dest_name, dest_name );
+	if( dest_name ){
+		if( !(*msger->dest_name) || strcmp(msger->dest_name, dest_name )!=0 ){
+			//get the thread
+			msger->dest_thread = sys_namespace_match( (char*)dest_name );
+			if( !msger->dest_thread )
+				return -ERR_NODEST;
+			strcpy( msger->dest_name, dest_name );
+		}
+	}else{
+		//reply??
+		msger->dest_thread = msger->recv_thread;
 	}
 	sess.thread = msger->dest_thread;
 	len = bxml_buffer_size( msger->bxml );
@@ -141,6 +152,7 @@ int	msg_recv_ex( messenger_t* msger, uint thread, uint flag )
 	if( msger->bxml )
 		bxml_free(msger->bxml);
 	msger->bxml = bxml_parse( msger->buffer );
+	msger->recv_thread = sess.thread;
 	if( msger->bxml == NULL )
 		return -ERR_UNKNOWN;
 	return ret;

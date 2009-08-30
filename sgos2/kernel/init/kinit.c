@@ -115,27 +115,11 @@ static void kinit_process_start()
 	//获得api接口库
 	mod_api = module_get_by_name( proc, "api.bxm");
 	//创建进程主线程
-	main = thread_create( proc, module_get_export_addr( mod_api, "_program_entry_" ) );
+	main = thread_create( proc, module_get_export_addr( mod_api, "_program_entry_" ), 0 );
 	//设置主线程
 	proc->main_thread = main;
 	if( proc->process_info )
 		proc->process_info->main_thread = (uint)main;
-	thread_resume( main );
-	thread_terminate(current_thread(), 0);
-}
-
-static void kinit_bios_mode()
-{
-	PROCESS* proc;
-	THREAD* main;
-	proc = current_proc();	//当前进程
-	//映射前1MB
-	map_pages( proc->page_dir, 0, 0, 1<<20, P_USER|P_WRITE );
-	proc->bios_mode = 1;	//这样创建的线程就是16位的。
-	//now copy program
-	memcpy( (void*)0x10100, (void*)proc->module_addr, proc->module_size );
-	//创建进程主线程
-	main = thread_create( proc, 0x10100 );
 	thread_resume( main );
 	thread_terminate(current_thread(), 0);
 }
@@ -153,8 +137,6 @@ void kinit_resume()
 		mbi->mods_addr += KERNEL_BASE;	//修正地址
 		for (i = 0, mod = (module_t *) mbi->mods_addr; 
 			i < mbi->mods_count; i++, mod ++) {
-			kprintf ("Loading %s (0x%x)\n", 
-				(char *) mod->string, mod->mod_start ); 
 			//修正地址
 			mod->mod_start += KERNEL_BASE;
 			mod->mod_end += KERNEL_BASE;
@@ -179,19 +161,12 @@ void kinit_resume()
 					proc->module_size = mod->mod_end - mod->mod_start;
 					strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
 					//为该进程创建一个内核线程来加载模块
-					thr = thread_create( proc, (uint)kinit_process_start );
+					thr = thread_create( proc, (uint)kinit_process_start, KERNEL_THREAD );
 					thread_resume( thr );
-				}else if( strcmp(ext,".com")==0 ){//执行16位文件
-					PROCESS* proc;
-					THREAD* thr;
-					//创建进程
-					proc = process_create( current_proc(), NULL );
-					proc->module_addr = mod->mod_start;
-					proc->module_size = mod->mod_end - mod->mod_start;
-					strncpy( proc->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
-					//为该进程创建一个内核线程来加载模块
-					thr = thread_create( proc, (uint)kinit_bios_mode );
-					thread_resume( thr );
+				}else if( strcmp(ext,".com")==0 ){//16位文件,BIOSCALL所需
+					//映射前1MB
+					map_pages( current_proc()->page_dir, 0, 0, 1<<20, P_USER|P_WRITE );
+					memcpy( (void*)0x10100, (void*)mod->mod_start, mod->mod_end-mod->mod_start );
 				}
 			}
 		}

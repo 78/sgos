@@ -50,5 +50,6 @@ SYSCALL2( 36, int, iomap_set, uchar*, buf, size_t, buf_len  );
 SYSCALL2( 37, int, irq_register, int, tid, int, irq );
 SYSCALL2( 38, int, irq_unregister, int, tid, int, irq );
 SYSCALL4( 39, int, vm_map, size_t, vaddr, size_t, paddr, size_t, map_size, uint, flag );
+SYSCALL3( 40, int, bios_call, int, interrupt, void*, context, size_t, context_size );
 
 #endif //_APIDEF_H_

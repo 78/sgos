@@ -10,6 +10,8 @@ namespace Service{
 	void outdword( ushort port, uint v );
 	int MapMemory( size_t vaddr, size_t paddr, size_t siz, uint flag );
 	int UnmapMemory( size_t vaddr, size_t siz );
+	int CallBIOS( int interrupt, void* tc );
+	int CallBIOS( int interrupt, int& eax, int& ebx, int& ecx, int& edx );
 };
 
 #endif
