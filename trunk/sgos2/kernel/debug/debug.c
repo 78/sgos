@@ -7,7 +7,7 @@
 #include <stdarg.h>
 #include <arch.h>
 #include <terminal.h>
-#include <mutex.h>
+#include <semaphore.h>
 #include <stdlib.h>
 #include <mm.h>
 #include <thread.h>

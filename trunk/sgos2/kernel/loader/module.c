@@ -8,12 +8,12 @@
 #include <debug.h>
 #include <process.h>
 #include <module.h>
-#include <mutex.h>
+#include <semaphore.h>
 
 struct MODULE_INFO{
 	uint	mod_num;
 	MODULE*	module;
-	mutex_t	mutex;
+	sema_t	sem_modify;
 }g_mods;
 
 static int module_id = 1;
@@ -31,7 +31,7 @@ static int generate_mid()
 void module_init()
 {
 	memset( &g_mods, 0, sizeof(g_mods) );
-	mutex_init( &g_mods.mutex );
+	sema_init( &g_mods.sem_modify );
 }
 
 //映射进程地址到模块处
@@ -76,14 +76,14 @@ MODULE*	module_add( struct PROCESS* proc, size_t addr, size_t size, uchar share,
 	if( (mod->name = strrchr(name, '/')+1 )==(char*)1 )
 		mod->name = mod->full_name;
 	//获取锁
-	mutex_lock( &g_mods.mutex );
+	sema_down( &g_mods.sem_modify );
 	//插入到链头 
 	if( g_mods.module ){//有模块
 		mod->next = g_mods.module;
 		g_mods.module->pre = mod;
 	}
 	g_mods.module = mod;
-	mutex_unlock( &g_mods.mutex );
+	sema_up( &g_mods.sem_modify );
 	//尝试申请虚拟内存地址
 	if( umalloc_ex( proc, addr, size ) == NULL ){
 		//需要重定位
@@ -142,7 +142,7 @@ MODULE* module_get_by_name( struct PROCESS* proc, char* name )
 	MODULE* mod;
 	int i;
 	//获取锁
-	mutex_lock( &g_mods.mutex );
+	sema_down( &g_mods.sem_modify );
 	mod = module_search_by_name( proc, name );
 	if( !mod ){
 		//查找
@@ -154,11 +154,11 @@ MODULE* module_get_by_name( struct PROCESS* proc, char* name )
 					//需要重定位
 					PERROR("need relocation.");
 					PERROR("##not implemented.");
-					mutex_unlock( &g_mods.mutex );
+					sema_up( &g_mods.sem_modify );
 					return NULL;
 				}
 				mod->reference ++;
-				mutex_unlock( &g_mods.mutex );
+				sema_up( &g_mods.sem_modify );
 				//连接该模块到进程
 				module_link( proc, mod );
 				//映射模块页面到进程
@@ -172,11 +172,11 @@ MODULE* module_get_by_name( struct PROCESS* proc, char* name )
 			}
 		}
 	}else{
-		mutex_unlock( &g_mods.mutex );
+		sema_up( &g_mods.sem_modify );
 		return mod;
 	}
 	//not found
-	mutex_unlock( &g_mods.mutex );
+	sema_up( &g_mods.sem_modify );
 	PERROR("##module %s is not loaded.", name );
 	return NULL;
 }

@@ -15,7 +15,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <string.h>
-#include <mutex.h>
+#include <semaphore.h>
 #include <allocator.h>
 #include <process.h>
 

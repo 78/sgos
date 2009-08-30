@@ -7,12 +7,16 @@
 #include <process.h>
 #include <mm.h>
 #include <debug.h>
+#include <semaphore.h>
 
+static sema_t sem_bioscall;
+
+//线性地址转换为实模式地址
 uint LINEAR_TO_FARPTR(size_t ptr)
 {
     unsigned seg, off;
-    off = ptr & 0xf;
-    seg = (ptr - (ptr & 0xf)) >> 4;
+    off = ptr & 0xffff;
+    seg = (ptr & 0xffff0000) >> 4;
     return MAKE_FARPTR(seg, off);
 }
 
@@ -55,6 +59,7 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 			break;
 		case 0xCD:	//int n
 			switch( ip[1] ){
+			case 0xFB:
 			case 0x03: //debug
 				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
 				thread_terminate( thr, r->eax );
@@ -65,7 +70,7 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 				r->eip = (t_16) (r->eip + 1);
 				return 1;
 			default:
-				kprintf("vm86 interrupt 0x%x at 0x%X\n", ip[1], r->eip );
+//				kprintf("vm86 interrupt 0x%x at 0x%X\n", ip[1], r->eip );
 				stack -= 3;
 				r->esp = ((r->esp & 0xffff) - 6) & 0xffff;
 				stack[0] = (t_16) (r->eip + 2);
@@ -154,7 +159,6 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 				arch->vmflag_if = (stack[2]&EFLAG_IF)!=0;
 				r->esp = ((r->esp & 0xffff) + 6) & 0xffff;
 			}
-			kprintf("eax=0x%X\n", r->eax );
 			return 1;
 		case 0xFA:	//cli
 			arch->vmflag_if = 0;
@@ -172,9 +176,66 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 	return 0; //kill the thread
 }
 
+//VM86初始化
 void vm86_init()
 {
 	// 对运行在vm86下的异常进行处理
 	isr_install( GPF_INTERRUPT, (void*)gpf_handler );
+	// 此时应该可以初始化信号灯吧
+	sema_init( &sem_bioscall );
+}
+
+//BIOS调用
+/* 最简单的方法是创建一个VM86线程，然后跳转过去调用bios */
+int bios_call( int interrupt, void* context_ptr, size_t siz )
+{
+	THREAD* thr;
+	I386_CONTEXT* context;
+	t_16* stack;
+	int i;
+	if( siz < sizeof(I386_CONTEXT) )
+		return -ERR_WRONGARG;
+	context = (I386_CONTEXT*)context_ptr;
+	stack = (t_16*)0x0001FFE0;
+	// 因为bios调用不支持多线程，因此同一时刻只能一个线程使用。
+	sema_down( &sem_bioscall );
+	// 设置堆栈
+	i = 0;
+	// 获取寄存器信息
+	stack[i++] = (t_8)interrupt;
+	stack[i++] = context->es;
+	stack[i++] = context->ds;
+	stack[i++] = context->edi;
+	stack[i++] = context->esi;
+	stack[i++] = context->ebp;
+	stack[i++] = context->kesp;
+	stack[i++] = context->ebx;
+	stack[i++] = context->edx;
+	stack[i++] = context->ecx;
+	stack[i++] = context->eax;
+	// 创建VM86线程
+	thr = thread_create( current_proc(), 0x10100, BIOS_THREAD );
+	if( thr==NULL ){
+		sema_up( &sem_bioscall );
+		return -ERR_UNKNOWN;
+	}
+	thread_resume( thr );
+	// 等待线程结束
+	thread_join( thr );
+	// 保存寄存器信息
+	i = 1;
+	context->es = stack[i++];
+	context->ds = stack[i++];
+	context->edi = stack[i++];
+	context->esi = stack[i++];
+	context->ebp = stack[i++];
+	context->kesp = stack[i++];
+	context->ebx = stack[i++];
+	context->edx = stack[i++];
+	context->ecx = stack[i++];
+	context->eax = stack[i++];
+	//
+	sema_up( &sem_bioscall );
+	return 0;
 }
 

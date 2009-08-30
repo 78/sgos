@@ -121,9 +121,9 @@ typedef struct I386_REGISTERS
 }I386_REGISTERS;	//19*4=76 Bytes
 
 typedef struct I386_CONTEXT{
-	t_32	gs, fs, es, ds, ss;
-	t_32	edi, esi, ebp, esp, ebx, edx, ecx, eax;
-	t_32	eflags, cs, eip;
+	t_32	gs, fs, es, ds;
+	t_32	edi, esi, ebp, kesp, ebx, edx, ecx, eax;
+	t_32	eip, cs, eflags, esp, ss;
 }I386_CONTEXT;
 
 typedef struct ARCH_THREAD{
@@ -222,6 +222,7 @@ void fastcall_init();
 void update_for_next_thread();
 void i386_switch( struct THREAD*, uint*, uint* );	//switch.S
 void vm86_init();	//vm86.c
+int bios_call( int interrupt, void* context, size_t siz );	//vm86.c
 //fpu
 void fpu_check_and_save( struct THREAD* thr );
 void fpu_init();

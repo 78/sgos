@@ -112,7 +112,7 @@ int lba_init()
 				part[i*5+j].start = p->skipSectors;	//相对扇区起始位置
 				part[i*5+j].sectors = p->allSectors;	//总扇区数
 				if( p->allSectors){
-					printf("disk[%d]: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
+					printf("Disk[%d]: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
 						part[i*5+j].start, part[i*5+j].sectors);
 				}
 			}

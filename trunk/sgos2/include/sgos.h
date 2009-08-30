@@ -65,6 +65,12 @@ typedef struct _SESSION{
 	uint	sequence;
 }session_t;
 
+typedef struct THREAD_CONTEXT{
+	t_32	gs, fs, es, ds;
+	t_32	edi, esi, ebp, kesp, ebx, edx, ecx, eax;
+	t_32	eip, cs, eflags, esp, ss;
+}THREAD_CONTEXT;
+
 //API 
 #define	MSG_SEND_TO_ALL		0
 #define MSG_PENDING		0x80000000

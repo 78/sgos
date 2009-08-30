@@ -30,7 +30,7 @@ static int name_search(const void* p, const void* q )
 
 void name_init()
 {
-	queue_create( &nq, MAX_NAME_IN_QUEUE, name_delete, "name_queue" );
+	queue_create( &nq, MAX_NAME_IN_QUEUE, name_delete, "name_queue", 1 );
 }
 
 void name_destroy()
@@ -48,7 +48,7 @@ int name_insert( THREAD* thr, const char* name )
 		return -ERR_NOMEM;
 	strncpy( n->name, name, NAME_LEN );
 	n->thread = thr;
-	if( queue_push_to_tail( &nq, n ) < 0 ){
+	if( queue_push_front( &nq, n ) < 0 ){
 		kfree( n );
 		return -ERR_NOMEM;
 	}
@@ -58,11 +58,12 @@ int name_insert( THREAD* thr, const char* name )
 int name_remove( THREAD* thr, const char* name )
 {
 	name_t* n;
-	n = queue_search( &nq, name, name_search );
+	qnode_t* nod;
+	n = queue_search( &nq, (char*)name, name_search, &nod );
 	if( !n )
 		return -ERR_NONE;
 	if( n->thread == thr )
-		queue_remove( &nq, n );
+		queue_remove( &nq, nod );
 	name_delete(n);
 	return 0;
 }
@@ -70,7 +71,8 @@ int name_remove( THREAD* thr, const char* name )
 void* name_match( const char* name )
 {
 	name_t* n;
-	n = queue_search( &nq, name, name_search );
+	qnode_t* nod;
+	n = queue_search( &nq, (char*)name, name_search, &nod );
 	if( !n )
 		return NULL;
 	return n->thread;

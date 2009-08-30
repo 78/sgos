@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <string.h>
 #include <thread.h>
+#include <process.h>
 
 static char *exception_msg[] =
 {
@@ -171,6 +172,7 @@ void isr_handler(const I386_REGISTERS *r)
 				"Description: %s\tCode: %d\n", 
 				exception_msg[ r->int_no ], r->err_code );
 			isr_dumpcpu( r );
+			KERROR("Termiating [%d:%d]", current_proc()->pid, current_thread()->tid );
 		}
 	}
 }

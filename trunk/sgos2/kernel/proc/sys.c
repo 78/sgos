@@ -74,7 +74,9 @@ void* syscall_table[] = {
 	sys_iomap_set,
 	sys_irq_register,
 	sys_irq_unregister,
-	sys_vm_map
+	sys_vm_map,
+	//40-44
+	sys_bios_call,
 };
  
 
@@ -158,7 +160,7 @@ int sys_thread_create( size_t addr, uint* ret )
 	THREAD* thr;
 	if( IS_USER_MEMORY(addr) &&
 		IS_WRITABLE( current_proc(), ret, sizeof(uint)) ){
-		thr = thread_create( current_proc(), addr );
+		thr = thread_create( current_proc(), addr, 0 );
 		if( thr ){
 			*ret = (uint)thr;
 			return 0;
@@ -448,3 +450,14 @@ int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
 		map_pages( current_proc()->page_dir, vaddr, paddr, map_size, P_USER | P_WRITE );
 	return 0;
 }
+
+//BIOS调用
+int sys_bios_call( int interrupt, void* context, size_t siz )
+{
+	if( current_thread()->process->uid != ADMIN_USER )
+		return -ERR_LOWPRI;
+	if( !IS_WRITABLE( current_proc(), context, siz ) )
+		return -ERR_WRONGARG;
+	return bios_call( interrupt, context, siz );
+}
+

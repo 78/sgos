@@ -64,7 +64,7 @@ void process_init()
 	// set as current process
 	cur_proc = init_proc;
 	// create an init thread for the init process
-	init_thr = thread_create( cur_proc, (uint)process_init ); //用process_init来标记是内核线程
+	init_thr = thread_create( cur_proc, (uint)process_init, KERNEL_THREAD ); //用process_init来标记是内核线程
 	// set run time because no scheduler can be used at the present
 	init_thr->sched_info.clock = 10;
 	// set ready state!!

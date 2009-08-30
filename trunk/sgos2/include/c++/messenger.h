@@ -13,6 +13,10 @@ public:
 	Messenger( const char* str );
 	~Messenger();
 	//useful functions
+	// 得到一个回复用的Messenger
+	Messenger	reply();
+	// 添加一个兄弟节点
+	Messenger&	append( const char* name );
 	// 解析一个消息文本
 	int	parse( const char* str );
 	// 创建一个路径，并且转到创建的路径

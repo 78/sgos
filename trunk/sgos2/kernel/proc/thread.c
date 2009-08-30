@@ -7,6 +7,7 @@
 #include <debug.h>
 #include <string.h>
 #include <mm.h>
+#include <queue.h>
 
 // useless at the present
 static int thread_id = 1;
@@ -82,7 +83,7 @@ THREAD* thread_get( int tid )
 }
 
 //创建一个线程
-THREAD* thread_create( PROCESS* proc, uint entry_addr )
+THREAD* thread_create( PROCESS* proc, uint entry_addr, int flag )
 {
 	THREAD* thr;
 	SCHEDULE_INFO* sched;
@@ -100,6 +101,8 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	sema_init( &thr->semaphore );
 	//初始化消息队列
 	message_init( thr );
+	//初始化等待队列
+	sema_init_ex( &thr->sem_join, 0 );
 	//调度信息
 	sched = &thr->sched_info;
 	//线程基本信息
@@ -109,12 +112,15 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr )
 	thr->priority = PRI_NORMAL;
 	thr->entry_address = entry_addr;
 	thr->stack_size = THREAD_STACK_SIZE;
-	if( IS_USER_MEMORY( entry_addr ) ){//创建用户态线程？？
+	if( flag & BIOS_THREAD )
+		thr->bios_mode = 1;
+	if( flag & KERNEL_THREAD ){//创建用户态线程？？
+		thr->kernel = 1;
+	}else{
 		thr->kernel = 0;
 		//用户态线程堆栈
-		thr->stack_address = (uint)umalloc( proc, thr->stack_size );
-	}else{
-		thr->kernel = 1;
+		if( !thr->bios_mode )
+			thr->stack_address = (uint)umalloc( proc, thr->stack_size );
 	}
 	//初始化用户态信息
 	if( thr->kernel == 0 ){
@@ -147,10 +153,12 @@ int thread_terminate( THREAD* thr, int code )
 	sched_set_state( thr, TS_DEAD );
 	//线程退出码
 	thr->exit_code = code;
-	//
+	//清空消息队列
 	message_destroy( thr );
 	//Wakeup all related sleeping threads
 	sema_destroy( &thr->semaphore );
+	//唤醒所有join线程
+	sema_destroy( &thr->sem_join );
 	//向各系统服务发送线程结束消息
 	
 	//回收资源
@@ -166,7 +174,18 @@ int thread_terminate( THREAD* thr, int code )
 //等待一个线程结束
 void thread_join( THREAD* thr )
 {
-	die("not implemented.");
+	PROCESS* proc;
+	THREAD* t;
+	uint flags;
+	proc = current_proc();
+	local_irq_save( flags );
+	for( t=proc->thread; t; t=t->next )
+		if( t==thr ){
+			if( thr->state != TS_DEAD )
+				sema_down( &thr->sem_join );
+			break;
+		}
+	local_irq_restore( flags );
 }
 
 //线程继续

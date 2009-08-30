@@ -4,7 +4,6 @@
 //类型定义
 //typedef unsigned long size_t;
 #include <sgos.h>
-#include <mutex.h>
 
 #define FREE_NODE 0x00000001
 

@@ -29,6 +29,7 @@ all: check grub
 
 grub: scripts/menu.lst
 	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
+	tools/wf/wf sgos2.img -src tools/vm86/vm86.com -dest sgos2/vm86.com
 
 check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))

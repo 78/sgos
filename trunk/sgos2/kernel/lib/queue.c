@@ -7,9 +7,11 @@
  *
  *  2008-7-12 Created.
  *  2009-8-20 Ported for SGOS2
+ *  2009-8-30 Use link table instead of array
  *
  *  Description: 循环队列，队列满时，将旧数据剔除 
- *
+ *  front---1---2---3----4---5---6---back
+ *  这里插入                        这里取出
  */
  
 #include <sgos.h>
@@ -22,128 +24,214 @@
 #include <debug.h>
 
 //创建循环队列
-int queue_create( queue_t* q, int size, queue_delete_func del, const char* name )
+int queue_create( queue_t* q, int size, queue_delete_func del, const char* name, int use_sem )
 {
-	q->size = size;
-	q->head = q->tail = 0;
+	if( size==0 )
+		size = 0x70000000;
+	q->max_num = size;
+	q->front = q->back = NULL;
 	q->del_func = del;
+	q->cur_num = 0;
+	q->use_sem = use_sem;
 	strncpy( q->name, name, QUEUE_NAME_LEN-1 );
-	sema_init( &q->semaphore );
-	q->items = kmalloc( q->size*sizeof(void*) );
-	if( q->items == NULL )
-		return -ERR_NOMEM;
+	if( q->use_sem ){
+		q->semaphore = kmalloc(sizeof(sema_t));
+		if(!q->semaphore)
+			return -ERR_NOMEM;
+		sema_init( q->semaphore );
+	}
 	return 0;
 }
 
 //加到尾
-int queue_push_to_tail( queue_t* q, const void* data )
+int queue_push_back( queue_t* q, void* data )
 {
-	sema_down( &q->semaphore );
-	if( (q->tail+1)%q->size == q->head ){
-		PERROR("queue %s is full. size:%d", q->name, q->size);
-		if( q->del_func )
-			q->del_func( q->items[q->head] );
-		q->head = (q->head+1)%q->size;
-		
-	}
-	q->items[q->tail] = (void*)data;
-	q->tail = (q->tail+1)%q->size;
-	sema_up( &q->semaphore );
+	qnode_t* nod;
+	if( q->cur_num>=q->max_num )
+		return -ERR_NOMEM;
+	nod = kmalloc(sizeof(qnode_t));
+	if(!nod)
+		return -ERR_NOMEM;
+	nod->v = data;
+	q->cur_num++;
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	//链表处理，加入到back后
+	if( q->back )
+		q->back->pre = nod;
+	else if(!q->front)
+		q->front = nod;
+	nod->pre = NULL;
+	nod->next = q->back;
+	q->back = nod;
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
 	return 0;
 }
 
 //加到头
-int queue_push_to_head( queue_t* q, const void* data )
+int queue_push_front( queue_t* q, void* data )
 {
-	sema_down( &q->semaphore );
-	if( (q->size+q->head-1)%q->size == q->tail ){
-		q->tail = (q->size+q->tail-1)%q->size;
-		ASSERT( q->tail >= 0 );
-		if( q->del_func )
-			q->del_func( q->items[q->tail] );
-		
+	qnode_t* nod;
+	if( q->cur_num>=q->max_num ){
+		PERROR("##QUEUE %s is full.", q->name );
+		return -ERR_NOMEM;
 	}
-	q->head = (q->size+q->head-1)%q->size;
-	ASSERT( q->head >= 0 );
-	q->items[q->head] = (void*)data;
-	sema_up( &q->semaphore );
+	nod = kmalloc(sizeof(qnode_t));
+	if(!nod)
+		return -ERR_NOMEM;
+	nod->v = data;
+	q->cur_num++;
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	//处理链表
+	if( q->front )
+		q->front->next = nod;
+	else if( !q->back )	
+		q->back = nod;
+	nod->pre = q->front;
+	nod->next = NULL;
+	q->front = nod;
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
 	return 0;
 }
 
-void* queue_pop_from_head( queue_t* q )
+void* queue_pop_front( queue_t* q )
 {
+	qnode_t* tmp = NULL;
 	void* p = NULL;
-	sema_down( &q->semaphore );
-	if( q->tail != q->head ){
-		p = q->items[q->head];
-		q->head = (q->head+1)%q->size;
-		ASSERT( q->head < q->size );
+	if( q->cur_num == 0 )
+		return NULL;
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	if( q->front ){
+		p = q->front->v;
+		if( q->front->pre )
+			q->front->pre->next = NULL;
+		tmp = q->front;
+		q->front = q->front->pre;
+		if( !q->front )
+			q->back = NULL;
 	}
-	sema_up( &q->semaphore );
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
+	q->cur_num --;
+	if(tmp)
+		kfree( tmp );
 	return p;
 }
 
-void* queue_pop_from_tail( queue_t* q )
+void* queue_pop_back( queue_t* q )
 {
+	qnode_t* tmp = NULL;
 	void* p = NULL;
-	sema_down( &q->semaphore );
-	if( q->tail != q->head ){
-		q->tail = (q->size+q->tail-1)%q->size;
-		ASSERT( q->tail >= 0 );
-		p = q->items[q->tail];
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	if( q->back ){
+		p = q->back->v;
+		if( q->back->next )
+			q->back->next->pre = NULL;
+		tmp = q->back;
+		q->back = q->back->next;
+		if( !q->back )
+			q->front = NULL;
 	}
-	sema_up( &q->semaphore );
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
+	q->cur_num --;
+	if(tmp)
+		kfree( tmp );
 	return p;
 }
 
-//如果用链表，会快很多的。
-//可以做很多优化
-void queue_remove( queue_t* q, const void* data )
+//链表，会比数组快很多的。
+void queue_remove( queue_t* q, qnode_t* nod )
 {
-	int i;
-	sema_down( &q->semaphore );
-	for( i=q->head; i!=q->tail; i=(i+1)%q->size )
-	{
-		if( q->items[i] == data ){
-			q->tail = (q->size+q->tail-1)%q->size;
-			ASSERT( q->tail >= 0 );
-			//从i开始，数据往前移动
-			for( ; i!=q->tail; i=(i+1)%q->size )
-				q->items[i] = q->items[(i+1)%q->size];
-			break;
-		}
-	}
-	sema_up( &q->semaphore );
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	if( nod->pre )
+		nod->pre->next = nod->next;
+	else
+		q->back = NULL;
+	if( nod->next )
+		nod->next->pre = nod->pre;
+	else
+		q->front = NULL;
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
+	kfree( nod );
 }
 
-void* queue_search( queue_t* q, const void* v, queue_search_func search )
+void* queue_search( queue_t* q, void* v, queue_search_func search, qnode_t** ret_nod )
 {
-	int i;
-	sema_down( &q->semaphore );
-	for( i=q->head; i!=q->tail; i=(i+1)%q->size )
+	qnode_t * nod;
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	for( nod=q->front; nod; nod=nod->pre )
 	{
-		if( search( q->items[i], v ) )
+		if( search( nod->v, v ) )
 			break;
 	}
-	sema_up( &q->semaphore );
-	if( i != q->tail )
-		return q->items[i];
-	return NULL;
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
+	*ret_nod = nod;
+	if( nod )
+		return nod->v;
+	else
+		return NULL;
+}
+
+void* queue_quick_search( queue_t* q, void* v, qnode_t** ret_nod )
+{
+	qnode_t * nod;
+	//进入临界区
+	if( q->use_sem )
+		sema_down( q->semaphore );
+	for( nod=q->front; nod; nod=nod->pre )
+	{
+		if( nod->v == v )
+			break;
+	}
+	//离开临界区
+	if( q->use_sem )
+		sema_up( q->semaphore );
+	*ret_nod = nod;
+	if( nod )
+		return nod->v;
+	else
+		return NULL;
 }
 
 void queue_cleanup( queue_t* q )
 {
-	int i;
-	sema_down( &q->semaphore );
-	if( q->del_func )
-		for( i=q->head; i!=q->tail; i=(i+1)%q->size )
-			q->del_func( q->items[i] );
-	kfree( q->items );
-	sema_destroy( &q->semaphore );
+	q->cur_num = 1;
+	q->max_num = 0;
+	if(q->del_func)
+		while(!queue_is_empty(q))
+			q->del_func(queue_pop_back(q));
+	else
+		queue_pop_back(q);
+	if(q->use_sem){
+		sema_destroy(q->semaphore);
+		kfree(q->semaphore);
+	}
 }
 
 int queue_is_empty( queue_t* q )
 {
-	return( q->head == q->tail );
+	return( q->front == NULL );
 }
 
