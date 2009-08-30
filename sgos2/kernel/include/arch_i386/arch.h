@@ -11,6 +11,7 @@
 
 #define SYSTEM_INTERRUPT	0xA1
 #define PAGEFAULT_INTERRUPT	14
+#define DEBUG_INTERRUPT		1
 #define GPF_INTERRUPT		13
 #define RTC_INTERRUPT		0
 #define FPU_INTERRUPT		7
@@ -46,7 +47,7 @@
 	((uint) ((((ushort)(seg)) << 4) + ((ushort)off)))
 uint LINEAR_TO_FARPTR(size_t ptr);	//vm86.c
 #define EFLAG_IOPL3	0x3000
-#define EFLAG_VM	(1<<17)
+#define EFLAG_VM	((1<<17)|0x3000)
 #define EFLAG_IF	(1<<9)
 	
 struct THREAD;
@@ -95,7 +96,8 @@ typedef struct TSS {
 	t_16	trap;
 	t_16	iobase;	
 	/* I/O位图基址大于或等于TSS段界限，就表示没有I/O许可位图 */
-	/*t_8	iomap[2];*/
+	//8192KB包含64K个端口
+	t_8	iomap[8192];
 }TSS;
 
 /*数学协处理器寄存器*/
@@ -173,10 +175,11 @@ void set_idt_desc( int vector, uchar desc_type, void* handler );
 void set_ldt_desc( SEGMENT_DESC *desc, uint base, uint limit, uint attribute );
 //isr
 void isr_init();
-void isr_dumpcpu( const I386_REGISTERS *r );
 void isr_uninstall( int isr );
 int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) );
-void isr_dumpstack( void* thr, uint stk );
+//debug
+void dbg_dumpcpu( const I386_REGISTERS *r );
+void dbg_init();
 //irq
 void irq_init();
 void irq_mask( int irq, int enabled );

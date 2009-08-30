@@ -7,6 +7,7 @@
 #include <process.h>
 #include <mm.h>
 #include <debug.h>
+#include <string.h>
 #include <semaphore.h>
 
 static sema_t sem_bioscall;
@@ -21,6 +22,7 @@ uint LINEAR_TO_FARPTR(size_t ptr)
 }
 
 // VM86 General Protection Fault ...
+#define VALID_FLAGS	0xDFF
 int gpf_handler( int err_code, I386_REGISTERS* r)
 {
 	t_8* ip;
@@ -60,8 +62,8 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 		case 0xCD:	//int n
 			switch( ip[1] ){
 			case 0xFB:
-			case 0x03: //debug
-				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
+			case 0x03: //breakpoint
+//				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
 				thread_terminate( thr, r->eax );
 				return 0;
 				//never return here
@@ -89,7 +91,7 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 			if( is_data32 ){
 				r->esp = ((r->esp & 0xffff) - 4) & 0xffff;
 				stack32--;
-				stack32[0] = r->eflags;
+				stack32[0] = r->eflags & VALID_FLAGS;
 				if( arch->vmflag_if )
 					stack32[0] |= EFLAG_IF;
 				else
@@ -107,41 +109,13 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 			return 1;
 		case 0x9d:	//popf
 			if( is_data32 ){
-				r->eflags = stack32[0]|EFLAG_VM|EFLAG_IF;
+				r->eflags = (stack32[0] & VALID_FLAGS) |EFLAG_VM|EFLAG_IF;
 				r->esp = ((r->esp & 0xffff) + 4) & 0xffff;
 				arch->vmflag_if = (stack32[0]&EFLAG_IF)!=0;
 			}else{
 				r->eflags = stack[0]|EFLAG_VM|EFLAG_IF;
 				r->esp = ((r->esp & 0xffff) + 2) & 0xffff;
 				arch->vmflag_if = (stack[0]&EFLAG_IF)!=0;
-			}
-			r->eip = (t_16) (r->eip + 1);
-			return 1;
-		case 0xEE:	//out byte
-			out_byte(r->edx, r->eax&0xFF);
-			r->eip = (t_16) (r->eip + 1);
-			return 1;
-		case 0xEF:	//out word
-			/* 我看的资料上竟然没有说在0xEF前加0x66要输出32位值，
-			 * 在VMware上无法改变分辨率。后来发现此处最可疑，想不到
-			 * 改成dword后竟然成功了。我真聪明:-)
-			 */
-			if( is_data32 ){
-				out_dword(r->edx, r->eax);
-			}else{
-				out_word(r->edx, r->eax&0xFFFF);
-			}
-			r->eip = (t_16) (r->eip + 1);
-			return 1;
-		case 0xEC:	//in byte
-			r->eax = (r->eax&0xFFFFFF00)|in_byte(r->edx);
-			r->eip = (t_16) (r->eip + 1);
-			return 1;
-		case 0xED:	//in word
-			if( is_data32 ){
-				r->eax = in_dword(r->edx);
-			}else{
-				r->eax = (r->eax&0xFFFF0000)|in_word(r->edx);
 			}
 			r->eip = (t_16) (r->eip + 1);
 			return 1;

@@ -124,7 +124,6 @@ static void kinit_process_start()
 	thread_terminate(current_thread(), 0);
 }
 
-
 //线程0执行hlt指令，线程1继续内核初始化。
 void kinit_resume()
 {
