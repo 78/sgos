@@ -20,6 +20,7 @@ static PARTITION_INFO part[5*MAX_HD];
 
 int lba_rw_sectors(t_8 dev, t_32 sec_start, t_32 sec_count, uchar *buf, int write)
 {
+	sec_start += part[dev].start;
 //	printf("rwhd %x, %x, %x, 0x%x, %d\n",
 //		dev, sec_start, sec_count, buf, write);
 	/*采用LBA方式读写*/
@@ -59,12 +60,23 @@ static uchar readCMOS(uchar p)
 	return inbyte( 0x71 );
 }
 
+//向vfs注册设备
+static void registerDevice( uint part )
+{
+	Messenger msger;
+	msger.parse("<msg to=\"dev\"><register driver=\"hd\" /></msg>");
+	msger.putUInt("/register:part", part );
+	while( msger.send()<0 )
+		Thread::Sleep(100);;
+}
+
 #define LPValue(m) ( *(size_t*)m )
 //获取硬盘数据
 int lba_init()
 {
 	int i, ret;
 	uchar* boot = new uchar[512];
+	memset( part, 0, sizeof(part) );
 	//请求内核映射前1MB内存
 	ret = Service::MapMemory( 0, 0, 1<<20, MAP_READONLY );
 	if( ret < 0 ){
@@ -112,8 +124,9 @@ int lba_init()
 				part[i*5+j].start = p->skipSectors;	//相对扇区起始位置
 				part[i*5+j].sectors = p->allSectors;	//总扇区数
 				if( p->allSectors){
-					printf("Disk[%d]: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
-						part[i*5+j].start, part[i*5+j].sectors);
+					registerDevice( i*5+j );
+//					printf("Disk[%d]: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
+//						part[i*5+j].start, part[i*5+j].sectors);
 				}
 			}
 		}

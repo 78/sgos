@@ -48,7 +48,7 @@ static void process_init_basicinfo( PROCESS* proc )
 }
 
 //第一个进程初始化
-void process_init()
+void process_init( const char* cmdline )
 {
 	THREAD* init_thr;
 	process_id = 0;
@@ -124,7 +124,7 @@ int process_suspend( PROCESS* proc )
 }
 
 //结束进程
-int process_terminate( PROCESS* proc, int exit_code )
+int process_kill( PROCESS* proc, int exit_code )
 {
 	die("not implemented.");
 	return 0;

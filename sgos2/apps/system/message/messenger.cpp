@@ -27,8 +27,20 @@ namespace System{
 	Messenger Messenger::reply()
 	{
 		Messenger m;
-		m.msg.recv_thread = this->msg.recv_thread;
+		m.msg.session.thread = this->msg.session.thread;
+		m.msg.session.process = this->msg.session.process;
 		return m;
+	}
+	
+	// 获取发送者信息
+	uint	Messenger::getSenderThread()
+	{
+		return this->msg.session.thread;
+	}
+	
+	uint	Messenger::getSenderProcess()
+	{
+		return this->msg.session.process;
 	}
 	
 	//

@@ -5,12 +5,12 @@
 
 int create_name( uint thread, const char* name )
 {
-	return sys_namespace_register( thread, (char*)name );
+	return sys_namespace_create( thread, (char*)name );
 }
 
 int delete_name( uint thread, const char* name )
 {
-	return sys_namespace_unregister( thread, (char*)name );
+	return sys_namespace_delete( thread, (char*)name );
 }
 
 uint match_name( const char* name )

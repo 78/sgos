@@ -15,6 +15,9 @@ public:
 	//useful functions
 	// 得到一个回复用的Messenger
 	Messenger	reply();
+	// 获取发送者信息
+	uint	getSenderThread();
+	uint	getSenderProcess();
 	// 添加一个兄弟节点
 	Messenger&	append( const char* name );
 	// 解析一个消息文本

@@ -64,7 +64,7 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 			case 0xFB:
 			case 0x03: //breakpoint
 //				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
-				thread_terminate( thr, r->eax );
+				thread_kill( thr, r->eax );
 				return 0;
 				//never return here
 			case 0xFC: //delay 5 seconds

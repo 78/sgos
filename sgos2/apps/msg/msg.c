@@ -86,24 +86,24 @@ int	msg_request( messenger_t * msger )
 int	msg_send( messenger_t* msger, uint flag )
 {
 	const char * dest_name;
-	session_t sess;
 	size_t len;
 	if(!msger->bxml)
 		return -ERR_NOINIT;
-	dest_name = bxml_readstr( msger->bxml, ":to" );
+	dest_name = bxml_readstr( msger->bxml, "/:to" );
 	if( dest_name ){
 		if( !(*msger->dest_name) || strcmp(msger->dest_name, dest_name )!=0 ){
 			//get the thread
 			msger->dest_thread = sys_namespace_match( (char*)dest_name );
-			if( !msger->dest_thread )
+			if( !msger->dest_thread ){
 				return -ERR_NODEST;
+			}
 			strcpy( msger->dest_name, dest_name );
 		}
 	}else{
 		//reply??
-		msger->dest_thread = msger->recv_thread;
+		msger->dest_thread = msger->session.thread;
 	}
-	sess.thread = msger->dest_thread;
+	msger->session.thread = msger->dest_thread;
 	len = bxml_buffer_size( msger->bxml );
 	if( !msger->buffer || msger->buffer_size < len ){
 		if( msger->buffer )
@@ -112,7 +112,7 @@ int	msg_send( messenger_t* msger, uint flag )
 		msger->buffer = malloc( msger->buffer_size );
 	}
 	bxml_build( msger->bxml, msger->buffer, msger->buffer_size );
-	return sys_send( &sess, msger->buffer, len, flag );
+	return sys_send( &msger->session, msger->buffer, len, flag );
 }
 
 // 接收消息
@@ -125,7 +125,6 @@ int	msg_recv( messenger_t* msger, uint flag )
 int	msg_recv_ex( messenger_t* msger, uint thread, uint flag )
 {
 	const char * dest_name;
-	session_t sess;
 	size_t len;
 	int ret;
 	if( msger->buffer_size < MIN_RECV_BUFFER_SIZE ){
@@ -135,16 +134,16 @@ int	msg_recv_ex( messenger_t* msger, uint thread, uint flag )
 	}
 	len = msger->buffer_size;
 	if( thread )
-		sess.thread = thread;
+		msger->session.thread = thread;
 	else
-		sess.thread = 0;
-	ret = sys_recv( &sess, msger->buffer, &len, flag );
+		msger->session.thread = 0;
+	ret = sys_recv( &msger->session, msger->buffer, &len, flag );
 	if( ret < 0 ){
 		if( -ret == ERR_NOMEM ){
 			free( msger->buffer );
 			msger->buffer_size = len;
 			msger->buffer = malloc( msger->buffer_size );
-			ret = sys_recv( &sess, msger->buffer, &len, flag );
+			ret = sys_recv( &msger->session, msger->buffer, &len, flag );
 		}else{
 			return ret;
 		}
@@ -152,7 +151,6 @@ int	msg_recv_ex( messenger_t* msger, uint thread, uint flag )
 	if( msger->bxml )
 		bxml_free(msger->bxml);
 	msger->bxml = bxml_parse( msger->buffer );
-	msger->recv_thread = sess.thread;
 	if( msger->bxml == NULL )
 		return -ERR_UNKNOWN;
 	return ret;

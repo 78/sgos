@@ -726,10 +726,9 @@ int bxml_read( struct BXML_DATA* xml, const char* path, void* buf, unsigned int 
 	struct BXML_NODE* nod;
 	nod = parse_path( xml, path, 0 );
 	if( nod && nod->value ){
-		if( nod->value_len > buf_size )
-			return -BXML_BUFF_TOO_SMALL;
-		memcpy( buf, nod->value, nod->value_len );
-		return nod->value_len;
+		buf_size = nod->value_len < buf_size ? nod->value_len:buf_size;
+		memcpy( buf, nod->value, buf_size );
+		return buf_size;
 	}else{
 		return -1;	//temporary do this.
 	}

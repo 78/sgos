@@ -31,7 +31,7 @@ void kernel_err(char* file, char* function, int line, const char *fmt, ...)
 	kprintf("[%s]%s(%d): %s\n", file, function, line, printbuf );
 	thr = current_thread();
 	if( thr ){
-		thread_terminate( thr, -1 );
+		thread_kill( thr, -1 );
 	}else
 		die("System halted.");
 }
@@ -45,7 +45,7 @@ void assert_err(char* file, char* function, int line, int b )
 	thr = current_thread();
 	if( thr ){
 		kprintf("Terminated. tid:%d pid:%d\n", thr->tid, thr->process->pid );
-		thread_terminate( thr, -1 );
+		thread_kill( thr, -1 );
 	}else
 		die("System halted.");
 }

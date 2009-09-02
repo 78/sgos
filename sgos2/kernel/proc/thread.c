@@ -144,7 +144,7 @@ THREAD* thread_create( PROCESS* proc, uint entry_addr, int flag )
 }
 
 //结束线程
-int thread_terminate( THREAD* thr, int code )
+int thread_kill( THREAD* thr, int code )
 {
 	PROCESS* proc;
 	uint flags;

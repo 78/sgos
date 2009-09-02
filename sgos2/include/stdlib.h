@@ -8,6 +8,8 @@ EXTERN void*	malloc(size_t);
 EXTERN void	free(void*);
 EXTERN void*	calloc(size_t, size_t);
 EXTERN void* 	realloc(void*, size_t);
+EXTERN int rand(void);
+EXTERN void srand(int seed);
 
 EXTERN int sprintf(char * buf, const char *fmt, ...);
 EXTERN int vsprintf(char *buf, const char *fmt, va_list args);

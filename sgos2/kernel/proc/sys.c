@@ -12,6 +12,7 @@
 #include <message.h>
 #include <namespace.h>
 #include <semaphore.h>
+#include <string.h>
 
 #define IS_THREAD( thr ) ( ((THREAD*)thr)->magic == THREAD_MAGIC )
 #define IS_MODULE( mod ) ( ((MODULE*)mod)->magic == MODULE_MAGIC )
@@ -44,7 +45,7 @@ void* syscall_table[] = {
 	sys_thread_wait,
 	sys_thread_suspend,
 	sys_thread_resume,
-	sys_thread_terminate,
+	sys_thread_kill,
 	//15-19
 	sys_thread_set_priority,
 	sys_thread_get_priority, 
@@ -53,16 +54,16 @@ void* syscall_table[] = {
 	sys_thread_semctl,
 	//20-24
 	sys_process_create,
-	sys_process_terminate,
+	sys_process_kill,
 	sys_process_suspend,
 	sys_process_resume,
 	sys_process_self,
 	//25-29
-	sys_loader_load,
-	sys_loader_unload,
-	sys_loader_get_proc,
-	sys_namespace_register,
-	sys_namespace_unregister,
+	sys_loader_open,
+	sys_loader_close,
+	sys_loader_symbol,
+	sys_namespace_create,
+	sys_namespace_delete,
 	//30-34
 	sys_namespace_match,
 	NULL,
@@ -150,8 +151,8 @@ void sys_thread_exit( int code )
 		//terminate the process
 		kprintf("Program %s exited with code 0x%X\n", current_proc()->name, code );
 	}
-	thread_terminate( thr, code );
-	//process_terminate
+	thread_kill( thr, code );
+	//process_kill
 }
 
 //创建线程
@@ -180,14 +181,14 @@ uint sys_thread_self()
 int sys_thread_detach( uint thread )
 {
 	PERROR("##not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //等待线程结束
 int sys_thread_join( uint thread, int* code )
 {
 	PERROR("##not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //线程睡眠一段时间
@@ -220,13 +221,13 @@ int sys_thread_resume( uint thread )
 }
 
 //结束线程
-int sys_thread_terminate( uint thread, int code )
+int sys_thread_kill( uint thread, int code )
 {
 	THREAD* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
 	thr = (THREAD*)thread;
-	thread_terminate( thr, code );
+	thread_kill( thr, code );
 	return 0;
 }
 
@@ -314,32 +315,76 @@ int sys_thread_semctl( int i, int cmd )
 	return -ERR_WRONGARG;
 }
 
-//进程管理
-int sys_process_create( char* file, void* environment, void* create_info, uint* ret_proc )
+//创建进程
+int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint* retp )
 {
-	PERROR("not implemented.");
+	PROCESS* curproc, *newproc;
+	THREAD* init;
+	int len;
+	env_t* env;
+	curproc = current_proc();
+	if( !cmdline || !IS_WRITABLE( curproc, retp, sizeof(uint)) )
+		return -ERR_WRONGARG;
+	//如果cmdline指向错误路径，则异常退出
+	env = (env_t*)kmalloc( sizeof(env_t) );
+	if( !env )
+		return -ERR_NOMEM;
+	memset( env, 0, sizeof(env_t) );
+	//cmdline
+	strncpy( env->cmdline, cmdline, PAGE_SIZE );
+	//variables
+	if( var ){
+		char* p, **q, *end;
+		end = env->variables + ENV_VARIABLES_SIZE;
+		for( p=env->variables, q=(char**)var; *q && p<end; q++ ){
+			len = strlen( *q )+1; //including '\0'
+			if( p+len<end ){
+				memcpy( p, *q, len );
+				p+=len;
+			}else{
+				break;
+			}
+		}
+	}
+	//create process
+	newproc = process_create( curproc );
+	if( !newproc ){
+		kfree( env );
+		return -ERR_NOMEM;
+	}
+	//set environment kernel pointer
+	newproc->environment = env;
+	//proc/newproc.c
+	extern void init_newproc();
+	init = thread_create( newproc, (uint)init_newproc, KERNEL_THREAD );
+	if( !init ){
+		//failed???
+		process_kill( curproc, 0 );
+		return -ERR_NOMEM;
+	}
+	thread_resume( init );
 	return 0;
 }
 
 //结束进程
-int sys_process_terminate( uint proc, int code )
+int sys_process_kill( uint proc, int code )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //挂起进程
 int sys_process_suspend( uint proc)
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //启动进程
 int sys_process_resume( uint proc )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //当前进程ID
@@ -349,28 +394,28 @@ uint sys_process_self()
 }
 
 //加载器 返回加载id
-int sys_loader_load( char* file, uint* ret_mod )
+int sys_loader_open( char* file, uint* ret_mod )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //卸载库
-int sys_loader_unload( uint mod )
+int sys_loader_close( uint mod )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //获得过程
-size_t sys_loader_get_proc( uint mod, char* name )
+size_t sys_loader_symbol( uint mod, char* name )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //命名空间
-int sys_namespace_register( uint thread, char* name )
+int sys_namespace_create( uint thread, char* name )
 {
 	THREAD* thr;
 	int ret;
@@ -383,7 +428,7 @@ int sys_namespace_register( uint thread, char* name )
 	return ret;
 }
 
-int sys_namespace_unregister( uint thread, char* name )
+int sys_namespace_delete( uint thread, char* name )
 {
 	THREAD* thr;
 	int ret;
@@ -407,27 +452,27 @@ uint sys_namespace_match( char* name )
 int sys_iomap_get( uchar* buf, size_t buf_size )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //设置io位图 
 int sys_iomap_set( uchar* buf, size_t buf_len  )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 //注册irq消息
 int sys_irq_register( int tid, int irq )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 int sys_irq_unregister( int tid, int irq )
 {
 	PERROR("not implemented.");
-	return 0;
+	return -ERR_NOIMP;
 }
 
 // 进程虚拟内存映射到物理地址

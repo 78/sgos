@@ -94,19 +94,20 @@ _recv_search:
 	if( thr_src )	//specify the thread
 		kmsg = queue_search( &thr_cur->message_queue, thr_src,
 			message_search, &nod );
-	else
+	else	//receive any message
 		kmsg = queue_pop_back( &thr_cur->message_queue );
 	if( !kmsg ){
 		if( flag&MSG_PENDING ){
 			thread_sleep();
 			goto _recv_search;
 		}
+		//要求立即返回，但又没有取得消息
 		return -ERR_NONE;
 	}
 	//check user space
 	if( kmsg->length > *len ){
 		*len = kmsg->length;
-		//恢复
+		//恢复取出来的消息
 		if(!thr_src )
 			queue_push_back( &thr_cur->message_queue, kmsg );
 		return -ERR_NOMEM;
@@ -127,7 +128,9 @@ _recv_search:
 		else
 			message_delete( kmsg );
 	}
+	//设置来源
 	session->thread = (uint)kmsg->source;
+	session->process = (uint)((THREAD*)kmsg->source)->process;
 	return ret;
 }
 

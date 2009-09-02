@@ -161,7 +161,7 @@ void isr_handler(const I386_REGISTERS *r)
 				"Description: %s\tCode: %d\n", 
 				exception_msg[ r->int_no ], r->err_code );
 			dbg_dumpcpu( r );
-			KERROR("Termiating [%d:%d]", current_proc()->pid, current_thread()->tid );
+			KERROR("Termiating %s[%d:%d]", current_proc()->name, current_proc()->pid, current_thread()->tid );
 		}
 	}
 }

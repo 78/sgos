@@ -18,7 +18,7 @@ PROCESS_INFO* process_info()
 }
 
 //进程主线程用户态入口点
-void _program_entry_()
+void __start_process()
 {
 	int (*func)();
 	THREAD_INFO* ti;
@@ -29,5 +29,13 @@ void _program_entry_()
 	pi = ti->process_info;
 	//获得运行地址
 	func = (void*)pi->entry_address;
+	if( !func ){
+		//加载可执行文件
+		extern int __do_execute( PROCESS_INFO* pi );
+		int ret = __do_execute( pi );
+		if( ret < 0 )
+			sys_thread_exit(ret);
+		func = (void*)pi->entry_address;
+	}
 	sys_thread_exit(func());
 }
