@@ -5,8 +5,8 @@ LDFLAGS = -shared
 ODFLAGS = -S
 
 #here defines the program information
-PROGRAM = system
-LDFLAGS += --image-base 0x7FC00000 ../libc/libc.dll ../msg/msg.dll ../api/api.dll
+PROGRAM = vfs
+LDFLAGS += --image-base 0x7F900000 ../libc/libc.dll ../msg/msg.dll ../api/api.dll
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)
@@ -15,11 +15,7 @@ LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
-OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp)) \
-	$(patsubst %.cpp,%.o,  $(wildcard base/*.cpp)) \
-	$(patsubst %.cpp,%.o,  $(wildcard message/*.cpp)) \
-	$(patsubst %.cpp,%.o,  $(wildcard threading/*.cpp)) \
-	$(patsubst %.cpp,%.o,  $(wildcard service/*.cpp))
+OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp))
 
 all: $(PROGRAM).bxm
 

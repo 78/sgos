@@ -10,4 +10,6 @@ api		0x7FF00000		System Calls & Program Entrance
 libc		0x7FE00000		Standard C Library
 msg		0x7FD00000		Easy Message Library
 system		0x7FC00000		C++ System Library
-
+buffer		0x7FB00000		Disk Buffer Management
+vfat		0x7FA00000		Fat File System
+vfs		0x7F900000		Virtual File System

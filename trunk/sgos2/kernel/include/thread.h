@@ -106,7 +106,7 @@ extern THREAD_BOX	tbox;	//线程盒子
 //函数定义
 THREAD* current_thread();
 THREAD* thread_create( struct PROCESS* proc, uint entry_addr, int flag );
-int thread_terminate( THREAD* thr, int code );
+int thread_kill( THREAD* thr, int code );
 int thread_wakeup( THREAD* thr );
 int thread_resume( THREAD* thr );
 int thread_suspend( THREAD* thr );

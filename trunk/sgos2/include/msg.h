@@ -10,7 +10,7 @@ typedef struct MESSENGER{
 	bxml_t*	bxml;
 	char	dest_name[NAME_LEN];
 	uint	dest_thread;
-	uint	recv_thread;
+	session_t	session;
 	char*	buffer;
 	size_t	buffer_size;
 }messenger_t;

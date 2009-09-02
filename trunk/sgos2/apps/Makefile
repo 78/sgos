@@ -7,8 +7,10 @@ all:
 	make -Cmsg
 	make -Csystem
 	make -Cspeaker
+	make -Cvfs
+	make -Cfs
 	make -Chd
-	make -Chello
+	make -Cstart
 
 clean:
 	make -Capi clean
@@ -16,6 +18,8 @@ clean:
 	make -Cmsg clean
 	make -Csystem clean
 	make -Cspeaker clean
+	make -Cvfs clean
+	make -Cfs clean
 	make -Chd clean
-	make -Chello clean
+	make -Cstart clean
 

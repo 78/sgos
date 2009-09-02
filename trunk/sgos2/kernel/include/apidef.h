@@ -22,26 +22,26 @@ SYSCALL2( 10, int, thread_join, uint, thread, int*, code );	//等待线程结束
 SYSCALL1( 11, int, thread_wait, time_t, ms );	//线程睡眠一段时间
 SYSCALL1( 12, int, thread_suspend, uint, thread );	//挂起线程
 SYSCALL1( 13, int, thread_resume, uint, thread );	//启动线程
-SYSCALL2( 14, int, thread_terminate, uint, thread, int, code );	//结束线程
+SYSCALL2( 14, int, thread_kill, uint, thread, int, code );	//结束线程
 SYSCALL2( 15, int, thread_set_priority, uint, thread, int, pri );	//设置线程优先级
 SYSCALL2( 16, int, thread_get_priority, uint, thread, int*, pri );	//获取线程优先级
 SYSCALL1( 17, int, thread_semget, int, value );	//获取信号灯
 SYSCALL2( 18, int, thread_semop, int, sem, int, op );	//操作信号灯
 SYSCALL2( 19, int, thread_semctl, int, sem, int, cmd );	//设置信号灯
 //进程管理
-SYSCALL4( 20, int, process_create, char*, file, void*, env, void*, cinfo, uint*, proc );
-SYSCALL2( 21, int, process_terminate, uint, proc, int, code );	//结束进程
+SYSCALL4( 20, int, process_create, const char*, cmdline, const char**, env, void*, cinfo, uint*, proc );
+SYSCALL2( 21, int, process_kill, uint, proc, int, code );	//结束进程
 SYSCALL1( 22, int, process_suspend, uint, proc );	//挂起进程 
 SYSCALL1( 23, int, process_resume, uint, proc );	//启动进程
 SYSCALL0( 24, uint, process_self );	//当前进程ID
 //加载器
-SYSCALL2( 25, int, loader_load, char*, file, uint*, mod );	//返回库id
-SYSCALL1( 26, int, loader_unload, uint, mod );	//卸载库
-SYSCALL2( 27, size_t, loader_get_proc, uint, mod, char*, name );	//获得过程
+SYSCALL2( 25, int, loader_open, char*, file, uint*, mod );	//返回库id
+SYSCALL1( 26, int, loader_close, uint, mod );	//卸载库
+SYSCALL2( 27, size_t, loader_symbol, uint, mod, char*, name );	//获得过程
 
 //命名空间
-SYSCALL2( 28, int, namespace_register, uint, thread, char*, name );
-SYSCALL2( 29, int, namespace_unregister, uint, thread, char*, name );
+SYSCALL2( 28, int, namespace_create, uint, thread, char*, name );
+SYSCALL2( 29, int, namespace_delete, uint, thread, char*, name );
 SYSCALL1( 30, uint, namespace_match, char*, name );
 //....
 //特权调用

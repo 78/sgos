@@ -25,15 +25,15 @@ typedef struct _QUEUE{
 
 #define QUEUE_UNINTERRUPTABLE	1
 
-int queue_create( queue_t* l, int size, queue_delete_func del, const char* name, int use_sem );
-void* queue_pop_back( queue_t* l );
-void* queue_pop_front( queue_t* l );
-int queue_push_front( queue_t* l, void* data );
-int queue_push_back( queue_t* l, void* data );
-void* queue_search( queue_t* l, void*, queue_search_func search, qnode_t** ret_nod );
-void* queue_quick_search( queue_t* l, void*, qnode_t** ret_nod );
-void queue_cleanup( queue_t* l );
-int queue_is_empty( queue_t* l );
-void queue_remove( queue_t* l, QUEUE_NODE* data );
+EXTERN int queue_create( queue_t* l, int size, queue_delete_func del, const char* name, int use_sem );
+EXTERN void* queue_pop_back( queue_t* l );
+EXTERN void* queue_pop_front( queue_t* l );
+EXTERN int queue_push_front( queue_t* l, void* data );
+EXTERN int queue_push_back( queue_t* l, void* data );
+EXTERN void* queue_search( queue_t* l, void*, queue_search_func search, qnode_t** ret_nod );
+EXTERN void* queue_quick_search( queue_t* l, void*, qnode_t** ret_nod );
+EXTERN void queue_cleanup( queue_t* l );
+EXTERN int queue_is_empty( queue_t* l );
+EXTERN void queue_remove( queue_t* l, QUEUE_NODE* data );
 
 #endif

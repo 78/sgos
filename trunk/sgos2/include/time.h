@@ -1,12 +1,12 @@
 // time structures
-#ifndef __MICRON_KERNEL_TIME_H__
-#define __MICRON_KERNEL_TIME_H__
+#ifndef _TIME_H__
+#define _TIME_H__
 
-#include <types.h>
+#include <sgos.h>
 
 //! the old time struct
 #ifndef _TM_DEFINED
-struct tm
+typedef struct tm
 {
 	int tm_sec;     //
 	int tm_min;     //
@@ -17,21 +17,21 @@ struct tm
 	int tm_wday;    //day of the week?  0~6
 	int tm_yday;    //day of the year
 	int tm_isdst;   //is leap year?
-};
+}TIME;
 #define _TM_DEFINED
 #endif  //_TM_DEFINED
 
 //! ...
-time_t time(time_t* );
+EXTERN time_t time(time_t* );
 //! Get a format string by a time,
 //! The function returns the length of the string, 0 means failed, others > 0 means success
 //! Note: the str buffer must be enough big, normally 48 bytes
-int strtime( time_t*, char* str );
+EXTERN int strtime( time_t*, char* str );
 //! From struct tm to time_t
-time_t mktime( const struct tm* );
+EXTERN time_t mktime( const struct tm* );
 //! From time_t to struct tm
 //! If failed, it will return 0, others > 0 means success
-int gettime( const time_t*, struct tm* );
+EXTERN int gettime( const time_t*, struct tm* );
 
 #endif
 

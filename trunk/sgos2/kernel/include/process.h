@@ -15,12 +15,13 @@
 #define MAX_SEM_NUM	64
 
 #define IS_KERNEL_PROCESS( p ) (p->user)
+#define ENV_VARIABLES_SIZE	PAGE_SIZE*4
 
 // 进程运行用户态环境信息
 typedef struct ENVIRONMENT{
-	char	cmd_line[PAGE_SIZE];
-	char	variables[PAGE_SIZE];
-}ENVIRONMENT;
+	char	cmdline[PAGE_SIZE];
+	char	variables[ENV_VARIABLES_SIZE];
+}ENVIRONMENT, env_t;
 
 // 物理内存使用信息
 typedef struct PAGE_INFO{
@@ -67,11 +68,12 @@ typedef struct PROCESS{
 }PROCESS;
 
 //第一个进程初始化
-void process_init();
+void process_init( const char* cmdline );
 //返回当前进程
 PROCESS* current_proc();
 //创建进程
-PROCESS* process_create( PROCESS* parent, ENVIRONMENT* env );
+PROCESS* process_create( PROCESS* parent );
+int process_kill( PROCESS* proc, int exit_code );
 //由id获取进程
 PROCESS* process_get( int pid );
 

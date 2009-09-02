@@ -29,9 +29,10 @@ void parseCommand( Messenger& msgRecv )
 	t_8 dev;
 	t_32 sec_start, sec_count;
 	uchar *buf;
-	string cmd = msgRecv.readName("...");
+	msgRecv.redir("...");
 	Messenger sender = msgRecv.reply();
 	sender.parse("<msg/>");
+	string cmd = msgRecv.readName(".");
 	if( cmd == "ReadSector" ){
 		dev = msgRecv.getUInt(":part");
 		sec_start = msgRecv.getUInt(":start");
@@ -74,14 +75,16 @@ void parseCommand( Messenger& msgRecv )
 int startService()
 {
 	//接收消息使者
-	Messenger msgRecv;
+	Messenger msger;
 	//注册线程名称，其它程序便可以向此服务线程发送消息
 	Thread current = Thread::ThisThread();
 	current.createName("hd");
+	//初始化驱动程序
+	lba_init();
 	for(;;){
 		//Pending for messenger
-		msgRecv.receive();
-		parseCommand( msgRecv );
+		msger.receive();
+		parseCommand( msger );
 		
 	}
 	current.deleteName("hd");
@@ -91,7 +94,6 @@ int startService()
 int main()
 {
 	printf("Starting hd service ...\n");
-	lba_init();
 	return startService();
 }
 

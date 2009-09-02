@@ -1,0 +1,1016 @@
+
+vfs.exe:     file format pei-i386
+vfs.exe
+architecture: i386, flags 0x0000013b:
+HAS_RELOC, EXEC_P, HAS_DEBUG, HAS_SYMS, HAS_LOCALS, D_PAGED
+start address 0x004010fc
+
+Characteristics 0x2106
+	executable
+	line numbers stripped
+	32 bit words
+	DLL
+
+Time/Date		Tue Sep 01 21:11:40 2009
+
+ImageBase		00400000
+SectionAlignment	00001000
+FileAlignment		00000200
+MajorOSystemVersion	4
+MinorOSystemVersion	0
+MajorImageVersion	1
+MinorImageVersion	0
+MajorSubsystemVersion	4
+MinorSubsystemVersion	0
+Win32Version		00000000
+SizeOfImage		00010000
+SizeOfHeaders		00000400
+CheckSum		00016a9c
+Subsystem		00000003	(Windows CUI)
+DllCharacteristics	00000000
+SizeOfStackReserve	00200000
+SizeOfStackCommit	00001000
+SizeOfHeapReserve	00100000
+SizeOfHeapCommit	00001000
+LoaderFlags		00000000
+NumberOfRvaAndSizes	00000010
+
+The Data Directory
+Entry 0 00005000 000003de Export Directory [.edata (or where ever we found it)]
+Entry 1 00006000 000007fc Import Directory [parts of .idata]
+Entry 2 00000000 00000000 Resource Directory [.rsrc]
+Entry 3 00000000 00000000 Exception Directory [.pdata]
+Entry 4 00000000 00000000 Security Directory
+Entry 5 00007000 00000174 Base Relocation Directory [.reloc]
+Entry 6 00000000 00000000 Debug Directory
+Entry 7 00000000 00000000 Description Directory
+Entry 8 00000000 00000000 Special Directory
+Entry 9 00000000 00000000 Thread Storage Directory [.tls]
+Entry a 00000000 00000000 Load Configuration Directory
+Entry b 00000000 00000000 Bound Import Directory
+Entry c 00000000 00000000 Import Address Table Directory
+Entry d 00000000 00000000 Delay Import Directory
+Entry e 00000000 00000000 Reserved
+Entry f 00000000 00000000 Reserved
+
+There is an import table in .idata at 0x406000
+
+The Import Tables (interpreted .idata section contents)
+ vma:            Hint    Time      Forward  DLL       First
+                 Table   Stamp     Chain    Name      Thunk
+ 00006000	00006040 00000000 00000000 0000679c 00006118
+
+	DLL Name: system.dll
+	vma:  Hint/Ord Member-Name Bound-To
+	61ec	    0  _ZN6System6Thread10ThisThreadEv
+	6210	    1  _ZN6System6Thread10createNameEPKc
+	6234	    2  _ZN6System6Thread10deleteNameEPKc
+	6258	    3  _ZN6System6Thread4ExitEj
+	6274	    6  _ZN6System6Thread5SleepEj
+	6290	    8  _ZN6System6Thread5startEv
+	62ac	   12  _ZN6System6ThreadC1EPv
+	62c8	   16  _ZN6System6ThreadD1Ev
+	62e0	   21  _ZN6System6string4cstrEv
+	62fc	   34  _ZN6System6stringC1Ev
+	6314	   38  _ZN6System6stringD1Ev
+	632c	   40  _ZN6System6stringaSEPKc
+	6348	   44  _ZN6System6stringeqEPKc
+	6364	   62  _ZN6System9Messenger16getSenderProcessEv
+	6390	   63  _ZN6System9Messenger4readEPKcPvj
+	63b4	   64  _ZN6System9Messenger4sendEv
+	63d4	   65  _ZN6System9Messenger5mkdirEPKc
+	63f8	   66  _ZN6System9Messenger5parseEPKc
+	641c	   67  _ZN6System9Messenger5redirEPKc
+	6440	   68  _ZN6System9Messenger5replyEv
+	6460	   69  _ZN6System9Messenger5writeEPKcPKvj
+	6488	   71  _ZN6System9Messenger6getIntEPKc
+	64ac	   72  _ZN6System9Messenger6putIntEPKci
+	64d0	   75  _ZN6System9Messenger7getUIntEPKc
+	64f4	   77  _ZN6System9Messenger7putUIntEPKcj
+	6518	   78  _ZN6System9Messenger7receiveEi
+	653c	   79  _ZN6System9Messenger7requestEv
+	6560	   85  _ZN6System9Messenger8readNameEPKc
+	6584	   86  _ZN6System9Messenger9getStringEPKc
+	65ac	   88  _ZN6System9Messenger9putStringEPKcS2_
+	65d4	   91  _ZN6System9MessengerC1Ev
+	65f0	   94  _ZN6System9MessengerD1Ev
+
+ 00006014	000060c8 00000000 00000000 000067f0 000061a0
+
+	DLL Name: libc.dll
+	vma:  Hint/Ord Member-Name Bound-To
+	660c	    1  __allocation_init
+	6620	    2  __pthread_init
+	6634	    7  free
+	663c	    9  malloc
+	6648	   11  memcpy
+	6654	   14  memset
+	6660	   19  printf
+	666c	   34  queue_create
+	667c	   37  queue_pop_front
+	6690	   38  queue_push_back
+	66a4	   39  queue_push_front
+	66b8	   40  queue_quick_search
+	66d0	   41  queue_remove
+	66e0	   42  queue_search
+	66f0	   43  rand
+	66f8	   47  sprintf
+	6704	   51  strcmp
+	6710	   59  strncpy
+
+ 00006028	00000000 00000000 00000000 00000000 00000000
+
+There is an export table in .edata at 0x405000
+
+The Export Tables (interpreted .edata section contents)
+
+Export Flags 			0
+Time/Date stamp 		4a9d1d8c
+Major/Minor 			0/0
+Name 				000051d6 vfs.exe
+Ordinal Base 			1
+Number in:
+	Export Address Table 		0000002b
+	[Name Pointer/Ordinal] Table	0000002b
+Table Addresses
+	Export Address Table 		00005028
+	Name Pointer Table 		000050d4
+	Ordinal Table 			00005180
+
+Export Address Table -- Ordinal Base 1
+	[   0] +base[   1] 106a Export RVA
+	[   1] +base[   2] 1070 Export RVA
+	[   2] +base[   3] 1076 Export RVA
+	[   3] +base[   4] 150e Export RVA
+	[   4] +base[   5] 1c9e Export RVA
+	[   5] +base[   6] 1fb6 Export RVA
+	[   6] +base[   7] 1e3e Export RVA
+	[   7] +base[   8] 298e Export RVA
+	[   8] +base[   9] 103c Export RVA
+	[   9] +base[  10] 1028 Export RVA
+	[  10] +base[  11] 1014 Export RVA
+	[  11] +base[  12] 1000 Export RVA
+	[  12] +base[  13] 1170 Export RVA
+	[  13] +base[  14] 1050 Export RVA
+	[  14] +base[  15] 10f0 Export RVA
+	[  15] +base[  16] 10ba Export RVA
+	[  16] +base[  17] 10f6 Export RVA
+	[  17] +base[  18] 1080 Export RVA
+	[  18] +base[  19] 15fe Export RVA
+	[  19] +base[  20] 1712 Export RVA
+	[  20] +base[  21] 1796 Export RVA
+	[  21] +base[  22] 4070 Export RVA
+	[  22] +base[  23] 4050 Export RVA
+	[  23] +base[  24] 1834 Export RVA
+	[  24] +base[  25] 1864 Export RVA
+	[  25] +base[  26] 1956 Export RVA
+	[  26] +base[  27] 4010 Export RVA
+	[  27] +base[  28] 40b0 Export RVA
+	[  28] +base[  29] 1e0a Export RVA
+	[  29] +base[  30] 1d30 Export RVA
+	[  30] +base[  31] 1d64 Export RVA
+	[  31] +base[  32] 1180 Export RVA
+	[  32] +base[  33] 1187 Export RVA
+	[  33] +base[  34] 1e90 Export RVA
+	[  34] +base[  35] 10fc Export RVA
+	[  35] +base[  36] 40f0 Export RVA
+	[  36] +base[  37] 4120 Export RVA
+	[  37] +base[  38] 411c Export RVA
+	[  38] +base[  39] 2004 Export RVA
+	[  39] +base[  40] 1fe6 Export RVA
+	[  40] +base[  41] 22e8 Export RVA
+	[  41] +base[  42] 1ff0 Export RVA
+	[  42] +base[  43] 1ffa Export RVA
+
+[Ordinal/Name Pointer] Table
+	[   0] _Unwind_SjLj_Register
+	[   1] _Unwind_SjLj_Resume
+	[   2] _Unwind_SjLj_Unregister
+	[   3] _Z11buffer_initj
+	[   4] _Z11device_initv
+	[   5] _Z12get_procinfoj
+	[   6] _Z7fs_initv
+	[   7] _Z8vfs_initv
+	[   8] _ZdaPv
+	[   9] _ZdlPv
+	[  10] _Znaj
+	[  11] _Znwj
+	[  12] __cxa_pure_virtual
+	[  13] __gxx_personality_sj0
+	[  14] __main
+	[  15] __run_exit_func
+	[  16] _alloca
+	[  17] atexit
+	[  18] buffer_get
+	[  19] buffer_put
+	[  20] buffer_sync
+	[  21] devQueue
+	[  22] devThread
+	[  23] device_find
+	[  24] device_mount
+	[  25] device_register
+	[  26] empty_buffer
+	[  27] fsQueue
+	[  28] fs_detect
+	[  29] fs_register
+	[  30] fs_unregister
+	[  31] get_ctors
+	[  32] get_dtors
+	[  33] main
+	[  34] mainCRTStartup
+	[  35] procQueue
+	[  36] root
+	[  37] vfsThread
+	[  38] vfs_close
+	[  39] vfs_ioctl
+	[  40] vfs_open
+	[  41] vfs_read
+	[  42] vfs_write
+
+
+PE File Base Relocations (interpreted .reloc section contents)
+
+Virtual Address: 00001000 Chunk size 184 (0xb8) Number of fixups 88
+	reloc    0 offset   59 [1059] HIGHLOW
+	reloc    1 offset   aa [10aa] HIGHLOW
+	reloc    2 offset   b4 [10b4] HIGHLOW
+	reloc    3 offset   c1 [10c1] HIGHLOW
+	reloc    4 offset  182 [1182] HIGHLOW
+	reloc    5 offset  189 [1189] HIGHLOW
+	reloc    6 offset  1f7 [11f7] HIGHLOW
+	reloc    7 offset  213 [1213] HIGHLOW
+	reloc    8 offset  226 [1226] HIGHLOW
+	reloc    9 offset  245 [1245] HIGHLOW
+	reloc   10 offset  264 [1264] HIGHLOW
+	reloc   11 offset  27f [127f] HIGHLOW
+	reloc   12 offset  29d [129d] HIGHLOW
+	reloc   13 offset  2b4 [12b4] HIGHLOW
+	reloc   14 offset  2ca [12ca] HIGHLOW
+	reloc   15 offset  2d7 [12d7] HIGHLOW
+	reloc   16 offset  2fe [12fe] HIGHLOW
+	reloc   17 offset  327 [1327] HIGHLOW
+	reloc   18 offset  36d [136d] HIGHLOW
+	reloc   19 offset  389 [1389] HIGHLOW
+	reloc   20 offset  39c [139c] HIGHLOW
+	reloc   21 offset  3bb [13bb] HIGHLOW
+	reloc   22 offset  3da [13da] HIGHLOW
+	reloc   23 offset  3f5 [13f5] HIGHLOW
+	reloc   24 offset  41a [141a] HIGHLOW
+	reloc   25 offset  438 [1438] HIGHLOW
+	reloc   26 offset  44f [144f] HIGHLOW
+	reloc   27 offset  465 [1465] HIGHLOW
+	reloc   28 offset  472 [1472] HIGHLOW
+	reloc   29 offset  499 [1499] HIGHLOW
+	reloc   30 offset  4ac [14ac] HIGHLOW
+	reloc   31 offset  4bf [14bf] HIGHLOW
+	reloc   32 offset  4d2 [14d2] HIGHLOW
+	reloc   33 offset  521 [1521] HIGHLOW
+	reloc   34 offset  529 [1529] HIGHLOW
+	reloc   35 offset  538 [1538] HIGHLOW
+	reloc   36 offset  5d1 [15d1] HIGHLOW
+	reloc   37 offset  5e4 [15e4] HIGHLOW
+	reloc   38 offset  60f [160f] HIGHLOW
+	reloc   39 offset  650 [1650] HIGHLOW
+	reloc   40 offset  665 [1665] HIGHLOW
+	reloc   41 offset  6c8 [16c8] HIGHLOW
+	reloc   42 offset  6d4 [16d4] HIGHLOW
+	reloc   43 offset  78b [178b] HIGHLOW
+	reloc   44 offset  7a6 [17a6] HIGHLOW
+	reloc   45 offset  7ea [17ea] HIGHLOW
+	reloc   46 offset  845 [1845] HIGHLOW
+	reloc   47 offset  853 [1853] HIGHLOW
+	reloc   48 offset  8b0 [18b0] HIGHLOW
+	reloc   49 offset  978 [1978] HIGHLOW
+	reloc   50 offset  9cf [19cf] HIGHLOW
+	reloc   51 offset  9dd [19dd] HIGHLOW
+	reloc   52 offset  a06 [1a06] HIGHLOW
+	reloc   53 offset  a90 [1a90] HIGHLOW
+	reloc   54 offset  ab6 [1ab6] HIGHLOW
+	reloc   55 offset  adf [1adf] HIGHLOW
+	reloc   56 offset  af8 [1af8] HIGHLOW
+	reloc   57 offset  b23 [1b23] HIGHLOW
+	reloc   58 offset  b43 [1b43] HIGHLOW
+	reloc   59 offset  b77 [1b77] HIGHLOW
+	reloc   60 offset  ba8 [1ba8] HIGHLOW
+	reloc   61 offset  bba [1bba] HIGHLOW
+	reloc   62 offset  bcd [1bcd] HIGHLOW
+	reloc   63 offset  bef [1bef] HIGHLOW
+	reloc   64 offset  c06 [1c06] HIGHLOW
+	reloc   65 offset  c1b [1c1b] HIGHLOW
+	reloc   66 offset  c3f [1c3f] HIGHLOW
+	reloc   67 offset  c57 [1c57] HIGHLOW
+	reloc   68 offset  cb1 [1cb1] HIGHLOW
+	reloc   69 offset  cc8 [1cc8] HIGHLOW
+	reloc   70 offset  cf4 [1cf4] HIGHLOW
+	reloc   71 offset  d02 [1d02] HIGHLOW
+	reloc   72 offset  d07 [1d07] HIGHLOW
+	reloc   73 offset  d4f [1d4f] HIGHLOW
+	reloc   74 offset  d7b [1d7b] HIGHLOW
+	reloc   75 offset  d97 [1d97] HIGHLOW
+	reloc   76 offset  e1b [1e1b] HIGHLOW
+	reloc   77 offset  e29 [1e29] HIGHLOW
+	reloc   78 offset  e50 [1e50] HIGHLOW
+	reloc   79 offset  e67 [1e67] HIGHLOW
+	reloc   80 offset  ed9 [1ed9] HIGHLOW
+	reloc   81 offset  f05 [1f05] HIGHLOW
+	reloc   82 offset  f2e [1f2e] HIGHLOW
+	reloc   83 offset  f57 [1f57] HIGHLOW
+	reloc   84 offset  f6b [1f6b] HIGHLOW
+	reloc   85 offset  fc7 [1fc7] HIGHLOW
+	reloc   86 offset  fd5 [1fd5] HIGHLOW
+	reloc   87 offset    0 [1000] ABSOLUTE
+
+Virtual Address: 00002000 Chunk size 188 (0xbc) Number of fixups 90
+	reloc    0 offset  164 [2164] HIGHLOW
+	reloc    1 offset  1d3 [21d3] HIGHLOW
+	reloc    2 offset  350 [2350] HIGHLOW
+	reloc    3 offset  46d [246d] HIGHLOW
+	reloc    4 offset  4bd [24bd] HIGHLOW
+	reloc    5 offset  516 [2516] HIGHLOW
+	reloc    6 offset  52c [252c] HIGHLOW
+	reloc    7 offset  53f [253f] HIGHLOW
+	reloc    8 offset  575 [2575] HIGHLOW
+	reloc    9 offset  593 [2593] HIGHLOW
+	reloc   10 offset  5a8 [25a8] HIGHLOW
+	reloc   11 offset  5bd [25bd] HIGHLOW
+	reloc   12 offset  5f9 [25f9] HIGHLOW
+	reloc   13 offset  619 [2619] HIGHLOW
+	reloc   14 offset  634 [2634] HIGHLOW
+	reloc   15 offset  64e [264e] HIGHLOW
+	reloc   16 offset  683 [2683] HIGHLOW
+	reloc   17 offset  69e [269e] HIGHLOW
+	reloc   18 offset  6bc [26bc] HIGHLOW
+	reloc   19 offset  6d5 [26d5] HIGHLOW
+	reloc   20 offset  70b [270b] HIGHLOW
+	reloc   21 offset  720 [2720] HIGHLOW
+	reloc   22 offset  735 [2735] HIGHLOW
+	reloc   23 offset  78a [278a] HIGHLOW
+	reloc   24 offset  7c1 [27c1] HIGHLOW
+	reloc   25 offset  7d9 [27d9] HIGHLOW
+	reloc   26 offset  7f7 [27f7] HIGHLOW
+	reloc   27 offset  810 [2810] HIGHLOW
+	reloc   28 offset  85e [285e] HIGHLOW
+	reloc   29 offset  871 [2871] HIGHLOW
+	reloc   30 offset  886 [2886] HIGHLOW
+	reloc   31 offset  89b [289b] HIGHLOW
+	reloc   32 offset  8f0 [28f0] HIGHLOW
+	reloc   33 offset  919 [2919] HIGHLOW
+	reloc   34 offset  939 [2939] HIGHLOW
+	reloc   35 offset  9a1 [29a1] HIGHLOW
+	reloc   36 offset  9b8 [29b8] HIGHLOW
+	reloc   37 offset  9e4 [29e4] HIGHLOW
+	reloc   38 offset  9f2 [29f2] HIGHLOW
+	reloc   39 offset  9f7 [29f7] HIGHLOW
+	reloc   40 offset  a22 [2a22] HIGHLOW
+	reloc   41 offset  a32 [2a32] HIGHLOW
+	reloc   42 offset  a42 [2a42] HIGHLOW
+	reloc   43 offset  a52 [2a52] HIGHLOW
+	reloc   44 offset  a62 [2a62] HIGHLOW
+	reloc   45 offset  a72 [2a72] HIGHLOW
+	reloc   46 offset  a82 [2a82] HIGHLOW
+	reloc   47 offset  a92 [2a92] HIGHLOW
+	reloc   48 offset  aa2 [2aa2] HIGHLOW
+	reloc   49 offset  ab2 [2ab2] HIGHLOW
+	reloc   50 offset  ac2 [2ac2] HIGHLOW
+	reloc   51 offset  ad2 [2ad2] HIGHLOW
+	reloc   52 offset  ae2 [2ae2] HIGHLOW
+	reloc   53 offset  af2 [2af2] HIGHLOW
+	reloc   54 offset  b02 [2b02] HIGHLOW
+	reloc   55 offset  b12 [2b12] HIGHLOW
+	reloc   56 offset  b22 [2b22] HIGHLOW
+	reloc   57 offset  b32 [2b32] HIGHLOW
+	reloc   58 offset  b42 [2b42] HIGHLOW
+	reloc   59 offset  b52 [2b52] HIGHLOW
+	reloc   60 offset  b62 [2b62] HIGHLOW
+	reloc   61 offset  b72 [2b72] HIGHLOW
+	reloc   62 offset  b82 [2b82] HIGHLOW
+	reloc   63 offset  b92 [2b92] HIGHLOW
+	reloc   64 offset  ba2 [2ba2] HIGHLOW
+	reloc   65 offset  bb2 [2bb2] HIGHLOW
+	reloc   66 offset  bc2 [2bc2] HIGHLOW
+	reloc   67 offset  bd2 [2bd2] HIGHLOW
+	reloc   68 offset  be2 [2be2] HIGHLOW
+	reloc   69 offset  bf2 [2bf2] HIGHLOW
+	reloc   70 offset  c02 [2c02] HIGHLOW
+	reloc   71 offset  c12 [2c12] HIGHLOW
+	reloc   72 offset  c22 [2c22] HIGHLOW
+	reloc   73 offset  c32 [2c32] HIGHLOW
+	reloc   74 offset  c42 [2c42] HIGHLOW
+	reloc   75 offset  c52 [2c52] HIGHLOW
+	reloc   76 offset  c62 [2c62] HIGHLOW
+	reloc   77 offset  c72 [2c72] HIGHLOW
+	reloc   78 offset  c82 [2c82] HIGHLOW
+	reloc   79 offset  c92 [2c92] HIGHLOW
+	reloc   80 offset  ca2 [2ca2] HIGHLOW
+	reloc   81 offset  cb2 [2cb2] HIGHLOW
+	reloc   82 offset  cc2 [2cc2] HIGHLOW
+	reloc   83 offset  cd2 [2cd2] HIGHLOW
+	reloc   84 offset  ce2 [2ce2] HIGHLOW
+	reloc   85 offset  cf2 [2cf2] HIGHLOW
+	reloc   86 offset  d02 [2d02] HIGHLOW
+	reloc   87 offset  d12 [2d12] HIGHLOW
+	reloc   88 offset  d22 [2d22] HIGHLOW
+	reloc   89 offset  d32 [2d32] HIGHLOW
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         00001d48  00401000  00401000  00000400  2**4
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .rdata        000003d0  00403000  00403000  00002200  2**4
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .bss          00000130  00404000  00404000  00000000  2**4
+                  ALLOC
+  3 .edata        000003de  00405000  00405000  00002600  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .idata        000007fc  00406000  00406000  00002a00  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  5 .reloc        00000174  00407000  00407000  00003200  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  6 .stab         000029d0  00408000  00408000  00003400  2**2
+                  CONTENTS, READONLY, DEBUGGING, NEVER_LOAD, EXCLUDE
+  7 .stabstr      00004bc4  0040b000  0040b000  00005e00  2**0
+                  CONTENTS, READONLY, DEBUGGING, NEVER_LOAD, EXCLUDE
+SYMBOL TABLE:
+[  0](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x0000000d alloc.cpp
+File 
+[  2](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x00000000 __Znwj
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[  4](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000014 __Znaj
+[  5](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000028 __ZdlPv
+[  6](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x0000003c __ZdaPv
+[  7](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .text
+AUX scnlen 0x4f nreloc 4 nlnno 0
+[  9](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 11](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 13](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x0000001c exception.cpp
+File 
+[ 15](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x00000050 ___gxx_personality_sj0
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 17](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x0000006a __Unwind_SjLj_Register
+[ 18](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000070 __Unwind_SjLj_Resume
+[ 19](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000076 __Unwind_SjLj_Unregister
+[ 20](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000050 .text
+AUX scnlen 0x2b nreloc 2 nlnno 0
+[ 22](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 24](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 26](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .rdata
+AUX scnlen 0x4 nreloc 0 nlnno 0
+[ 28](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000028 exit.cpp
+File 
+[ 30](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000000 _first
+[ 31](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x00000080 _atexit
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 33](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x000000ba ___run_exit_func
+[ 34](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000080 .text
+AUX scnlen 0x6b nreloc 4 nlnno 0
+[ 36](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 38](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .bss
+AUX scnlen 0x10 nreloc 0 nlnno 0
+[ 40](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000034 init.cpp
+File 
+[ 42](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x000000f0 ___main
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 44](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x000000f6 __alloca
+[ 45](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x000000fc _mainCRTStartup
+[ 46](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000000f0 .text
+AUX scnlen 0x78 nreloc 6 nlnno 0
+[ 48](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 50](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000010 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 52](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x0000003e virtual.cpp
+File 
+[ 54](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x00000170 ___cxa_pure_virtual
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 56](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000170 .text
+AUX scnlen 0x5 nreloc 0 nlnno 0
+[ 58](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 60](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000010 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 62](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000048 fake
+File 
+[ 64](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000180 .text
+AUX scnlen 0xe nreloc 2 nlnno 0
+[ 66](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 68](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000010 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 70](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000180 _get_ctors
+[ 71](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000187 _get_dtors
+[ 72](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x0000005d buffer.cpp
+File 
+[ 74](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 1) 0x00000190 __Z13delete_bufferPKv
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 76](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x000001b8 __Z13search_bufferPKvS0_
+[ 77](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x000001de __Z9readBlockP6BUFFER
+[ 78](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00000354 __Z10writeBlockP6BUFFER
+[ 79](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x0000050e __Z11buffer_initj
+[ 80](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x000005fe _buffer_get
+[ 81](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000712 _buffer_put
+[ 82](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000796 _buffer_sync
+[ 83](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000190 .text
+AUX scnlen 0x66d nreloc 95 nlnno 0
+[ 85](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[ 87](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000010 .bss
+AUX scnlen 0x2c nreloc 0 nlnno 0
+[ 89](sec  7)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .stab
+AUX scnlen 0xcc0 nreloc 11 nlnno 0
+[ 91](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000010 .rdata
+AUX scnlen 0x13e nreloc 0 nlnno 0
+[ 93](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000071 device.cpp
+File 
+[ 95](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 1) 0x00000800 __Z13search_devicePKvS0_
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[ 97](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000834 _device_find
+[ 98](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000864 _device_mount
+[ 99](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00000916 __Z19check_if_registeredPKvS0_
+[100](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000956 _device_register
+[101](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00000b36 __Z11dev_servicev
+[102](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000c9e __Z11device_initv
+[103](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000800 .text
+AUX scnlen 0x523 nreloc 71 nlnno 0
+[105](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[107](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000050 .bss
+AUX scnlen 0x4c nreloc 0 nlnno 0
+[109](sec  7)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000cc0 .stab
+AUX scnlen 0xb4c nreloc 10 nlnno 0
+[111](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000150 .rdata
+AUX scnlen 0x111 nreloc 0 nlnno 0
+[113](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000083 fs.cpp
+File 
+[115](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 1) 0x00000d30 _fs_register
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[117](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000d64 _fs_unregister
+[118](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00000db6 __Z6try_fsPKvS0_
+[119](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000e0a _fs_detect
+[120](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000e3e __Z7fs_initv
+[121](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000d30 .text
+AUX scnlen 0x15d nreloc 12 nlnno 0
+[123](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[125](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000000b0 .bss
+AUX scnlen 0x2c nreloc 0 nlnno 0
+[127](sec  7)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000014dc .stab
+AUX scnlen 0x810 nreloc 8 nlnno 0
+[129](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000270 .rdata
+AUX scnlen 0x8 nreloc 0 nlnno 0
+[131](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x00000090 main.cpp
+File 
+[133](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000e90 _main
+[134](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000e90 .text
+AUX scnlen 0xf7 nreloc 17 nlnno 0
+[136](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[138](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000000f0 .bss
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[140](sec  7)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00001998 .stab
+AUX scnlen 0x63c nreloc 4 nlnno 0
+[142](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000280 .rdata
+AUX scnlen 0x6f nreloc 0 nlnno 0
+[144](sec -2)(fl 0x00)(ty   0)(scl 103) (nx 1) 0x000001ae vfs.cpp
+File 
+[146](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 1) 0x00000f90 __Z14search_processPKvS0_
+AUX tagndx 0 ttlsiz 0x0 lnnos 0 next 0
+[148](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000fb6 __Z12get_procinfoj
+[149](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000fe6 _vfs_ioctl
+[150](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000ff0 _vfs_read
+[151](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00000ffa _vfs_write
+[152](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001004 _vfs_close
+[153](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x000010a6 __Z8try_openP5_FILES0_PKc
+[154](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00001152 __Z9name_fileP16PROCESS_OPENLISTP5_FILEPKc
+[155](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x000012e8 _vfs_open
+[156](sec  1)(fl 0x00)(ty  20)(scl   3) (nx 0) 0x00001450 __Z11vfs_servicev
+[157](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x0000198e __Z8vfs_initv
+[158](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000f90 .text
+AUX scnlen 0xa83 nreloc 110 nlnno 0
+[160](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .data
+AUX scnlen 0x0 nreloc 0 nlnno 0
+[162](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000000f0 .bss
+AUX scnlen 0x34 nreloc 0 nlnno 0
+[164](sec  7)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00001ca4 .stab
+AUX scnlen 0x1080 nreloc 14 nlnno 0
+[166](sec  2)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x000002f0 .rdata
+AUX scnlen 0xd3 nreloc 0 nlnno 0
+[168](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a20 .text
+[169](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000071c .idata$7
+[170](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000118 .idata$5
+[171](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000040 .idata$4
+[172](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001ec .idata$6
+[173](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a30 .text
+[174](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000720 .idata$7
+[175](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000011c .idata$5
+[176](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000044 .idata$4
+[177](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000210 .idata$6
+[178](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a40 .text
+[179](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000724 .idata$7
+[180](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000120 .idata$5
+[181](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000048 .idata$4
+[182](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000234 .idata$6
+[183](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a50 .text
+[184](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000728 .idata$7
+[185](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000124 .idata$5
+[186](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000004c .idata$4
+[187](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000258 .idata$6
+[188](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a60 .text
+[189](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000072c .idata$7
+[190](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000128 .idata$5
+[191](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000050 .idata$4
+[192](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000274 .idata$6
+[193](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a70 .text
+[194](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000730 .idata$7
+[195](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000012c .idata$5
+[196](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000054 .idata$4
+[197](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000290 .idata$6
+[198](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a80 .text
+[199](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000734 .idata$7
+[200](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000130 .idata$5
+[201](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000058 .idata$4
+[202](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000002ac .idata$6
+[203](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001a90 .text
+[204](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000738 .idata$7
+[205](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000134 .idata$5
+[206](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000005c .idata$4
+[207](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000002c8 .idata$6
+[208](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001aa0 .text
+[209](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000073c .idata$7
+[210](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000138 .idata$5
+[211](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000060 .idata$4
+[212](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000002e0 .idata$6
+[213](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ab0 .text
+[214](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000740 .idata$7
+[215](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000013c .idata$5
+[216](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000064 .idata$4
+[217](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000002fc .idata$6
+[218](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ac0 .text
+[219](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000744 .idata$7
+[220](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000140 .idata$5
+[221](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000068 .idata$4
+[222](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000314 .idata$6
+[223](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ad0 .text
+[224](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000748 .idata$7
+[225](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000144 .idata$5
+[226](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000006c .idata$4
+[227](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000032c .idata$6
+[228](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ae0 .text
+[229](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000074c .idata$7
+[230](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000148 .idata$5
+[231](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000070 .idata$4
+[232](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000348 .idata$6
+[233](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001af0 .text
+[234](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000750 .idata$7
+[235](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000014c .idata$5
+[236](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000074 .idata$4
+[237](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000364 .idata$6
+[238](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b00 .text
+[239](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000754 .idata$7
+[240](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000150 .idata$5
+[241](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000078 .idata$4
+[242](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000390 .idata$6
+[243](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b10 .text
+[244](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000758 .idata$7
+[245](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000154 .idata$5
+[246](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000007c .idata$4
+[247](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000003b4 .idata$6
+[248](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b20 .text
+[249](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000075c .idata$7
+[250](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000158 .idata$5
+[251](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000080 .idata$4
+[252](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000003d4 .idata$6
+[253](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b30 .text
+[254](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000760 .idata$7
+[255](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000015c .idata$5
+[256](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000084 .idata$4
+[257](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000003f8 .idata$6
+[258](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b40 .text
+[259](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000764 .idata$7
+[260](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000160 .idata$5
+[261](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000088 .idata$4
+[262](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000041c .idata$6
+[263](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b50 .text
+[264](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000768 .idata$7
+[265](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000164 .idata$5
+[266](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000008c .idata$4
+[267](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000440 .idata$6
+[268](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b60 .text
+[269](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000076c .idata$7
+[270](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000168 .idata$5
+[271](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000090 .idata$4
+[272](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000460 .idata$6
+[273](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b70 .text
+[274](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000770 .idata$7
+[275](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000016c .idata$5
+[276](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000094 .idata$4
+[277](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000488 .idata$6
+[278](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b80 .text
+[279](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000774 .idata$7
+[280](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000170 .idata$5
+[281](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000098 .idata$4
+[282](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000004ac .idata$6
+[283](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001b90 .text
+[284](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000778 .idata$7
+[285](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000174 .idata$5
+[286](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000009c .idata$4
+[287](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000004d0 .idata$6
+[288](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ba0 .text
+[289](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000077c .idata$7
+[290](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000178 .idata$5
+[291](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000a0 .idata$4
+[292](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000004f4 .idata$6
+[293](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001bb0 .text
+[294](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000780 .idata$7
+[295](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000017c .idata$5
+[296](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000a4 .idata$4
+[297](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000518 .idata$6
+[298](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001bc0 .text
+[299](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000784 .idata$7
+[300](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000180 .idata$5
+[301](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000a8 .idata$4
+[302](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000053c .idata$6
+[303](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001bd0 .text
+[304](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000788 .idata$7
+[305](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000184 .idata$5
+[306](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000ac .idata$4
+[307](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000560 .idata$6
+[308](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001be0 .text
+[309](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000078c .idata$7
+[310](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000188 .idata$5
+[311](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000b0 .idata$4
+[312](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000584 .idata$6
+[313](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001bf0 .text
+[314](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000790 .idata$7
+[315](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000018c .idata$5
+[316](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000b4 .idata$4
+[317](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000005ac .idata$6
+[318](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c00 .text
+[319](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000794 .idata$7
+[320](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000190 .idata$5
+[321](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000b8 .idata$4
+[322](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000005d4 .idata$6
+[323](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c10 .text
+[324](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000798 .idata$7
+[325](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000194 .idata$5
+[326](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000bc .idata$4
+[327](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000005f0 .idata$6
+[328](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c20 .text
+[329](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007a8 .idata$7
+[330](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001a0 .idata$5
+[331](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000c8 .idata$4
+[332](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000060c .idata$6
+[333](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c30 .text
+[334](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007ac .idata$7
+[335](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001a4 .idata$5
+[336](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000cc .idata$4
+[337](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000620 .idata$6
+[338](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c40 .text
+[339](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007b0 .idata$7
+[340](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001a8 .idata$5
+[341](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000d0 .idata$4
+[342](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000634 .idata$6
+[343](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c50 .text
+[344](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007b4 .idata$7
+[345](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001ac .idata$5
+[346](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000d4 .idata$4
+[347](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000063c .idata$6
+[348](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c60 .text
+[349](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007b8 .idata$7
+[350](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001b0 .idata$5
+[351](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000d8 .idata$4
+[352](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000648 .idata$6
+[353](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c70 .text
+[354](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007bc .idata$7
+[355](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001b4 .idata$5
+[356](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000dc .idata$4
+[357](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000654 .idata$6
+[358](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c80 .text
+[359](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007c0 .idata$7
+[360](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001b8 .idata$5
+[361](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000e0 .idata$4
+[362](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000660 .idata$6
+[363](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001c90 .text
+[364](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007c4 .idata$7
+[365](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001bc .idata$5
+[366](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000e4 .idata$4
+[367](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000066c .idata$6
+[368](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ca0 .text
+[369](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007c8 .idata$7
+[370](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001c0 .idata$5
+[371](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000e8 .idata$4
+[372](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000067c .idata$6
+[373](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001cb0 .text
+[374](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007cc .idata$7
+[375](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001c4 .idata$5
+[376](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000ec .idata$4
+[377](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000690 .idata$6
+[378](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001cc0 .text
+[379](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007d0 .idata$7
+[380](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001c8 .idata$5
+[381](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000f0 .idata$4
+[382](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006a4 .idata$6
+[383](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001cd0 .text
+[384](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007d4 .idata$7
+[385](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001cc .idata$5
+[386](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000f4 .idata$4
+[387](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006b8 .idata$6
+[388](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001ce0 .text
+[389](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007d8 .idata$7
+[390](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001d0 .idata$5
+[391](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000f8 .idata$4
+[392](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006d0 .idata$6
+[393](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001cf0 .text
+[394](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007dc .idata$7
+[395](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001d4 .idata$5
+[396](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000fc .idata$4
+[397](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006e0 .idata$6
+[398](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001d00 .text
+[399](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007e0 .idata$7
+[400](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001d8 .idata$5
+[401](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000100 .idata$4
+[402](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006f0 .idata$6
+[403](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001d10 .text
+[404](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007e4 .idata$7
+[405](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001dc .idata$5
+[406](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000104 .idata$4
+[407](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000006f8 .idata$6
+[408](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001d20 .text
+[409](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007e8 .idata$7
+[410](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001e0 .idata$5
+[411](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000108 .idata$4
+[412](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000704 .idata$6
+[413](sec  1)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00001d30 .text
+[414](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007ec .idata$7
+[415](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001e4 .idata$5
+[416](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000010c .idata$4
+[417](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000710 .idata$6
+[418](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000000 .idata$2
+[419](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000114 .idata$5
+[420](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000003c .idata$4
+[421](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000014 .idata$2
+[422](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000019c .idata$5
+[423](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000c4 .idata$4
+[424](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000000c0 .idata$4
+[425](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000198 .idata$5
+[426](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x0000079c .idata$7
+[427](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x00000110 .idata$4
+[428](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000001e8 .idata$5
+[429](sec  5)(fl 0x00)(ty   0)(scl   3) (nx 0) 0x000007f0 .idata$7
+[430](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000134 __imp___ZN6System6ThreadD1Ev
+[431](sec  2)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000003d0 ___RUNTIME_PSEUDO_RELOC_LIST__
+[432](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a30 __ZN6System6Thread10createNameEPKc
+[433](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b70 __ZN6System9Messenger6getIntEPKc
+[434](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000018c __imp___ZN6System9Messenger9putStringEPKcS2_
+[435](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001d10 _sprintf
+[436](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001bf0 __ZN6System9Messenger9putStringEPKcS2_
+[437](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001cd0 _queue_quick_search
+[438](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c90 _queue_create
+[439](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001d0 __imp__queue_remove
+[440](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __data_start__
+[441](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001d40 ___DTOR_LIST__
+[442](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000011c _vfsThread
+[443](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c40 _free
+[444](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001d20 _strcmp
+[445](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001bc __imp__queue_create
+[446](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000017c __imp___ZN6System9Messenger7receiveEi
+[447](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ac0 __ZN6System6stringD1Ev
+[448](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001bd0 __ZN6System9Messenger8readNameEPKc
+[449](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ba0 __ZN6System9Messenger7putUIntEPKcj
+[450](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000079c _system_dll_iname
+[451](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ab0 __ZN6System6stringC1Ev
+[452](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000128 __imp___ZN6System6Thread5SleepEj
+[453](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___tls_start__
+[454](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000170 __imp___ZN6System9Messenger6putIntEPKci
+[455](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000050 _devThread
+[456](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001d00 _rand
+[457](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a60 __ZN6System6Thread5SleepEj
+[458](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001000 __size_of_stack_commit__
+[459](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000140 __imp___ZN6System6stringD1Ev
+[460](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000010 _empty_buffer
+[461](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00200000 __size_of_stack_reserve__
+[462](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000004 __major_subsystem_version__
+[463](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xl_start__
+[464](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000150 __imp___ZN6System9Messenger4readEPKcPvj
+[465](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001a0 __imp____allocation_init
+[466](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xi_start__
+[467](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a80 __ZN6System6ThreadC1EPv
+[468](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001d4 __imp__queue_search
+[469](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xi_end__
+[470](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b60 __ZN6System9Messenger5writeEPKcPKvj
+[471](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000118 __imp___ZN6System6Thread10ThisThreadEv
+[472](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001c8 __imp__queue_push_front
+[473](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001d8 __imp__rand
+[474](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a70 __ZN6System6Thread5startEv
+[475](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000013c __imp___ZN6System6stringC1Ev
+[476](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001be0 __ZN6System9Messenger9getStringEPKc
+[477](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c20 ___allocation_init
+[478](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000120 _root
+[479](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001cf0 _queue_search
+[480](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000007f0 _libc_dll_iname
+[481](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b10 __ZN6System9Messenger4sendEv
+[482](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __bss_start__
+[483](sec  2)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000003d0 ___RUNTIME_PSEUDO_RELOC_LIST_END__
+[484](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001000 __size_of_heap_commit__
+[485](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000000f0 _procQueue
+[486](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000012c __imp___ZN6System6Thread5startEv
+[487](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000184 __imp___ZN6System9Messenger8readNameEPKc
+[488](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000000b0 _fsQueue
+[489](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000011c __imp___ZN6System6Thread10createNameEPKc
+[490](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xp_start__
+[491](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a40 __ZN6System6Thread10deleteNameEPKc
+[492](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000148 __imp___ZN6System6stringeqEPKc
+[493](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001aa0 __ZN6System6string4cstrEv
+[494](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xp_end__
+[495](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000160 __imp___ZN6System9Messenger5redirEPKc
+[496](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001af0 __ZN6System9Messenger16getSenderProcessEv
+[497](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __dll__
+[498](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __minor_os_version__
+[499](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001d30 _strncpy
+[500](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ae0 __ZN6System6stringeqEPKc
+[501](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000178 __imp___ZN6System9Messenger7putUIntEPKcj
+[502](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00400000 __image_base__
+[503](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000014c __imp___ZN6System9Messenger16getSenderProcessEv
+[504](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001000 __section_alignment__
+[505](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b90 __ZN6System9Messenger7getUIntEPKc
+[506](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b40 __ZN6System9Messenger5redirEPKc
+[507](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c60 _memcpy
+[508](sec  2)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000003d0 __RUNTIME_PSEUDO_RELOC_LIST__
+[509](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c70 _memset
+[510](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000190 __imp___ZN6System9MessengerC1Ev
+[511](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000138 __imp___ZN6System6string4cstrEv
+[512](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000144 __imp___ZN6System6stringaSEPKc
+[513](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __data_end__
+[514](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001d38 __CTOR_LIST__
+[515](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001dc __imp__sprintf
+[516](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __head_system_dll
+[517](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000130 __bss_end__
+[518](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b50 __ZN6System9Messenger5replyEv
+[519](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xc_end__
+[520](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000014 __head_libc_dll
+[521](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000174 __imp___ZN6System9Messenger7getUIntEPKc
+[522](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xc_start__
+[523](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000164 __imp___ZN6System9Messenger5replyEv
+[524](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001a4 __imp____pthread_init
+[525](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000180 __imp___ZN6System9Messenger7requestEv
+[526](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b80 __ZN6System9Messenger6putIntEPKci
+[527](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001d38 ___CTOR_LIST__
+[528](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000168 __imp___ZN6System9Messenger5writeEPKcPKvj
+[529](sec  3)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000070 _devQueue
+[530](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b30 __ZN6System9Messenger5parseEPKc
+[531](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b00 __ZN6System9Messenger4readEPKcPvj
+[532](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001b0 __imp__memcpy
+[533](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c30 ___pthread_init
+[534](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001e0 __imp__strcmp
+[535](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000200 __file_alignment__
+[536](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ce0 _queue_remove
+[537](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001ac __imp__malloc
+[538](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001e4 __imp__strncpy
+[539](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001bb0 __ZN6System9Messenger7receiveEi
+[540](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000004 __major_os_version__
+[541](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ca0 _queue_pop_front
+[542](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a90 __ZN6System6ThreadD1Ev
+[543](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c00 __ZN6System9MessengerC1Ev
+[544](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __end__
+[545](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000154 __imp___ZN6System9Messenger4sendEv
+[546](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c50 _malloc
+[547](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00001d40 __DTOR_LIST__
+[548](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001ad0 __ZN6System6stringaSEPKc
+[549](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001b20 __ZN6System9Messenger5mkdirEPKc
+[550](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001b4 __imp__memset
+[551](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000188 __imp___ZN6System9Messenger9getStringEPKc
+[552](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00100000 __size_of_heap_reserve__
+[553](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xt_start__
+[554](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000130 __imp___ZN6System6ThreadC1EPv
+[555](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000003 __subsystem__
+[556](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000194 __imp___ZN6System9MessengerD1Ev
+[557](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___tls_end__
+[558](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000015c __imp___ZN6System9Messenger5parseEPKc
+[559](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001a8 __imp__free
+[560](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000001 __major_image_version__
+[561](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __loader_flags__
+[562](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001b8 __imp__printf
+[563](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001c0 __imp__queue_pop_front
+[564](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a50 __ZN6System6Thread4ExitEj
+[565](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __minor_subsystem_version__
+[566](sec -1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 __minor_image_version__
+[567](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001cc0 _queue_push_front
+[568](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c10 __ZN6System9MessengerD1Ev
+[569](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001a20 __ZN6System6Thread10ThisThreadEv
+[570](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000124 __imp___ZN6System6Thread4ExitEj
+[571](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001c80 _printf
+[572](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001bc0 __ZN6System9Messenger7requestEv
+[573](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001cc __imp__queue_quick_search
+[574](sec  2)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000003d0 __RUNTIME_PSEUDO_RELOC_LIST_END__
+[575](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 ___crt_xt_end__
+[576](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000120 __imp___ZN6System6Thread10deleteNameEPKc
+[577](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000158 __imp___ZN6System9Messenger5mkdirEPKc
+[578](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x0000016c __imp___ZN6System9Messenger6getIntEPKc
+[579](sec  5)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x000001c4 __imp__queue_push_back
+[580](sec  1)(fl 0x00)(ty  20)(scl   2) (nx 0) 0x00001cb0 _queue_push_back
+
+

@@ -45,6 +45,9 @@ typedef struct BXML_DATA{
 //	mutex_t			mutex;			//wo don't need it in kernel mode.
 }BXML_DATA, bxml_t;
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
 //XML
 struct BXML_DATA*		bxml_load( const char* filename );	//load xml data from a file
 struct BXML_DATA*		bxml_parse( const char* mem );	//load xml data from memory buffer
@@ -67,6 +70,10 @@ size_t 				bxml_buffer_size( struct BXML_DATA* xml );
 //操作接口
 //
 const char*			bxml_lasterr();
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif	//_BXML_PARSER_
 

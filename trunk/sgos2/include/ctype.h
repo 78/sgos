@@ -1,6 +1,8 @@
 #ifndef _CTYPE_H
 #define _CTYPE_H
 
+#include <sgos.h>
+
 #define _U	0x01	/* upper */
 #define _L	0x02	/* lower */
 #define _D	0x04	/* digit */
@@ -10,8 +12,8 @@
 #define _X	0x40	/* hex digit */
 #define _SP	0x80	/* hard space (0x20) */
 
-extern unsigned char _ctype[];
-extern char _ctmp;
+EXTERN unsigned char _ctype[];
+EXTERN char _ctmp;
 
 #define isalnum(c) ((_ctype+1)[c]&(_U|_L|_D))
 #define isalpha(c) ((_ctype+1)[c]&(_U|_L))

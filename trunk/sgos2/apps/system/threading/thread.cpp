@@ -61,7 +61,7 @@ namespace System{
 	// 终止线程
 	void Thread::abort()
 	{
-		sys_thread_terminate( this->handle, -1 );
+		sys_thread_kill( this->handle, -1 );
 	}
 	
 	// 开始线程
