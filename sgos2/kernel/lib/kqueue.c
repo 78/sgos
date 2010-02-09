@@ -15,16 +15,15 @@
  */
  
 #include <sgos.h>
-#include <string.h>
 #include <stdlib.h>
-#include <thread.h>
-#include <semaphore.h>
+#include <tm.h>
+#include <ipc.h>
 #include <mm.h>
-#include <queue.h>
-#include <debug.h>
+#include <rtl.h>
+#include <kd.h>
 
 //创建循环队列
-int queue_create( queue_t* q, int size, queue_delete_func del, const char* name, int use_sem )
+int RtlCreateQueue( KQueue* q, int size, KQueueEraser del, const char* name, int use_sem )
 {
 	if( size==0 )
 		size = 0x70000000;
@@ -33,112 +32,112 @@ int queue_create( queue_t* q, int size, queue_delete_func del, const char* name,
 	q->del_func = del;
 	q->cur_num = 0;
 	q->use_sem = use_sem;
-	strncpy( q->name, name, QUEUE_NAME_LEN-1 );
+//	strncpy( q->name, name, QUEUE_NAME_LEN-1 );
 	if( q->use_sem ){
-		q->semaphore = kmalloc(sizeof(sema_t));
+		q->semaphore = MmAllocateKernelMemory(sizeof(KSemaphore));
 		if(!q->semaphore)
 			return -ERR_NOMEM;
-		sema_init( q->semaphore );
+		IpcInitializeSemaphore( q->semaphore );
 	}
 	return 0;
 }
 
 //加到尾
-int queue_push_back( queue_t* q, void* data )
+int RtlPushBackQueue( KQueue* q, void* data )
 {
-	qnode_t* nod;
+	KQueueNode* nod;
 	if( q->cur_num>=q->max_num )
 		return -ERR_NOMEM;
-	nod = kmalloc(sizeof(qnode_t));
+	nod = MmAllocateKernelMemory(sizeof(KQueueNode));
 	if(!nod)
 		return -ERR_NOMEM;
 	nod->v = data;
 	q->cur_num++;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
+		IpcLockSemaphore( q->semaphore );
 	//链表处理，加入到back后
 	if( q->back )
-		q->back->pre = nod;
+		q->back->prev = nod;
 	else if(!q->front)
 		q->front = nod;
-	nod->pre = NULL;
+	nod->prev = NULL;
 	nod->next = q->back;
 	q->back = nod;
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	return 0;
 }
 
 //加到头
-int queue_push_front( queue_t* q, void* data )
+int RtlPushFrontQueue( KQueue* q, void* data )
 {
-	qnode_t* nod;
+	KQueueNode* nod;
 	if( q->cur_num>=q->max_num ){
 		PERROR("##QUEUE %s is full.", q->name );
 		return -ERR_NOMEM;
 	}
-	nod = kmalloc(sizeof(qnode_t));
+	nod = MmAllocateKernelMemory(sizeof(KQueueNode));
 	if(!nod)
 		return -ERR_NOMEM;
 	nod->v = data;
 	q->cur_num++;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
+		IpcLockSemaphore( q->semaphore );
 	//处理链表
 	if( q->front )
 		q->front->next = nod;
 	else if( !q->back )	
 		q->back = nod;
-	nod->pre = q->front;
+	nod->prev = q->front;
 	nod->next = NULL;
 	q->front = nod;
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	return 0;
 }
 
-void* queue_pop_front( queue_t* q )
+void* RtlPopFrontQueue( KQueue* q )
 {
-	qnode_t* tmp = NULL;
+	KQueueNode* tmp = NULL;
 	void* p = NULL;
 	if( q->cur_num == 0 )
 		return NULL;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
+		IpcLockSemaphore( q->semaphore );
 	if( q->front ){
 		p = q->front->v;
-		if( q->front->pre )
-			q->front->pre->next = NULL;
+		if( q->front->prev )
+			q->front->prev->next = NULL;
 		tmp = q->front;
-		q->front = q->front->pre;
+		q->front = q->front->prev;
 		if( !q->front )
 			q->back = NULL;
 	}
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	q->cur_num --;
 	if(tmp)
-		kfree( tmp );
+		MmFreeKernelMemory( tmp );
 	return p;
 }
 
-void* queue_pop_back( queue_t* q )
+void* RtlPopBackQueue( KQueue* q )
 {
-	qnode_t* tmp = NULL;
+	KQueueNode* tmp = NULL;
 	void* p = NULL;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
+		IpcLockSemaphore( q->semaphore );
 	if( q->back ){
 		p = q->back->v;
 		if( q->back->next )
-			q->back->next->pre = NULL;
+			q->back->next->prev = NULL;
 		tmp = q->back;
 		q->back = q->back->next;
 		if( !q->back )
@@ -146,47 +145,47 @@ void* queue_pop_back( queue_t* q )
 	}
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	q->cur_num --;
 	if(tmp)
-		kfree( tmp );
+		MmFreeKernelMemory( tmp );
 	return p;
 }
 
 //链表，会比数组快很多的。
-void queue_remove( queue_t* q, qnode_t* nod )
+void RtlRemoveQueueElement( KQueue* q, KQueueNode* nod )
 {
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
-	if( nod->pre )
-		nod->pre->next = nod->next;
+		IpcLockSemaphore( q->semaphore );
+	if( nod->prev )
+		nod->prev->next = nod->next;
 	else
 		q->back = NULL;
 	if( nod->next )
-		nod->next->pre = nod->pre;
+		nod->next->prev = nod->prev;
 	else
 		q->front = NULL;
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
-	kfree( nod );
+		IpcUnlockSemaphore( q->semaphore );
+	MmFreeKernelMemory( nod );
 }
 
-void* queue_search( queue_t* q, void* v, queue_search_func search, qnode_t** ret_nod )
+void* RtlSearchQueue( KQueue* q, void* v, KQueueSearcher search, KQueueNode** ret_nod )
 {
-	qnode_t * nod = NULL;
+	KQueueNode * nod = NULL;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
-	for( nod=q->front; nod; nod=nod->pre )
+		IpcLockSemaphore( q->semaphore );
+	for( nod=q->front; nod; nod=nod->prev )
 	{
 		if( search( nod->v, v ) )
 			break;
 	}
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	*ret_nod = nod;
 	if( nod )
 		return nod->v;
@@ -194,20 +193,20 @@ void* queue_search( queue_t* q, void* v, queue_search_func search, qnode_t** ret
 		return NULL;
 }
 
-void* queue_quick_search( queue_t* q, void* v, qnode_t** ret_nod )
+void* RtlQuickSearchQueue( KQueue* q, void* v, KQueueNode** ret_nod )
 {
-	qnode_t * nod = NULL;
+	KQueueNode * nod = NULL;
 	//进入临界区
 	if( q->use_sem )
-		sema_down( q->semaphore );
-	for( nod=q->front; nod; nod=nod->pre )
+		IpcLockSemaphore( q->semaphore );
+	for( nod=q->front; nod; nod=nod->prev )
 	{
 		if( nod->v == v )
 			break;
 	}
 	//离开临界区
 	if( q->use_sem )
-		sema_up( q->semaphore );
+		IpcUnlockSemaphore( q->semaphore );
 	*ret_nod = nod;
 	if( nod )
 		return nod->v;
@@ -215,23 +214,23 @@ void* queue_quick_search( queue_t* q, void* v, qnode_t** ret_nod )
 		return NULL;
 }
 
-void queue_cleanup( queue_t* q )
+void RtlDestroyQueue( KQueue* q )
 {
 	q->cur_num = 1;
 	q->max_num = 0;
 	if(q->del_func)
-		while(!queue_is_empty(q))
-			q->del_func(queue_pop_back(q));
+		while(!RtlIsEmptyQueue(q))
+			q->del_func(RtlPopBackQueue(q));
 	else
-		while(!queue_is_empty(q))
-			queue_pop_back(q);
+		while(!RtlIsEmptyQueue(q))
+			RtlPopBackQueue(q);
 	if(q->use_sem){
-		sema_destroy(q->semaphore);
-		kfree(q->semaphore);
+		IpcDestroySemaphore(q->semaphore);
+		MmFreeKernelMemory(q->semaphore);
 	}
 }
 
-int queue_is_empty( queue_t* q )
+int RtlIsEmptyQueue( KQueue* q )
 {
 	return( q->front == NULL );
 }

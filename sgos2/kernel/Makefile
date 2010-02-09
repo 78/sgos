@@ -32,12 +32,11 @@ IMAGE = ../sgos2.img
 # Kernel dir
 DIR_ARCH	= arch
 DIR_IPC		= ipc
-DIR_LOADER	= loader
 DIR_MM		= mm
-DIR_DEBUG	= debug
-DIR_INIT	= init
+DIR_KD		= kd
+DIR_START	= start
 DIR_LIB		= lib
-DIR_PROC	= proc
+DIR_TM		= tm
 
 # All objects, here can be set the first link obj for your kernel
 OBJECTS :=
@@ -48,12 +47,11 @@ include arch/$(ARCH)/Makefile
 # Kernel objects
 OBJECTS += $(patsubst %.c,%.o,  $(wildcard $(DIR_ARCH)/*.c)) \
 		   $(patsubst %.c,%.o,  $(wildcard $(DIR_IPC)/*.c)) \
-		   $(patsubst %.c,%.o,  $(wildcard $(DIR_LOADER)/*.c)) \
 		   $(patsubst %.c,%.o,  $(wildcard $(DIR_MM)/*.c)) \
-		   $(patsubst %.c,%.o,  $(wildcard $(DIR_DEBUG)/*.c)) \
-		   $(patsubst %.c,%.o,  $(wildcard $(DIR_INIT)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_KD)/*.c)) \
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_START)/*.c)) \
 		   $(patsubst %.c,%.o,  $(wildcard $(DIR_LIB)/*.c)) \
-		   $(patsubst %.c,%.o,  $(wildcard $(DIR_PROC)/*.c))
+		   $(patsubst %.c,%.o,  $(wildcard $(DIR_TM)/*.c))
 
 # Target
 all: kernel

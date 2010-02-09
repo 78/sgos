@@ -1,40 +1,40 @@
 // Hope it works!!
 // 090828 by Huang Guan
 #include <arch.h>
-#include <string.h>
-#include <thread.h>
-#include <debug.h>
+#include <tm.h>
+#include <kd.h>
 #include <mm.h>
+#include <rtl.h>
 
 //为线程分配fpu
-void fpu_init_thread( THREAD* thr )
+void ArPrepareFpuForThread( KThread* thr )
 {
-	ARCH_THREAD* arch;
-	arch = &thr->arch;
+	ArchThread* arch;
+	arch = &thr->ArchitectureInformation;
 	if( !arch->fsave ){
-		arch->fsave = (I387_REGISTERS*)kmalloc( sizeof(I387_REGISTERS) );
-		memsetd( arch->fsave, 0, sizeof(I387_REGISTERS)>>2 );
+		arch->fsave = (I387_REGISTERS*)MmAllocateKernelMemory( sizeof(I387_REGISTERS) );
+		RtlZeroMemory32( arch->fsave, sizeof(I387_REGISTERS)>>2 );
 	}
 }
 
 //保存fpu寄存器
-inline void fpu_save( THREAD* thr )
+inline void fpu_save( KThread* thr )
 {
-	__asm__("fnsave %0; fwait"::"m"(*thr->arch.fsave));
+	__asm__("fnsave %0; fwait"::"m"(*thr->ArchitectureInformation.fsave));
 }
 
 //恢复fpu寄存器
-inline void fpu_restore( THREAD* thr )
+inline void fpu_restore( KThread* thr )
 {
-	__asm__("frstor %0"::"m"(*thr->arch.fsave));
+	__asm__("frstor %0"::"m"(*thr->ArchitectureInformation.fsave));
 }
 
 //在线程切换时，检查fpu是否有必要保存
-void fpu_check_and_save( THREAD* thr )
+void ArCheckAndSaveFpu( KThread* thr )
 {
-	if(thr->arch.used_fpu){
+	if(thr->ArchitectureInformation.used_fpu){
 		fpu_save(thr);
-		thr->arch.used_fpu = 0;
+		thr->ArchitectureInformation.used_fpu = 0;
 		//捕捉浮点处理异常
 		stts();
 	}
@@ -43,40 +43,40 @@ void fpu_check_and_save( THREAD* thr )
 // 注意，在处理过程中可能会发生硬件中断。
 static int fpu_handler(int err_code, I386_REGISTERS* r)
 {
-	THREAD* thr;
+	KThread* thr;
 	uint flags;
-	thr =  current_thread();
+	thr =  TmGetCurrentThread();
 	//是否数学协处理器已经有内容
-	if(thr->used_math){
+	if(thr->UsedMathProcessor){
 		//禁止切换线程
-		local_irq_save(flags);
+		ArLocalSaveIrq(flags);
 		//清ts，返回后可以使用fpu
 		clts();
 		//恢复
 		fpu_restore(thr);
-		thr->arch.used_fpu = 1;
-		local_irq_restore(flags);
+		thr->ArchitectureInformation.used_fpu = 1;
+		ArLocalRestoreIrq(flags);
 	}else{
-		fpu_init_thread(thr);
+		ArPrepareFpuForThread(thr);
 		//禁止切换线程
-		local_irq_save(flags);
-		//then it would save fpu when schedule
-		thr->arch.used_fpu = 1;
+		ArLocalSaveIrq(flags);
+		//then it would save fpu when TmSchedule
+		thr->ArchitectureInformation.used_fpu = 1;
 		//标记已初始化数学协处理器的内容
-		thr->used_math = 1;
+		thr->UsedMathProcessor = 1;
 		clts();
 		//init fpu and return
 		__asm__ __volatile__("fninit");
-		local_irq_restore(flags);
+		ArLocalRestoreIrq(flags);
 	}
 	return 1;
 }
 
 //初始化fpu
-void fpu_init()
+void ArInitializeMathProcessor()
 {
 	//安装浮点异常处理函数
-	isr_install( FPU_INTERRUPT, (void*)fpu_handler );
+	ArInstallIsr( FPU_INTERRUPT, (void*)fpu_handler );
 	//设置ts位，使用浮点时触发异常。
 	stts();
 }

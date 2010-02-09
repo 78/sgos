@@ -1,83 +1,82 @@
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <thread.h>
-#include <process.h>
-#include <string.h>
+#include <kd.h>
+#include <tm.h>
 #include <mm.h>
+#include <rtl.h>
 
 static TSS g_tss;
 
-#define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(THREAD)-sizeof(I386_REGISTERS) )
+#define GET_THREAD_REGS(p) (I386_REGISTERS*)((t_32)p+sizeof(KThread)-sizeof(I386_REGISTERS) )
 
-void enter_threading_mode(size_t stackptr);
-void kinit_resume();
-void start_threading()
+void ArAsmEnterThreadingMode(size_t stackptr);
+void KeResumeStart();
+void ArStartThreading()
 {
 	//TSS, 保存着内核所用的堆栈, 从特权3到特权0要借助TSS
-	memset(&g_tss, 0, sizeof(TSS) );
+	RtlZeroMemory(&g_tss, sizeof(TSS) );
 	g_tss.ss0 = GD_KERNEL_DATA;
 	g_tss.esp0 = 0;
-	g_tss.iobase = (uint)g_tss.iomap - (uint)&g_tss;//sizeof(TSS);
+	g_tss.iobase = (t_32)g_tss.iomap - (size_t)&g_tss;//sizeof(TSS);
 	//设置TSS描述符
-	set_gdt_desc( GD_TSS_INDEX, (t_32)&g_tss, sizeof(TSS)-1, DA_386TSS );
+	ArSetGdtEntry( GD_TSS_INDEX, (size_t)&g_tss, sizeof(TSS)-1, DA_386TSS );
 	//加载TSS和LDT
 	__asm__ __volatile__("mov $0x28, %bx; ltr %bx");
 	//进入线程模式
-	enter_threading_mode((size_t)(current_thread())+sizeof(THREAD));
+	ArAsmEnterThreadingMode((size_t)(TmGetCurrentThread())+sizeof(KThread));
 	//开启中断，引发线程切换
-	local_irq_enable();
+	ArLocalEnableIrq();
 	//继续初始化。
-	kinit_resume();
+	KeResumeStart();
 }
 
 // 设置下一个运行的线程环境
-void update_for_next_thread()
+void ArPrepareForNextThread()
 {
-	THREAD* next = tbox.next;
+	KThread* next = ThreadingBox.next;
 	if( !next )	
 		return;
-	if( !next->kernel ){
+	if( !next->IsKernelThread ){
 		//更新中断的线程内核栈
-		g_tss.esp0 = (uint)next+sizeof(THREAD);
+		g_tss.esp0 = (uint)next+sizeof(KThread);
 		//更新fastcall使用的线程内核栈
-		fastcall_update_esp( g_tss.esp0 );
+		ArUpdateFastcallEsp( g_tss.esp0 );
 		//设置用户态线程信息段，fs使用
-		set_gdt_desc( GD_TIB_INDEX, (t_32)next->thread_info, 
-			PAGE_ALIGN(sizeof(THREAD_INFO))-1, DA_DRW | DA_32 | DA_DPL3 );
+		ArSetGdtEntry( GD_TIB_INDEX, (t_32)next->UserModeThreadInformation, 
+			PAGE_ALIGN(sizeof(ThreadInformation))-1, DA_DRW | DA_32 | DA_DPL3 );
 	}
-	//如果改变了进程，页目录也会随着变化
-	if( current_proc() != next->process )
-		load_page_dir( next->process->page_dir );
+	//如果改变了地址空间，则更新页目录
+	if( MmGetCurrentSpace() != next->Space )
+		ArFlushPageDirectory( next->Space->PageDirectory );
 	//检查数学协处理器
-	fpu_check_and_save( tbox.running );
+	ArCheckAndSaveFpu( ThreadingBox.running );
 }
 
 //线程切换
-void switch_to( THREAD* cur, THREAD* next )
+void ArSwitchThread( KThread* cur, KThread* next )
 {
 	//改变环境
-	update_for_next_thread();
+	ArPrepareForNextThread();
 	//改变当前线程
-	tbox.running = next;
-	tbox.next = NULL;
+	ThreadingBox.running = next;
+	ThreadingBox.next = NULL;
 	//下面是汇编代码了
-	i386_switch( NULL, &cur->stack_pointer, &next->stack_pointer );
+	ArAsmSwapContext( NULL, &cur->StackPointer, &next->StackPointer );
 }
 
 //初始化线程的寄存器信息。
-void init_thread_regs( THREAD* thr, THREAD* parent,
-	void* context, uint entry_addr, uint stack_addr )
+void ArInitializeThreadRegisters( KThread* thr, KThread* parent,
+	void* context, size_t entry_addr, size_t stack_addr )
 {
 	I386_REGISTERS *r;
 	if( !parent )
 		return;
 	//获取堆栈的寄存器帧，通过设置这里的数据改变返回地址和返回后的寄存器
 	r = GET_THREAD_REGS(thr);	
-	if( thr->bios_mode ){	//VM86 线程
+	if( thr->InBiosMode ){	//VM86 线程
 		uint far_ptr;
-		ARCH_THREAD* arch;
-		arch = &thr->arch;
+		ArchThread* arch;
+		arch = &thr->ArchitectureInformation;
 		arch->vmflag_if = 1; // allow interrupts
 		arch->in_vm86 = 1; //toggle vm86 mode.
 		far_ptr = LINEAR_TO_FARPTR( entry_addr );
@@ -85,10 +84,10 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 		r->eip = FARPTR_OFF(far_ptr);
 		r->esp = 0xFFE0;	//the end of 64KB
 		r->eflags = 0x202|EFLAG_VM|EFLAG_IF;	//VM|IF
-		thr->stack_pointer = (t_32)r;	//中断时堆栈
+		thr->StackPointer = (t_32)r;	//中断时堆栈
 	}else{	//32位保护模式
 		//判断是否内核态
-		if( thr->kernel ){
+		if( thr->IsKernelThread ){
 			r->es = r->ds = r->ss = GD_KERNEL_DATA;
 			r->cs = GD_KERNEL_CODE;
 		}else{
@@ -98,22 +97,22 @@ void init_thread_regs( THREAD* thr, THREAD* parent,
 			r->cs = GD_USER_CODE;
 		}
 		r->eflags = 0x202;	//标志寄存器
-		if( thr->process->uid == ADMIN_USER ){
-			//允许系统进程使用IO
+		if( thr->Space->UserId == ADMIN_USER ){
+			//允许系统线程使用IO
 			//r->eflags |= EFLAG_IOPL3;
 		}
 		r->esp = stack_addr;	//一般运行时堆栈
 		r->eip = entry_addr;	//入口
-		thr->stack_pointer = (t_32)r;	//中断时堆栈
+		thr->StackPointer = (t_32)r;	//中断时堆栈
 	}
 }
 
 //释放线程使用的资源，例如fpu
-void arch_thread_cleanup( THREAD* thr )
+void ArReleaseThreadResources( KThread* thr )
 {
-	if(thr->arch.fsave){
-		kfree(thr->arch.fsave);
-		thr->arch.fsave = NULL;
-		thr->used_math = 0;
+	if(thr->ArchitectureInformation.fsave){
+		MmFreeKernelMemory(thr->ArchitectureInformation.fsave);
+		thr->ArchitectureInformation.fsave = NULL;
+		thr->UsedMathProcessor = 0;
 	}
 }

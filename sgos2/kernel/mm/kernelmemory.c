@@ -4,16 +4,14 @@
 
 #include <sgos.h>
 #include <allocator.h>
-#include <debug.h>
-#include <process.h>
+#include <kd.h>
 #include <mm.h>
-#include <string.h>
 
-//Kernel Memory Information Block
+//Kernel Memory Information Pool
 allocator_t km_block;
 
 // 内核内存初始化
-void kmalloc_init()
+void MmInitializeKernelMemoryPool()
 {
 	mm_init_block( &km_block, 
 		0xC0400000,			//address
@@ -22,20 +20,20 @@ void kmalloc_init()
 }
 
 // 分配内核内存
-void*	kmalloc(size_t siz)
+void*	MmAllocateKernelMemory(size_t siz)
 {
-	PROCESS* proc;
-	MEMORY_INFO* info;
+	KSpace* space;
+	KMemoryInformation* info;
 	void* ptr;
-	proc = current_proc();
+	space = MmGetCurrentSpace();
 	//让siz按4字节对齐
 	siz = (siz&3?(siz&(~3))+4:siz);
-	if( proc ){
+	if( space ){
 		//change some mem info
-		info = &proc->memory_info;
-		info->kmem_size += siz;
-		if( info->kmem_size > info->max_kmem ){
-			info->kmem_size -= siz;
+		info = &space->MemoryInformation;
+		info->KernelMemoryAllocated += siz;
+		if( info->KernelMemoryAllocated > info->KernelMemoryCapacity ){
+			info->KernelMemoryAllocated -= siz;
 			return NULL;
 		}
 	}
@@ -44,30 +42,30 @@ void*	kmalloc(size_t siz)
 }
 
 // 释放内核内存
-void	kfree(void* p)
+void	MmFreeKernelMemory(void* p)
 {
-	PROCESS* proc;
-	MEMORY_INFO* info;
-	proc = current_proc();
+	KSpace* space;
+	KMemoryInformation* info;
+	space = MmGetCurrentSpace();
 	size_t siz;
 	siz = mm_free( &km_block, p );
-	if( proc ){
+	if( space ){
 		//change some mem info
-		info = &proc->memory_info;
-		info->kmem_size -= siz;
-		if( info->kmem_size < 0 )
-			info->kmem_size = 0;
+		info = &space->MemoryInformation;
+		info->KernelMemoryAllocated -= siz;
+		if( info->KernelMemoryAllocated < 0 )
+			info->KernelMemoryAllocated = 0;
 	}
 }
 
 // 检查是否在内核分配的块中
-int	kcheck_allocated(size_t addr)
+int	MmIsKernelMemoryAllocated(size_t addr)
 {
 	return mm_check_allocated( &km_block, addr );
 }
 
-
-void	kdump()
+// 打印内核内存分配信息
+void	MmDumpKernelMemory()
 {
 	mm_print_block(&km_block);
 }

@@ -3,34 +3,25 @@
 #include <sgos.h>
 #include <arch.h>
 #include <time.h>
-#include <process.h>
 #include <mm.h>
-#include <thread.h>
-#include <debug.h>
-#include <loader.h>
-#include <module.h>
-#include <message.h>
-#include <namespace.h>
-#include <semaphore.h>
-#include <string.h>
+#include <tm.h>
+#include <kd.h>
+#include <ipc.h>
 
-#define IS_THREAD( thr ) ( ((THREAD*)thr)->magic == THREAD_MAGIC )
-#define IS_MODULE( mod ) ( ((MODULE*)mod)->magic == MODULE_MAGIC )
-#define IS_PROCESS( proc ) (((PROCESS*)proc)->magic == PROCESS_MAGIC )
-#define IS_WRITABLE( proc, addr, size ) ( ucheck_allocated( proc, (uint)addr ) )
 
-#define SYSCALL0(id, type, name) static type sys_##name()
-#define SYSCALL1(id, type, name, atype, a) static type sys_##name( atype a )
-#define SYSCALL2(id, type, name, atype, a, btype, b) static type sys_##name( atype a, btype b )
-#define SYSCALL3(id, type, name, atype, a, btype, b, ctype, c) static type sys_##name( atype a, btype b, ctype c )
-#define SYSCALL4(id, type, name, atype, a, btype, b, ctype, c, dtype, d) static type sys_##name( atype a, btype b, ctype c, dtype d )
+#define SYSCALL0(id, type, name) static type Api_##name()
+#define SYSCALL1(id, type, name, atype, a) static type Api_##name( atype a )
+#define SYSCALL2(id, type, name, atype, a, btype, b) static type Api_##name( atype a, btype b )
+#define SYSCALL3(id, type, name, atype, a, btype, b, ctype, c) static type Api_##name( atype a, btype b, ctype c )
+#define SYSCALL4(id, type, name, atype, a, btype, b, ctype, c, dtype, d) static type Api_##name( atype a, btype b, ctype c, dtype d )
 
 #include <apidef.h>
 
-void* syscall_table[] = {
+void* SystemCallTable[] = {
 	//0-4
-	sys_test,
-	sys_dprint,
+	Api_Test,
+	Api_Print,
+	/*
 	sys_send,
 	sys_recv,
 	sys_virtual_alloc,
@@ -78,29 +69,30 @@ void* syscall_table[] = {
 	sys_vm_map,
 	//40-44
 	sys_bios_call,
+	*/
 };
  
 
 //返回计数
-uint sys_test()
+uint Api_Test()
 {
 	static unsigned counter=0; 
 	return counter++;
 }
 
 //输出调试信息
-int sys_dprint( const char* buf )
+int Api_Print( const char* buf )
 {
-	return debug_print( (char*)buf );
+	return KdPrint( (char*)buf );
 }
- 
+/* 
 //发送消息
 int sys_send( void* session, void* content, size_t len, uint flag )
 {
-	THREAD* dest;
+	KThread* dest;
 	if( !IS_USER_MEMORY((uint)content) || !IS_USER_MEMORY((uint)content+len) )
 		return -ERR_WRONGARG;
-	dest = (THREAD*)((session_t*)session)->thread;
+	dest = (KThread*)((session_t*)session)->thread;
 	if( !IS_THREAD(dest) )
 		return -ERR_WRONGARG;
 	return message_send( session, content, len, flag );
@@ -109,15 +101,15 @@ int sys_send( void* session, void* content, size_t len, uint flag )
 //接收消息
 int sys_recv( void* session, void* content, size_t* len, uint flag )
 {
-	THREAD* dest;
-	PROCESS* proc;
-	proc = current_proc();
-	if( !IS_WRITABLE(proc, session, sizeof(session_t)) ||
-		!IS_WRITABLE(proc, content, *len) || 
-		!IS_WRITABLE(proc, len, sizeof(size_t)) ){
+	KThread* dest;
+	KSpace* space;
+	space = MmGetCurrentSpace();
+	if( !IS_WRITABLE(space, session, sizeof(session_t)) ||
+		!IS_WRITABLE(space, content, *len) || 
+		!IS_WRITABLE(space, len, sizeof(size_t)) ){
 		return -ERR_WRONGARG;
 	}
-	dest = (THREAD*)((session_t*)session)->thread;
+	dest = (KThread*)((session_t*)session)->thread;
 	if( dest && !IS_THREAD(dest) )
 		return -ERR_WRONGARG;
 	return message_recv( session, content, len, flag );
@@ -128,9 +120,9 @@ void* sys_virtual_alloc( size_t siz, size_t addr, uint flag )
 {
 	void* ptr;
 	if( flag & ALLOC_WITH_ADDR ){
-		ptr = umalloc_ex( current_proc(), addr, siz );
+		ptr = umalloc_ex( MmGetCurrentSpace(), addr, siz );
 	}else{
-		ptr = umalloc( current_proc(), siz );
+		ptr = MmAllocateUserMemory( MmGetCurrentSpace(), siz );
 	}
 	return ptr;
 }
@@ -138,30 +130,30 @@ void* sys_virtual_alloc( size_t siz, size_t addr, uint flag )
 //释放内存
 void sys_virtual_free( void* p )
 {
-	ufree( current_proc(), p );
+	MmFreeUserMemory( MmGetCurrentSpace(), p );
 }
 
 //退出线程
 void sys_thread_exit( int code )
 {
 	//直接终止
-	THREAD* thr;
-	thr = current_thread();
-	if( current_proc()->main_thread == thr ){
+	KThread* thr;
+	thr = TmGetCurrentThread();
+	if( MmGetCurrentSpace()->main_thread == thr ){
 		//terminate the process
-		kprintf("Program %s exited with code 0x%X\n", current_proc()->name, code );
+		KdPrintf("Program %s exited with code 0x%X\n", MmGetCurrentSpace()->name, code );
 	}
-	thread_kill( thr, code );
+	TmTerminateThread( thr, code );
 	//process_kill
 }
 
 //创建线程
 int sys_thread_create( size_t addr, uint* ret )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( IS_USER_MEMORY(addr) &&
-		IS_WRITABLE( current_proc(), ret, sizeof(uint)) ){
-		thr = thread_create( current_proc(), addr, 0 );
+		IS_WRITABLE( MmGetCurrentSpace(), ret, sizeof(uint)) ){
+		thr = thread_create( MmGetCurrentSpace(), addr, 0 );
 		if( thr ){
 			*ret = (uint)thr;
 			return 0;
@@ -174,7 +166,7 @@ int sys_thread_create( size_t addr, uint* ret )
 //返回当前线程ID
 uint sys_thread_self()
 {
-	return (uint)current_thread();
+	return (uint)TmGetCurrentThread();
 }
 
 //脱离线程
@@ -201,10 +193,10 @@ int sys_thread_wait( time_t ms )
 //挂起线程
 int sys_thread_suspend( uint thread )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
+	thr = (KThread*)thread;
 	thread_suspend( thr );
 	return 0;
 }
@@ -212,10 +204,10 @@ int sys_thread_suspend( uint thread )
 //启动线程
 int sys_thread_resume( uint thread )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
+	thr = (KThread*)thread;
 	thread_resume( thr );
 	return 0;
 }
@@ -223,30 +215,30 @@ int sys_thread_resume( uint thread )
 //结束线程
 int sys_thread_kill( uint thread, int code )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
-	thread_kill( thr, code );
+	thr = (KThread*)thread;
+	TmTerminateThread( thr, code );
 	return 0;
 }
 
 //设置线程优先级
 int sys_thread_set_priority( uint thread, int pri )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
-	if( thr->process != current_proc() )
+	thr = (KThread*)thread;
+	if( thr->Space != MmGetCurrentSpace() )
 		return -ERR_LOWPRI;
 	if( pri<1 || pri>4 )
 		return -ERR_WRONGARG;
 	if( pri == PRI_REALTIME )
-		thr->process->realtime_thread = thr;
+		thr->Space->realtime_thread = thr;
 	else{
 		if( thr->priority == PRI_REALTIME )
-			thr->process->realtime_thread = NULL;
+			thr->Space->realtime_thread = NULL;
 	}
 	thr->priority = pri;
 	return 0;
@@ -255,61 +247,61 @@ int sys_thread_set_priority( uint thread, int pri )
 //获取线程优先级
 int sys_thread_get_priority( uint thread, int* pri )
 {
-	THREAD* thr;
+	KThread* thr;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
+	thr = (KThread*)thread;
 	return thr->priority;
 }
 
 //返回一个空闲的信号量
 int sys_thread_semget(int value)
 {
-	PROCESS* proc;
+	KSpace* space;
 	int i;
-	proc = current_proc();
-	down( &proc->semaphore );
+	space = MmGetCurrentSpace();
+	down( &space->semaphore );
 	for(i=0; i<MAX_SEM_NUM; i++ )
-		if( proc->sem_array[i]==NULL ){
-			proc->sem_array[i] = kmalloc(sizeof(sema_t));
-			up( &proc->semaphore );
-			sema_init_ex( proc->sem_array[i], value );
+		if( space->sem_array[i]==NULL ){
+			space->sem_array[i] = MmAllocateKernelMemory(sizeof(KSemaphore));
+			up( &space->semaphore );
+			sema_init_ex( space->sem_array[i], value );
 			return i;
 		}
-	up( &proc->semaphore );
+	up( &space->semaphore );
 	return -ERR_NOMEM;
 }
 
 int sys_thread_semop( int i, int op )
 {
-	PROCESS* proc;
-	proc = current_proc();
-	if( i<0 || i>=MAX_SEM_NUM || !proc->sem_array[i] )
+	KSpace* space;
+	space = MmGetCurrentSpace();
+	if( i<0 || i>=MAX_SEM_NUM || !space->sem_array[i] )
 		return -ERR_WRONGARG;
 	switch( op ){
 	case SEMOP_DOWN:
-		sema_down( proc->sem_array[i] );
+		IpcLockSemaphore( space->sem_array[i] );
 		return 0;
 	case SEMOP_UP:
-		sema_up( proc->sem_array[i] );
+		IpcUnlockSemaphore( space->sem_array[i] );
 		return 0;
 	case SEMOP_TRYDOWN:
-		return sema_trydown( proc->sem_array[i] );
+		return sema_trydown( space->sem_array[i] );
 	}
 	return -ERR_WRONGARG;
 }
 
 int sys_thread_semctl( int i, int cmd )
 {
-	PROCESS* proc;
-	proc = current_proc();
-	if( i<0 || i>=MAX_SEM_NUM || !proc->sem_array[i] )
+	KSpace* space;
+	space = MmGetCurrentSpace();
+	if( i<0 || i>=MAX_SEM_NUM || !space->sem_array[i] )
 		return -ERR_WRONGARG;
 	switch( cmd ){
 	case SEMCTL_FREE:
-		sema_destroy( proc->sem_array[i] );
-		kfree( proc->sem_array[i] );
-		proc->sem_array[i] = NULL;
+		sema_destroy( space->sem_array[i] );
+		MmFreeKernelMemory( space->sem_array[i] );
+		space->sem_array[i] = NULL;
 		break;
 	}
 	return -ERR_WRONGARG;
@@ -318,18 +310,18 @@ int sys_thread_semctl( int i, int cmd )
 //创建进程
 int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint* retp )
 {
-	PROCESS* curproc, *newproc;
-	THREAD* init;
+	KSpace* curproc, *newproc;
+	KThread* init;
 	int len;
 	env_t* env;
-	curproc = current_proc();
+	curproc = MmGetCurrentSpace();
 	if( !cmdline || !IS_WRITABLE( curproc, retp, sizeof(uint)) )
 		return -ERR_WRONGARG;
 	//如果cmdline指向错误路径，则异常退出
-	env = (env_t*)kmalloc( sizeof(env_t) );
+	env = (env_t*)MmAllocateKernelMemory( sizeof(env_t) );
 	if( !env )
 		return -ERR_NOMEM;
-	memset( env, 0, sizeof(env_t) );
+	RtlZeroMemory( env, 0, sizeof(env_t) );
 	//cmdline
 	strncpy( env->cmdline, cmdline, PAGE_SIZE );
 	//variables
@@ -339,7 +331,7 @@ int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint
 		for( p=env->variables, q=(char**)var; *q && p<end; q++ ){
 			len = strlen( *q )+1; //including '\0'
 			if( p+len<end ){
-				memcpy( p, *q, len );
+				RtlCopyMemory( p, *q, len );
 				p+=len;
 			}else{
 				break;
@@ -347,14 +339,16 @@ int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint
 		}
 	}
 	//create process
-	newproc = process_create( curproc );
+	newproc = MmCreateSpace( curproc );
 	if( !newproc ){
-		kfree( env );
+		MmFreeKernelMemory( env );
 		return -ERR_NOMEM;
 	}
+	//give the newproc a name
+	strncpy( newproc->name, env->cmdline, PROCESS_NAME_LEN-1 );
 	//set environment kernel pointer
 	newproc->environment = env;
-	//proc/newproc.c
+	//space/newproc.c
 	extern void init_newproc();
 	init = thread_create( newproc, (uint)init_newproc, KERNEL_THREAD );
 	if( !init ){
@@ -367,21 +361,21 @@ int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint
 }
 
 //结束进程
-int sys_process_kill( uint proc, int code )
+int sys_process_kill( uint space, int code )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //挂起进程
-int sys_process_suspend( uint proc)
+int sys_process_suspend( uint space)
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //启动进程
-int sys_process_resume( uint proc )
+int sys_process_resume( uint space )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
@@ -390,14 +384,24 @@ int sys_process_resume( uint proc )
 //当前进程ID
 uint sys_process_self()
 {
-	return (uint)current_proc();
+	return (uint)MmGetCurrentSpace();
 }
 
 //加载器 返回加载id
 int sys_loader_open( char* file, uint* ret_mod )
 {
-	PERROR("not implemented.");
-	return -ERR_NOIMP;
+	KSpace* space;
+	int ret, len;
+	uchar share = 0;
+	space = MmGetCurrentSpace();
+	if( !IS_WRITABLE(space, ret_mod, sizeof(uint) ) )
+		return -ERR_WRONGARG;
+	len = strlen(file);
+	if( file[len-4]=='.'&&file[len-3]=='b'&&file[len-2]=='x'&&
+		file[len-1]=='m' )
+		share = 1;
+	ret = loader_load( space, file, share, (MODULE**)ret_mod );
+	return ret;
 }
 
 //卸载库
@@ -417,12 +421,12 @@ size_t sys_loader_symbol( uint mod, char* name )
 //命名空间
 int sys_namespace_create( uint thread, char* name )
 {
-	THREAD* thr;
+	KThread* thr;
 	int ret;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
-	if( thr->process != current_proc() )
+	thr = (KThread*)thread;
+	if( thr->Space != MmGetCurrentSpace() )
 		return -ERR_LOWPRI;
 	ret = name_insert( thr, name );
 	return ret;
@@ -430,12 +434,12 @@ int sys_namespace_create( uint thread, char* name )
 
 int sys_namespace_delete( uint thread, char* name )
 {
-	THREAD* thr;
+	KThread* thr;
 	int ret;
 	if( !IS_THREAD(thread) )
 		return -ERR_WRONGARG;
-	thr = (THREAD*)thread;
-	if( thr->process != current_proc() )
+	thr = (KThread*)thread;
+	if( thr->Space != MmGetCurrentSpace() )
 		return -ERR_LOWPRI;
 	ret = name_remove( thr, name );
 	return ret;
@@ -484,25 +488,25 @@ int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
 	//不允许映射内核空间
 	if( !IS_USER_MEMORY(vaddr) || !IS_USER_MEMORY(vaddr+map_size-1) )
 		return -ERR_WRONGARG;
-	if( current_thread()->process->uid != ADMIN_USER )
+	if( TmGetCurrentThread()->process->UserId != ADMIN_USER )
 		return -ERR_LOWPRI;
 	if( flag & MAP_UNMAP ){
-		unmap_pages( vaddr, paddr, map_size );
+		ArUnmapMultiplePages( vaddr, paddr, map_size );
 	}
 	if( flag & MAP_READONLY )
-		map_pages( current_proc()->page_dir, vaddr, paddr, map_size, P_USER );
+		ArMapMultiplePages( MmGetCurrentSpace()->PageDirectory, vaddr, paddr, map_size, P_USER );
 	else
-		map_pages( current_proc()->page_dir, vaddr, paddr, map_size, P_USER | P_WRITE );
+		ArMapMultiplePages( MmGetCurrentSpace()->PageDirectory, vaddr, paddr, map_size, P_USER | P_WRITE );
 	return 0;
 }
 
 //BIOS调用
 int sys_bios_call( int interrupt, void* context, size_t siz )
 {
-	if( current_thread()->process->uid != ADMIN_USER )
+	if( TmGetCurrentThread()->process->UserId != ADMIN_USER )
 		return -ERR_LOWPRI;
-	if( !IS_WRITABLE( current_proc(), context, siz ) )
+	if( !IS_WRITABLE( MmGetCurrentSpace(), context, siz ) )
 		return -ERR_WRONGARG;
 	return bios_call( interrupt, context, siz );
 }
-
+*/

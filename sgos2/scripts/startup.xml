@@ -1,4 +1,4 @@
 <StartupList>
 	<description>程序会在内核初始化后被加载运行</description>
-	<item>sgos2/hello.run</item>
+	<item>c:/sgos/hello.run</item>
 </StartupList>

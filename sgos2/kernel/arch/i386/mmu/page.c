@@ -4,9 +4,9 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <process.h>
+#include <kd.h>
+#include <mm.h>
+#include <rtl.h>
 #include <multiboot.h>
 
 // 初始化时计算一个有多少个物理页面，
@@ -17,12 +17,13 @@
 // 假设内核以及基础服务占去 0x00100000-0x00200000 1MB
 // 那么剩下2MB，可以使用了。。。
 // 0x00200000 - 0x00300000 分页信息存储区
-// 0x00300000 - 0x00302000 内核页目录与页表区
+// 0x00300000 - 0x00302000 内核页目录与前4MB页表区
 // 0x00302000 - 0x00303000 内核栈
-// 0x00303000 - 0x00400000 保留
+// 0x00303000 - 0x00304000 临时映射用的页表，具体见map.c
+// 0x00304000 - 0x00400000 保留
 // 要用空间换取效率的话，这里还是使用链表好。。。。
-// 0xE0000000 - 0xE0400000 4MB来映射各个进程的页目录，每个进程占用4KB
-// 0xBFC00000 - 0xC0800000 4MB用来映射进程各个页表
+// 0xE0000000 - 0xE0400000 4MB来映射各个地址空间的页目录，每个地址空间占用4KB
+// 0xBFC00000 - 0xC0800000 4MB用来映射某地址空间的页目录下的各个页表
 
 #define PAGE_INDEX_TO_PHYS_ADDR( i ) ( (uint)(i<<PAGE_SIZE_BITS) )
 #define PHYS_ADDR_TO_PAGE_INDEX(addr) ((uint)addr>>PAGE_SIZE_BITS)
@@ -31,14 +32,14 @@ static uint	total_pages;	//总物理页面数
 static uchar*	page_ref;	//page reference count
 static uint	page_used;	//used page count
 static uint	page_front;	//第一个可使用的页面
-uint		kernel_page_dir;	//page dir for kernel
+uint		KernelPageDirectory;	//page dir for kernel
 static uint	page_it = 0;	//for fast allocation
 
 //页面异常调用函数
 extern int pagefault_handler( int err_code, I386_REGISTERS* r );
 
 //初始化分页
-int page_init(uint mem_size)
+int ArInitializePaging(uint mem_size)
 {
 	int i;
 	PAGE_DIR* dir_entry, *te;
@@ -47,7 +48,7 @@ int page_init(uint mem_size)
 	}
 	//we initialized it in multiboot.S
 	page_ref = (uchar*) (KERNEL_BASE+0x00200000);
-	memsetd( page_ref, 0, (1<<20)>>2 ); //set 1MB zeros
+	RtlZeroMemory( page_ref, (1<<20) ); //set 1MB zeros
 	//计算物理页面总数
 	total_pages = mem_size / PAGE_SIZE;
 	//第一个可分配物理页面
@@ -56,39 +57,40 @@ int page_init(uint mem_size)
 	//page_it指向一个可用的物理页面，为了快速分配使用。
 	page_it = page_front;
 	//设置isr
-	isr_install( PAGEFAULT_INTERRUPT, (void*)pagefault_handler );
+	ArInstallIsr( PAGEFAULT_INTERRUPT, (void*)pagefault_handler );
 	//分配所有的共享页表 3G-4G  大概需要2MB
-	// Allocating tables for kernel space
+	// KdPrintf("Allocating tables for kernel space\n");
 	dir_entry = (PAGE_DIR*)0xC0300000;
 	//内核进程页目录
-	kernel_page_dir = get_page_dir();
+	KernelPageDirectory = ArAllocatePageDirecotry();
 	// 分配内核3G-4G的页表，0xC0000000 - 0xC0400000 已分配，所以 +1
 	for( i=768+1; i<1024; i++ ){
-		dir_entry[i].v = get_phys_page();
+		dir_entry[i].v = ArGetPhysicalPage();
 		dir_entry[i].a.write = dir_entry[i].a.present = 1;
 	}
 	// 未分配的清0
-	memsetd( dir_entry+1, 0, 768-1 );
+	RtlZeroMemory32( dir_entry+1, 768-1 );
 	
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
-	// kprintf("Mapping tables for kernel process\n");
-	i = PROC_PAGE_TABLE_MAP>>22;	//767
-	dir_entry[i].v = 0x00300000|P_PRESENT|P_WRITE;
-	reflush_pages();
+	KdPrintf("Mapping tables for kernel process\n");
+	i = SPACE_PAGETABLE_BEG>>22;	//767
+	dir_entry[i].v = 0x00300000|PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE;
+	ArFlushPageDirectory();
 	//为分配的页表清0
-	memsetd( (void*)(PROC_PAGE_TABLE_MAP+769*PAGE_SIZE), 0, (1024-769)<<10 );
+	RtlZeroMemory32( (void*)(SPACE_PAGETABLE_BEG+769*PAGE_SIZE), (1024-769)<<10 );
 	//映射内核进程页目录到0xE0400000
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (kernel_page_dir>>12);
-	te[0].v = 0x00300000|P_WRITE|P_PRESENT;
-	
+	te = (PAGE_TABLE*)SPACE_PAGETABLE_BEG + (KernelPageDirectory>>12);
+	te[0].v = 0x00300000|PAGE_ATTR_WRITE|PAGE_ATTR_PRESENT;
+	//取消页表映射
+	dir_entry[i].v = 0;
 	//修改页表后更新cr3
-	reflush_pages();
+	ArFlushPageDirectory();
 	return 0;
 }
 
 //if there's no page , return 0.
 //## be careful multi-threading
-uint get_phys_page()
+uint ArGetPhysicalPage()
 {
 	int i;
 	uint eflags;
@@ -97,7 +99,7 @@ uint get_phys_page()
 		return 0;
 	}
 	//进入不可中断区域
-	local_irq_save(eflags);
+	ArLocalSaveIrq(eflags);
 	if( page_it < page_front )
 		page_it = page_front;
 	//从page_it开始搜索
@@ -105,7 +107,7 @@ uint get_phys_page()
 		if( !page_ref[i] ){
 			page_ref[i]++;
 			page_it = i+1;
-			local_irq_restore(eflags);
+			ArLocalRestoreIrq(eflags);
 			return PAGE_INDEX_TO_PHYS_ADDR(i);
 		}
 	}
@@ -114,17 +116,17 @@ uint get_phys_page()
 		if( !page_ref[i] ){
 			page_ref[i]++;
 			page_it = i+1;
-			local_irq_restore(eflags);
+			ArLocalRestoreIrq(eflags);
 			return PAGE_INDEX_TO_PHYS_ADDR(i);
 		}
 	}
 	PERROR("## no pages for allocation.");
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 	return 0;
 }
 
 // free a page
-void free_phys_page( uint addr )
+void ArFreePhysicalPage( uint addr )
 {
 	uint i;
 	i = PHYS_ADDR_TO_PAGE_INDEX( addr );
@@ -140,69 +142,75 @@ void free_phys_page( uint addr )
 }
 
 // 打印物理页面使用情况
-void dump_phys_pages()
+void ArDumpPhysicalPages()
 {
 	uint i;
 	for( i=page_front; i<total_pages; i++ ){
 		if( page_ref[i] )
-			kprintf("[%d:%d]", i, page_ref );
+			KdPrintf("[%d:%d]", i, page_ref );
 	}
-	kprintf("\n");
+	KdPrintf("\n");
 }
 
 //更新cr3（刷新页目录）
-void load_page_dir(uint vir_addr)
+void ArLoadPageDirectory(uint virt_addr)
 {
-	uint phys_addr = vir_to_phys(vir_addr);
+	uint phys_addr = ArVirtualToPhysicalAddress(virt_addr);
  	__asm__ __volatile__("mov %0, %%eax"::"m"(phys_addr) );
 	__asm__ __volatile__("mov %eax, %cr3");
 }
 
 //临时切换页目录，返回旧的页目录
-uint switch_page_dir(uint vir_addr)
+uint ArLoadPageDirectoryTemporary(uint virt_addr)
 {
 	uint old;
 	__asm__ __volatile__ \
 	("pushfl ; popl %0":"=g" (old): :"memory");
-	load_page_dir( vir_addr );
+	ArLoadPageDirectory( virt_addr );
 	return old;
 }
 
 //由0xE0000000上的页目录虚拟地址得到物理页面的地址
-uint vir_to_phys( uint vir_addr )
+uint ArVirtualToPhysicalAddress( uint virt_addr )
 {
 	PAGE_TABLE* te;
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
-	return ((te->a.phys_addr)<<12);
+	te = (PAGE_TABLE*)SPACE_PAGETABLE_BEG + (virt_addr>>12);
+	return ((te->a.physicalAddress)<<12);
 }
 
-//刷新当前进程的页目录
-void reflush_pages()
+//刷新当前页目录
+void ArFlushPageDirectory()
 {
-	PROCESS* proc = current_proc();
-	if( proc )
-		load_page_dir( proc->page_dir );
+	KSpace* space = MmGetCurrentSpace();
+	if( space )
+		ArLoadPageDirectory( space->PageDirectory );
 	else
 		__asm__ __volatile__("movl $0x00300000, %eax; movl %eax, %cr3");
 }
 
-//初始化页目录 
-void init_page_dir( uint vir_addr )
+//刷新一个页表
+void ArFlushPageTableEntry( uint virt_addr )
 {
-	PAGE_DIR* dir_entry = (PAGE_DIR*)vir_addr;
-	PAGE_DIR* kdir_entry = (PAGE_DIR*)kernel_page_dir;
+	__asm__ __volatile__("invlpg %0"::"m"(virt_addr) );
+}
+
+//初始化页目录 
+void ArInitializePageDirectory( uint virt_addr )
+{
+	PAGE_DIR* dir_entry = (PAGE_DIR*)virt_addr;
+	PAGE_DIR* kdir_entry = (PAGE_DIR*)KernelPageDirectory;
 	uint phys_addr;
 	int i;
 	// 复制内核3G-4G的页表，0xC0000000 - 0xFFFFFFFF
-	memcpyd( dir_entry + 768, kdir_entry + 768, 1024-768 );
+	RtlCopyMemory32( dir_entry + 768, kdir_entry + 768, 1024-768 );
 	// 未分配的清0
-	memsetd( dir_entry, 0, 768 );
+	RtlZeroMemory32( dir_entry, 768 );
 	//映射内核空间的页目录的各页表，这样以后我们就可以很容易修改页表内容
 	//获取页目录的物理地址
-	phys_addr = vir_to_phys( vir_addr );
+	phys_addr = ArVirtualToPhysicalAddress( virt_addr );
 	//设置映射
-	i = PROC_PAGE_TABLE_MAP>>22;	//767
-	dir_entry[i].v = phys_addr|P_PRESENT|P_WRITE;
+	i = SPACE_PAGETABLE_BEG>>22;	//767
+	dir_entry[i].v = phys_addr|PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE;
 	//修改页表后更新cr3
-	reflush_pages();
+	ArFlushPageDirectory();
 }

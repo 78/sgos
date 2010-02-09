@@ -3,17 +3,15 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <thread.h>
-#include <process.h>
+#include <tm.h>
 #include <mm.h>
-#include <debug.h>
-#include <string.h>
-#include <semaphore.h>
+#include <kd.h>
+#include <ipc.h>
 
-static sema_t sem_bioscall;
+static KSemaphore sem_bioscall;
 
 //线性地址转换为实模式地址
-uint LINEAR_TO_FARPTR(size_t ptr)
+size_t LINEAR_TO_FARPTR(size_t ptr)
 {
     unsigned seg, off;
     off = ptr & 0xffff;
@@ -23,16 +21,16 @@ uint LINEAR_TO_FARPTR(size_t ptr)
 
 // VM86 General Protection Fault ...
 #define VALID_FLAGS	0xDFF
-int gpf_handler( int err_code, I386_REGISTERS* r)
+static int gpf_handler( int err_code, I386_REGISTERS* r)
 {
 	t_8* ip;
 	t_16* stack, *ivt, *stack32;
-	THREAD* thr;
-	ARCH_THREAD* arch;
+	KThread* thr;
+	ArchThread* arch;
 	int is_data32, is_addr32;
-	thr = current_thread();
+	thr = TmGetCurrentThread();
 	// X86相关线程信息
-	arch = &thr->arch;
+	arch = &thr->ArchitectureInformation;
 	// 非vm86模式下的异常不进行处理
 	if( !arch->in_vm86 )
 		return 0;
@@ -64,15 +62,15 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 			case 0xFB:
 			case 0x03: //breakpoint
 //				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
-				thread_kill( thr, r->eax );
+				TmTerminateThread( thr, r->eax );
 				return 0;
 				//never return here
 			case 0xFC: //delay 5 seconds
-				thread_wait(r->eax);
+				//KeDelay(r->eax);
 				r->eip = (t_16) (r->eip + 1);
 				return 1;
 			default:
-//				kprintf("vm86 interrupt 0x%x at 0x%X\n", ip[1], r->eip );
+//				KdPrintf("vm86 interrupt 0x%x at 0x%X\n", ip[1], r->eip );
 				stack -= 3;
 				r->esp = ((r->esp & 0xffff) - 6) & 0xffff;
 				stack[0] = (t_16) (r->eip + 2);
@@ -151,19 +149,19 @@ int gpf_handler( int err_code, I386_REGISTERS* r)
 }
 
 //VM86初始化
-void vm86_init()
+void ArInitializeVm86()
 {
 	// 对运行在vm86下的异常进行处理
-	isr_install( GPF_INTERRUPT, (void*)gpf_handler );
+	ArInstallIsr( GPF_INTERRUPT, (void*)gpf_handler );
 	// 此时应该可以初始化信号灯吧
-	sema_init( &sem_bioscall );
+	IpcInitializeSemaphore( &sem_bioscall );
 }
 
 //BIOS调用
 /* 最简单的方法是创建一个VM86线程，然后跳转过去调用bios */
-int bios_call( int interrupt, void* context_ptr, size_t siz )
+int ArInvokeBiosService( int interrupt, void* context_ptr, size_t siz )
 {
-	THREAD* thr;
+	KThread* thr;
 	I386_CONTEXT* context;
 	t_16* stack;
 	int i;
@@ -172,7 +170,7 @@ int bios_call( int interrupt, void* context_ptr, size_t siz )
 	context = (I386_CONTEXT*)context_ptr;
 	stack = (t_16*)0x0001FFE0;
 	// 因为bios调用不支持多线程，因此同一时刻只能一个线程使用。
-	sema_down( &sem_bioscall );
+	IpcLockSemaphore( &sem_bioscall );
 	// 设置堆栈
 	i = 0;
 	// 获取寄存器信息
@@ -188,14 +186,14 @@ int bios_call( int interrupt, void* context_ptr, size_t siz )
 	stack[i++] = context->ecx;
 	stack[i++] = context->eax;
 	// 创建VM86线程
-	thr = thread_create( current_proc(), 0x10100, BIOS_THREAD );
+	thr = TmCreateThread( MmGetCurrentSpace(), 0x10100, BIOS_THREAD );
 	if( thr==NULL ){
-		sema_up( &sem_bioscall );
+		IpcUnlockSemaphore( &sem_bioscall );
 		return -ERR_UNKNOWN;
 	}
-	thread_resume( thr );
+	TmResumeThread( thr );
 	// 等待线程结束
-	thread_join( thr );
+	TmJoinThread( thr );
 	// 保存寄存器信息
 	i = 1;
 	context->es = stack[i++];
@@ -209,7 +207,7 @@ int bios_call( int interrupt, void* context_ptr, size_t siz )
 	context->ecx = stack[i++];
 	context->eax = stack[i++];
 	//
-	sema_up( &sem_bioscall );
+	IpcUnlockSemaphore( &sem_bioscall );
 	return 0;
 }
 

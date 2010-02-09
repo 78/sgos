@@ -27,7 +27,8 @@ OBJECTS += arch/i386/init/multiboot.o \
 	arch/i386/math/fpu.o \
 	arch/i386/irq/irq.o \
 	arch/i386/irq/isr.o \
-	arch/i386/irq/interrupt.o
+	arch/i386/irq/interrupt.o \
+	arch/i386/misc/mmop.o
 
 
 

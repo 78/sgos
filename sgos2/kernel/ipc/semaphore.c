@@ -2,96 +2,95 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <thread.h>
-#include <semaphore.h>
+#include <kd.h>
+#include <tm.h>
+#include <ipc.h>
 #include <mm.h>
 
 
 //尝试P
-int sema_trydown( sema_t *sem )
+int IpcTryLockSemaphore( KSemaphore *sem )
 {	
 	uint eflags;
 	//we don't want to be interrupt
-	local_irq_save( eflags );
+	ArLocalSaveIrq( eflags );
 	while( --sem->value ){
 		//don't have it..
-		local_irq_restore(eflags);
+		ArLocalRestoreIrq(eflags);
 		sem->value ++;
 		return 0;
 	}
 	//have it
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 	return 1;
 }
 
 //P
-void sema_down( sema_t *sem )
+void IpcLockSemaphore( KSemaphore *sem )
 {
 	uint eflags;
 	//we don't want to be interrupt
-	local_irq_save( eflags );
+	ArLocalSaveIrq( eflags );
 	if( --sem->value ){
 		//dont have it, then sleep
 		//跟队末尾
-		queue_push_front( &sem->wait_queue, current_thread() );
-		thread_sleep();
+		RtlPushFrontQueue( &sem->wait_queue, TmGetCurrentThread() );
+		TmSleepThread( INFINITE );
 		//now, we have it!!
 	}
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 }
 
 //初始化
-void sema_init( sema_t *sem )
+void IpcInitializeSemaphore( KSemaphore *sem )
 {
-	sema_init_ex( sem, 1 );
+	IpcInitializeSemaphoreValue( sem, 1 );
 }
 
 //初始化
-void sema_init_ex( sema_t *sem, int v )
+void IpcInitializeSemaphoreValue( KSemaphore *sem, int v )
 {
-	queue_create( &sem->wait_queue, 0, NULL, "sema_queue", 0 );
+	RtlCreateQueue( &sem->wait_queue, 0, NULL, "sema_queue", 0 );
 	sem->value = v;
 }
 
 //V
-void sema_up( sema_t *sem )
+void IpcUnlockSemaphore( KSemaphore *sem )
 {
 	uint eflags;
-	THREAD* thr = NULL;
-	local_irq_save( eflags );
-	thr = queue_pop_back( &sem->wait_queue );
-	local_irq_restore( eflags );
+	KThread* thr = NULL;
+	ArLocalSaveIrq( eflags );
+	thr = RtlPopBackQueue( &sem->wait_queue );
+	ArLocalRestoreIrq( eflags );
 	sem->value ++;
 	if( thr ){
-		thread_wakeup( thr );
+		TmWakeupThread( thr );
 	}
 }
 
 //释放一个sema
-void sema_destroy( sema_t *sem )
+void IpcDestroySemaphore( KSemaphore *sem )
 {
-	THREAD* thr;
+	KThread* thr;
 	uint eflags;
-	local_irq_save( eflags );
-	while( (thr=queue_pop_back(&sem->wait_queue)) ){
-		thread_wakeup( thr );
+	ArLocalSaveIrq( eflags );
+	while( (thr=RtlPopBackQueue(&sem->wait_queue)) ){
+		TmWakeupThread( thr );
 	}
 	sem->value = 0;
-	local_irq_restore( eflags );
+	ArLocalRestoreIrq( eflags );
 }
 
 //删除一个链表中的项
-void sema_remove_thread( sema_t* sem, THREAD* thr )
+void IpcRemoveSleepingThread( KSemaphore* sem, KThread* thr )
 {
 	uint eflags;
-	qnode_t *nod;
-	local_irq_save(eflags);
-	thr = queue_quick_search( &sem->wait_queue, thr, &nod );
+	KQueueNode *nod;
+	ArLocalSaveIrq(eflags);
+	thr = RtlQuickSearchQueue( &sem->wait_queue, thr, &nod );
 	if( thr )
-		queue_remove( &sem->wait_queue, nod );
+		RtlRemoveQueueElement( &sem->wait_queue, nod );
 	else
 		PERROR("##thread not found.");
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 }

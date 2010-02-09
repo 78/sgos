@@ -4,122 +4,135 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <process.h>
-#include <thread.h>
+#include <kd.h>
+#include <mm.h>
+#include <tm.h>
+#include <rtl.h>
 
-//映射一个临时页，虚拟地址是占用了进程页目录地址的
-uint map_temp_page( uint phys_addr )
+//映射一个临时页，虚拟地址是占用了一个页目录的地址
+size_t ArMapTemporaryPage( size_t phys_addr )
 {
-	uint temp_addr = get_page_dir();
-	PAGE_DIR *dir, *de, *te;
-	dir = (PAGE_DIR*)kernel_page_dir;
-	de = dir + (temp_addr>>22);
-	if( !de->v )
-		KERROR("## impossible. de->v = 0x%X", de->v );
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (temp_addr>>12);
-	if( te->v )
-		PERROR("## impossible. temp_addr: 0x%X  te->v = 0x%X", temp_addr, te->v );
+	const int index = 0x00303000 >> 12;
+	PAGE_TABLE* te = (PAGE_TABLE*)(KERNEL_BASE + 0x00301000) + index;
 	te->v = phys_addr;
 	te->a.present = te->a.write = 1;
-	reflush_pages();
-	return temp_addr;
+	ArFlushPageTableEntry( KERNEL_BASE + 0x00303000 );
+	return KERNEL_BASE + 0x00303000;
 }
 
-//释放一个临时页
-void unmap_temp_page( uint vir_addr )
+// get page information
+int ArQueryPageInformation( uint dir, uint virt_addr, uint* phys_addr, uint *attr )
 {
-//	what's the use for to change it to 0?
-	PAGE_DIR *dir, *de, *te;
-	dir = (PAGE_DIR*)kernel_page_dir;
-	de = dir + (vir_addr>>22);
-	if( !de->v )
-		KERROR("## impossible. de->v = 0x%X", de->v );
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
-	if( !te->v )
-		PERROR("## impossible. te->v = 0x%X", te->v );
-	te->v = 0;
-	free_page_dir( vir_addr );
+	PAGE_DIR* de, *te, *table, d;
+	uint eflags;
+	ASSERT( virt_addr%PAGE_SIZE == 0 );
+	// get page directory entry
+	de = (PAGE_DIR*)dir + (virt_addr>>22);
+	if( !de->v )	//no table
+		return -1;
+	// disable interrupts when we use ArMapTemporaryPage(spinlock is a must too)
+	ArLocalSaveIrq( eflags );
+	// get page table entry
+	table = (PAGE_DIR*)ArMapTemporaryPage(de->a.physicalAddress<<PAGE_SIZE_BITS); //SPACE_PAGETABLE_BEG + (virt_addr>>12);
+	te = table + ((virt_addr<<10)>>22);
+	d = *te;
+	ArLocalRestoreIrq( eflags );
+	*phys_addr = d.a.physicalAddress<<12;
+	*attr = 0;
+	if( d.a.user )
+		*attr |= PAGE_ATTR_USER;
+	if( d.a.write )
+		*attr |= PAGE_ATTR_WRITE;
+	if( d.a.present )
+		*attr |= PAGE_ATTR_PRESENT;
+	if( d.a.allocated )
+		*attr |= PAGE_ATTR_ALLOCATED;
+	if( d.a.copyOnWrite )
+		*attr |= PAGE_ATTR_COPYONWRITE;
+	if( d.a.share )
+		*attr |= PAGE_ATTR_SHARE;
+	return 0;
 }
 
 // map only one page from virtual address to physical address
-void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr )
+void ArMapOnePage( uint dir, uint virt_addr, uint phys_addr, uint attr, uint flag )
 {
-	PAGE_DIR* de, *te;
+	PAGE_DIR* de, *te, *table;
+	uint eflags;
 	int newpage=0;
-	if( phys_addr%PAGE_SIZE || vir_addr%PAGE_SIZE ){
-		PERROR("## wrong vir_addr or phys_addr" );
-		return;
-	} 
+	ASSERT( phys_addr%PAGE_SIZE == 0 &&
+		virt_addr%PAGE_SIZE == 0 );
 	// get page directory entry
-	de = (PAGE_DIR*)dir + (vir_addr>>22);
+	de = (PAGE_DIR*)dir + (virt_addr>>22);
 	if( !de->v ){	//no table
 		newpage = 1;
-		de->v = get_phys_page();
+		de->v = ArGetPhysicalPage();
 		if( !de->v )
 			return;
 		de->a.user = 1;
 		de->a.write = 1;
 		de->a.present = 1;
 	}
+	// disable interrupts when we use ArMapTemporaryPage(spinlock is a must too)
+	ArLocalSaveIrq( eflags );
 	// get page table entry
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
-	if( newpage ){
-		reflush_pages();	//刷新页目录了，否则下面这句就不管用了
-		memsetd( (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + ((vir_addr>>22)<<10),
-			 0, PAGE_SIZE>>2 );
-	}
-	if( te->v && te->a.phys_addr!=(phys_addr>>12) && te->a.write )
-		PERROR("## Leaking memory at 0x%X", vir_addr );
+	table = (PAGE_DIR*)ArMapTemporaryPage(de->a.physicalAddress<<PAGE_SIZE_BITS); //SPACE_PAGETABLE_BEG + (virt_addr>>12);
+	te = table + ((virt_addr<<10)>>22);
+	if( newpage )
+		RtlZeroMemory32( te, PAGE_SIZE>>2 );
+	if( flag&MAP_ADDRESS && te->v && te->a.physicalAddress!=(phys_addr>>12) && te->a.write )
+		PERROR("## Leaking memory at 0x%X", virt_addr );
 	//设置新的值
-	te->v = phys_addr;
-	if( attr&P_USER )
-		te->a.user = 1;
-	if( attr&P_WRITE )
-		te->a.write = 1;
-	te->a.present = 1;
-	//更改了分页信息，刷新页目录
-	reflush_pages();
+	if( flag&MAP_ADDRESS )
+		te->a.physicalAddress = phys_addr>>12;
+	if( flag&MAP_ATTRIBUTE ){
+		if( attr&PAGE_ATTR_USER )
+			te->a.user = 1;
+		if( attr&PAGE_ATTR_WRITE )
+			te->a.write = 1;
+		if( attr&PAGE_ATTR_PRESENT )
+			te->a.present = 1;
+		if( attr&PAGE_ATTR_ALLOCATED )
+			te->a.allocated = 1;
+		if( attr&PAGE_ATTR_COPYONWRITE )
+			te->a.copyOnWrite = 1;
+		if( attr&PAGE_ATTR_SHARE )
+			te->a.share = 1;
+	}
+	ArLocalRestoreIrq( eflags );
+	if( MmGetCurrentSpace()->PageDirectory == dir )
+		//更改了分页信息，刷新页目录
+		ArFlushPageTableEntry( virt_addr );
 }
 
 //取消一个页面的映射
-void unmap_one_page( uint dir, uint vir_addr )
+void ArUnmapOnePage( uint dir, uint virt_addr )
 {
-	PAGE_DIR* de, *te;
-	if( vir_addr%PAGE_SIZE ){
-		PERROR("## wrong vir_addr: 0x%X", vir_addr );
-		return;
-	} 
-	// get page directory entry
-	de = (PAGE_DIR*)dir + (vir_addr>>22);
-	if( !de->v )	//no dir entry
-		return;
-	// get page table entry
-	te = (PAGE_TABLE*)PROC_PAGE_TABLE_MAP + (vir_addr>>12);
-	if( te->v )	//there it is!!
-		free_phys_page( (uint)(te->a.phys_addr<<12) );
-	te->v = 0;
+	uint phys_addr, attr;
+	if( ArQueryPageInformation( dir, virt_addr, &phys_addr, &attr ) == 0 ){
+		//clear the table entry value!
+		ArMapOnePage( dir, virt_addr, 0, 0, MAP_ADDRESS|MAP_ATTRIBUTE );
+	}
 }
 
 
 // map virutal space to physical space
-void map_pages( uint dir, uint vir_addr, uint phys_addr, uint size, uint attr )
+void ArMapMultiplePages( uint dir, uint virt_addr, uint phys_addr, uint size, uint attr, uint flag )
 {
 	uint count;
 	count = size >> PAGE_SIZE_BITS;
-//	kprintf("map vir:0x%X to phy:0x%X  size:0x%X\n", vir_addr, phys_addr, size );
-	for( ; count; count--, vir_addr+=PAGE_SIZE, phys_addr+=PAGE_SIZE ){
-		map_one_page( dir, vir_addr, phys_addr, attr );
+//	KdPrintf("map vir:0x%X to phy:0x%X  size:0x%X\n", virt_addr, phys_addr, size );
+	for( ; count; count--, virt_addr+=PAGE_SIZE, phys_addr+=PAGE_SIZE ){
+		ArMapOnePage( dir, virt_addr, phys_addr, attr, flag );
 	}
 }
 
 //取消一堆页面的映射。。。
-void unmap_pages( uint dir, uint vir_addr, uint size )
+void ArUnmapMultiplePages( uint dir, uint virt_addr, uint size )
 {
 	uint count;
 	count = size >> PAGE_SIZE_BITS;
-	for( ; count; count--, vir_addr+=PAGE_SIZE ){
-		unmap_one_page( dir, vir_addr );
+	for( ; count; count--, virt_addr+=PAGE_SIZE ){
+		ArUnmapOnePage( dir, virt_addr );
 	}
 }

@@ -1,11 +1,11 @@
 ;//ported from SGOS1
 ;//System call
-.extern _syscall_table
-.global _syscall_interrupt
+.extern _SystemCallTable
+.global _SystemCallInterrupt
 ;//系统调用返回值
 ret_val:.long	0
 ;//系统调用中断底层处理函数
-_syscall_interrupt:
+_SystemCallInterrupt:
 	;//这里开启中断应该没问题，
 	;//当硬件中断发生时，会保存线程在内核下的上下文。
 	sti
@@ -30,7 +30,7 @@ _syscall_interrupt:
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
-	call	*_syscall_table(,%eax,4)
+	call	*_SystemCallTable(,%eax,4)
 	addl	$16, %esp
 	;//保存返回值
 	movl	%eax, ret_val
@@ -163,8 +163,8 @@ _irq15:
 	jmp		do_irq
 
 ;// 底层中断处理句柄
-.extern _irq_handler
-.extern _tbox
+.extern _ArHandleIrq
+.extern _ThreadingBox
 do_irq:
 	;//保护现场
 	pushal
@@ -180,20 +180,20 @@ do_irq:
 	movl	%esp, %edx
 	;//把堆栈指针压入栈
 	pushl	%edx
-	call	_irq_handler
+	call	_ArHandleIrq
 	popl	%edx
 	;//处理完毕
 	test	%eax, %eax
 	je .restore
 	;//线程切换 
-	leal	_tbox, %edi
-	movl	(%edi), %eax	;//tbox.running
-	movl	4(%edi), %ebx	;//tbox.next
+	leal	_ThreadingBox, %edi
+	movl	(%edi), %eax	;//_ThreadingBox.running
+	movl	4(%edi), %ebx	;//_ThreadingBox.next
 	movl	%esp, (%eax)	;//save current pointer
 	movl	(%ebx), %esp	;//restore next pointer
-	movl	4(%edi), %eax	;//tbox.next
-	movl	%eax, (%edi)	;//tbox.running = tbox.next
-	movl	$0, 4(%edi)	;//tbox.next = 0
+	movl	4(%edi), %eax	;//_ThreadingBox.next
+	movl	%eax, (%edi)	;//_ThreadingBox.running = _ThreadingBox.next
+	movl	$0, 4(%edi)	;//_ThreadingBox.next = 0
 .restore:
 	;//恢复现场
 	pop	%gs
@@ -432,7 +432,7 @@ _isr31:
 
 
 ;// isr handler
-.extern _isr_handler
+.extern _ArHandleIsr
 do_isr:
 	;//保护现场
 	pushal
@@ -448,7 +448,7 @@ do_isr:
 	movl	%esp, %eax
 	;//调用Trap处理函数
 	pushl	%eax
-	call	_isr_handler
+	call	_ArHandleIsr
 	popl	%eax
 	;//恢复现场
 	pop	%gs

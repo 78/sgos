@@ -83,67 +83,74 @@ typedef struct _DIRECTORY_ENTRY{
     time_t mtime;
 }DIRENTRY, dir_t;
 
-typedef unsigned int thread_t;
-
+typedef unsigned int ThreadId_t;
+typedef unsigned int SpaceId_t;
+/*
 //进程信息块
-typedef struct PROCESS_INFO{
-	char			name[PROCESS_NAME_LEN];	//进程名称
-	int			pid;			//进程id
-	int			uid;			//用户id
-	int			gid;			//用户组id
-	int			mid;			//可执行模块id
-	int			parent;			//父进程id
-	size_t			entry_address;		//程序入口
-	int			main_thread;		//主线程id
-	void*			global_storage;		//进程变量存储地址
-	char*			cmdline;		//命令行
-	char*			variables;		//环境变量
-}PROCESS_INFO;
+typedef struct ProcessInformation{
+	char			ProcessName[PROCESS_NAME_LEN];	//进程名称
+	int			ProcessId;			//进程id
+	int			UserId;				//用户id
+	int			GroupId;			//用户组id
+	int			ModuleId;			//可执行模块id
+	int			ParentProcessId;		//父进程id
+	size_t			EntryAddress;			//程序入口
+	int			MainThreadId;			//主线程id
+	void*			GlobalStorage;			//进程变量存储地址
+	char*			CommandLine;			//命令行
+	char*			EnvironmentViriables;		//环境变量
+}ProcessInformation;
+*/
 
-//线程信息块
-typedef struct THREAD_INFO{
-	void*			exception_list;		//00 set by user
-	size_t			stack_base;		//04 堆栈地址
-	size_t			stack_size;		//08 堆栈大小
-	void*			other_info;		//0C 线程其它信息
-	void*			process_info;		//10 进程信息块地址
-	void*			unused2;		//14 保留
-	struct THREAD_INFO*	self;			//18 指向线程信息块地址
-	char*			environment;		//1C 线程环境信息
-	int			pid;			//20 进程id
-	int			tid;			//24 线程id
-	void*			local_storage;		//28 线程局部变量存储地址
-	int			errno;			//2C 错误号
-	time_t			time;			//30 当前时间
-	void*			messenger;		//34 线程消息投递员(没用)
-	size_t			entry_address;		//38 线程用户态入口
-}THREAD_INFO;
+typedef struct SpaceInformation{
+	
+}SpaceInformation;
 
-//消息机制会话信息
-typedef struct _SESSION{
-	/* 发送时候thread是目标线程，接收时候thread是发送者线程 */
-	uint			thread;
-	/* sequence目前未使用 */
-	uint			sequence;
-	/* process仅对接收者可见，在接收的时候，由内核设置。 */
-	uint			process;
-}session_t;
+//SGOS2 线程信息块
+typedef struct ThreadInformation{
+	void*			ExceptionList;		//00 set by user
+	size_t			StackBase;		//04 堆栈地址
+	size_t			StackLimit;		//08 堆栈大小
+	void*			OtherInformation;	//0C 线程其它信息
+	void*			ProcessInformation;	//10 进程信息块地址
+	void*			Unused;			//14 保留
+	struct ThreadInformation*Self;			//18 指向线程信息块地址
+	char*			Environment;		//1C 线程环境信息
+	uint			ProcessId;		//20 进程id
+	uint			ThreadId;		//24 线程id
+	void*			LocalStorage;		//28 线程局部变量存储地址
+	int			ErrorCode;		//2C 错误号
+	time_t			CurrentTime;		//30 当前时间
+	void*			Messenger;		//34 线程消息投递员(没用)
+	size_t			EntryAddress;		//38 线程用户态入口
+	void*			SpaceInformation;	//3C 地址空间信息
+	uint			SpaceId;		//40 地址空间Id
+}ThreadInformation;
 
-typedef struct THREAD_CONTEXT{
+typedef struct Message{
+	uint	ThreadId;	//send to who
+	time_t	Time;		//sendtime
+	uint	Command;	//
+	uint	Arguments[12];	//Parameters
+	void*	Data;		//pointer of the data page
+}Message;
+
+// Intel x86 Cpu Registers
+typedef struct ThreadContext{
 	t_32			gs, fs, es, ds;
 	t_32			edi, esi, ebp, kesp, ebx, edx, ecx, eax;
 	t_32			eip, cs, eflags, esp, ss;
-}THREAD_CONTEXT;
+}ThreadContext;
 
 //API 
 #define	MSG_SEND_TO_ALL		0
-#define MSG_PENDING		0x80000000
 #define MSG_KEEP		0x40000000
 
 #define ALLOC_WITH_ADDR		1
 
-#define MAP_UNMAP		1
-#define MAP_READONLY		2
+#define MAP_ADDRESS		2
+#define MAP_ATTRIBUTE		4
+#define ALLOC_VIRTUAL		1
 
 //系统错误号
 #define ERR_NOMEM		1	//No memory
@@ -156,6 +163,8 @@ typedef struct THREAD_CONTEXT{
 #define ERR_NODEST		8	//No destination or wrong destination
 #define ERR_NOPATH		9	//Invalid path
 #define ERR_INVALID		10	//Invalid device
+#define ERR_IO			11	//IO error
+#define ERR_NOBUF		12	//Buffer too small
 
 //线程优先级
 #define PRI_REALTIME		1	//单线程独占模式

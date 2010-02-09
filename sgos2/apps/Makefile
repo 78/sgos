@@ -11,6 +11,7 @@ all:
 	make -Cfs
 	make -Chd
 	make -Cstart
+	make -Chello
 
 clean:
 	make -Capi clean
@@ -22,4 +23,5 @@ clean:
 	make -Cfs clean
 	make -Chd clean
 	make -Cstart clean
+	make -Chello clean
 

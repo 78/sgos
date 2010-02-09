@@ -2,9 +2,9 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <thread.h>
+#include <kd.h>
+#include <tm.h>
+#include <rtl.h>
 
 //中断捕获函数
 extern void irq0();
@@ -27,58 +27,58 @@ extern void irq15();
 //中断处理函数数组
 static void *irq_routines[16] =
 {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /* This installs a custom IRQ handler for the given IRQ */
-int irq_install( int irq, void (*handler)() )
+int ArInstallIrq( int irq, void (*handler)() )
 {
-    if( irq_routines[irq] ){
-        PERROR("IRQ: %d is already installed.", irq );
+	if( irq_routines[irq] ){
+		PERROR("IRQ: %d is already installed.", irq );
 		return -1;
 	}
-    irq_routines[irq] = handler;
+	irq_routines[irq] = handler;
 	return 0;
 }
 
 /* This clears the handler for a given IRQ */
-void irq_uninstall( int irq )
+void ArUninstallIrq( int irq )
 {
-    irq_routines[irq] = NULL;
+	irq_routines[irq] = NULL;
 }
 
 static void irq_remap(void)
 {
 	// 给中断寄存器编程
 	// 发送 ICW1 : 使用 ICW4，级联工作
-	out_byte( 0x20 , 0x11 ) ;
-	out_byte( 0xA0 , 0x11 ) ;
+	ArOutByte( 0x20 , 0x11 ) ;
+	ArOutByte( 0xA0 , 0x11 ) ;
 	// 发送 ICW2，中断起始号从 0x20 开始（第一片）及 0x28开始（第二片）
-	out_byte( 0x21 , 0x20 ) ;
-	out_byte( 0xA1 , 0x28 ) ;
+	ArOutByte( 0x21 , 0x20 ) ;
+	ArOutByte( 0xA1 , 0x28 ) ;
 	// 发送 ICW3
-	out_byte( 0x21 , 0x4 ) ;
-	out_byte( 0xA1 , 0x2 ) ;
+	ArOutByte( 0x21 , 0x4 ) ;
+	ArOutByte( 0xA1 , 0x2 ) ;
 	// 发送 ICW4
-	out_byte( 0x21 , 0x1 ) ;
-	out_byte( 0xA1 , 0x1 ) ;
+	ArOutByte( 0x21 , 0x1 ) ;
+	ArOutByte( 0xA1 , 0x1 ) ;
 	// 设置中断屏蔽位 OCW1 ，屏蔽所有中断请求
 	// 由于主片的 IRQ2 与从边相连,故不屏蔽它
-	out_byte( 0x21 , 0xFB ) ;
-	out_byte( 0xA1 , 0xFF ) ;
+	ArOutByte( 0x21 , 0xFB ) ;
+	ArOutByte( 0xA1 , 0xFF ) ;
 }
 
 // 设置IRQ屏蔽位图
-void irq_mask( int irq, int enabled )
+void ArSetIrqMask( int irq, int enabled )
 {
 	t_8 mask_word;
 	if (irq <0 || irq > 15 ) 
 		return;
 	if( irq < 8 )
-		mask_word = in_byte( 0x21 ) ;
+		mask_word = ArInByte( 0x21 ) ;
 	else
-		mask_word = in_byte( 0xA1 ) ;
+		mask_word = ArInByte( 0xA1 ) ;
 	switch( irq )
 	{
 	case 1:
@@ -140,39 +140,39 @@ void irq_mask( int irq, int enabled )
 	}
 	if( irq < 8 )
 	{
-		out_byte( 0x21, mask_word );
+		ArOutByte( 0x21, mask_word );
 	}else{
-		out_byte( 0xA1, mask_word );
+		ArOutByte( 0xA1, mask_word );
 	}
 }
 
 //irq处理(关中断情况下处理)
 //返回1，表示线程切换。
-int irq_handler(const I386_REGISTERS *r)
+int ArHandleIrq(const I386_REGISTERS *r)
 {
 	void (*handler)(const I386_REGISTERS *r);
 	//设置irq模式
-	current_thread()->interrupted = 1;
+	TmGetCurrentThread()->IsInterrupted = 1;
 	//获取处理函数句柄
 	handler = irq_routines[r->int_no - 32];
 	//调用特定处理函数。
 	if( handler )
 		handler(r);
 	//清irq模式
-	current_thread()->interrupted = 0;
+	TmGetCurrentThread()->IsInterrupted = 0;
 	//是否线程切换
-	if( tbox.next ){
+	if( ThreadingBox.next ){
 		//更新线程环境，如是否需要重装页目录
-		update_for_next_thread();;
+		ArPrepareForNextThread();
 		return 1;
 	}
 	return 0;
 }
 
 //硬件中断初始化
-void irq_init()
+void ArInitializeIrq()
 {
-	memsetd( irq_routines, 0, sizeof(irq_routines)>>2 );
+	RtlZeroMemory( irq_routines, sizeof(irq_routines) );
 	//重新映射irq
 	irq_remap();
 	// IDT初始化

@@ -1,10 +1,10 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <thread.h>
-#include <process.h>
+#include <kd.h>
+#include <tm.h>
+#include <mm.h>
+#include <rtl.h>
 
 static char *exception_msg[] =
 {
@@ -86,7 +86,7 @@ static void *isr_routines[32] =
 };
 
 // install a isr handler
-int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) )
+int ArInstallIsr( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) )
 {
 	if( isr_routines[isr] ){
 		PERROR("ISR: %d is already installed.", isr );
@@ -97,15 +97,15 @@ int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r)
 }
 
 
-void isr_uninstall( int isr )
+void ArUninstallIsr( int isr )
 {
 	isr_routines[isr] = NULL;
 }
 
 
-void isr_init()
+void ArInitializeIsr()
 {
-	memsetd( isr_routines, 0, sizeof(isr_routines)>>2 );
+	RtlZeroMemory( isr_routines, sizeof(isr_routines) );
 	/* ISR 0x0~0x1F */
 	SET_TRAP_GATE(0, (void*)isr0);
 	SET_TRAP_GATE(1, (void*)isr1);
@@ -149,7 +149,7 @@ void isr_init()
 }
 
 //异常处理入口。
-void isr_handler(const I386_REGISTERS *r)
+void ArHandleIsr(const I386_REGISTERS *r)
 {
 	int (*handler)(int err_code, const I386_REGISTERS *r);
 	if ( r->int_no < 32 )
@@ -157,11 +157,11 @@ void isr_handler(const I386_REGISTERS *r)
 		handler = isr_routines[r->int_no];
 		if (!handler ||
 			!handler(r->err_code, r) ){
-			kprintf("## Unhandled Exception ##\t"
+			KdPrintf("## Unhandled Exception ##\t"
 				"Description: %s\tCode: %d\n", 
 				exception_msg[ r->int_no ], r->err_code );
-			dbg_dumpcpu( r );
-			KERROR("Termiating %s[%d:%d]", current_proc()->name, current_proc()->pid, current_thread()->tid );
+			ArDumpRegisters( r );
+			KERROR("Termiating %s[%d:%d]", "Thread", MmGetCurrentSpace()->SpaceId, TmGetCurrentThread()->ThreadId );
 		}
 	}
 }

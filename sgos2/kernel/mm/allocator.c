@@ -13,17 +13,17 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <semaphore.h>
+#include <kd.h>
+#include <ipc.h>
 #include <allocator.h>
-#include <process.h>
+#include <mm.h>
+#include <rtl.h>
 
 #define HASH_APPEND( i, l ) { \
-	i->hash_next = l;	i->hash_pre = NULL;	if(l) l->hash_pre = i; l=i;	}
+	i->hash_next = l;	i->hash_prev = NULL;	if(l) l->hash_prev = i; l=i;	}
 #define HASH_DELETE( i, l ) { \
-	if( i->hash_pre ){ i->hash_pre->hash_next = i->hash_next; }else{ l = i->hash_next; }	\
-	if( i->hash_next ){ i->hash_next->hash_pre = i->hash_pre; } \
+	if( i->hash_prev ){ i->hash_prev->hash_next = i->hash_next; }else{ l = i->hash_next; }	\
+	if( i->hash_next ){ i->hash_next->hash_prev = i->hash_prev; } \
 	}
 
 /*  sizeof(node_t)=20  最小分配单元为12字节
@@ -68,7 +68,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	m = siz + sizeof(node_t);	//m是包括节点大小计算的。
 	i = calc_hash_index( m );
 	//进入临界区
-	local_irq_save( eflags );
+	ArLocalSaveIrq( eflags );
 	in_allocator = 1;	//告诉内核，进入了分配器
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
@@ -88,9 +88,9 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 				//调整邻接链表
 				nod2->next = nod->next;
 				if( nod2->next )
-					nod2->next->pre = nod2;
+					nod2->next->prev = nod2;
 				nod->next = nod2;
-				nod2->pre = nod;
+				nod2->prev = nod;
 				//调整散列表
 				k = calc_hash_index( rest );
 				HASH_APPEND( nod2, who->free_table[k] );
@@ -99,7 +99,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 			//离开分配器
 			in_allocator = 0;
 			//离开临界区
-			local_irq_restore(eflags);
+			ArLocalRestoreIrq(eflags);
 			return (void*)((size_t)nod + sizeof(node_t));
 		}
 		//没有可用块
@@ -107,7 +107,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	//离开分配器
 	in_allocator = 0;	
 	//离开临界区
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 	return NULL;
 }
 
@@ -117,17 +117,17 @@ int	mm_check_allocated(allocator_t* who, size_t addr )
 {
 	node_t* nod;
 	uint eflags;
-	local_irq_save( eflags );
+	ArLocalSaveIrq( eflags );
 	//这是例外情况。
 	if( in_allocator ){
-		local_irq_restore(eflags);
+		ArLocalRestoreIrq(eflags);
 		return 1;
 	}
 	nod = who->first_node;
 	while( nod ){
 		//
 		if( (uint)nod <= addr && (uint)nod+sizeof(node_t)+nod->size > addr  ){
-			local_irq_restore(eflags);
+			ArLocalRestoreIrq(eflags);
 			if( IS_FREE_NODE(nod) ){
 				return 0;
 			}else{
@@ -136,7 +136,7 @@ int	mm_check_allocated(allocator_t* who, size_t addr )
 		}
 		nod = nod->next;
 	}
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 	return 0;
 }
 
@@ -152,7 +152,7 @@ static node_t*	merge( allocator_t* who, node_t* a, node_t* b, node_t* c )
 	//调整邻接链表
 	a->next = b->next;
 	if(a->next)
-		a->next->pre = a;
+		a->next->prev = a;
 	return a;
 }
 
@@ -167,17 +167,17 @@ size_t	mm_free(allocator_t* who, void* p)
 	if( !p ) return 0;
 	nod = (node_t*)((size_t)p - sizeof(node_t));
 	//进入临界区
-	local_irq_save(eflags);
+	ArLocalSaveIrq(eflags);
 	if( IS_FREE_NODE(nod) ){
 		PERROR("## cannot free free node.\n");
-		local_irq_restore(eflags);
+		ArLocalRestoreIrq(eflags);
 		return 0;
 	}
 	MAKE_FREE(nod);
 	siz = nod->size;
-	if( nod->pre && IS_FREE_NODE(nod->pre) ){
+	if( nod->prev && IS_FREE_NODE(nod->prev) ){
 		//和前面一块空闲块合并，
-		nod = merge(who, nod->pre, nod, nod->pre);
+		nod = merge(who, nod->prev, nod, nod->prev);
 	}
 	if( nod->next && IS_FREE_NODE(nod->next) ){
 		//和后面一块合并。调整大小
@@ -186,7 +186,7 @@ size_t	mm_free(allocator_t* who, void* p)
 	k = calc_hash_index( nod->size+sizeof(node_t) );
 	HASH_APPEND(nod, who->free_table[k]);
 	//离开临界区
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 	return siz;
 }
 
@@ -205,10 +205,10 @@ void* 	mm_realloc(allocator_t* who, void* p, size_t siz)
 void	mm_init_block(allocator_t* who, size_t addr, size_t size)
 {
 	//make it clear
-	memset( (void*)who, 0, sizeof(allocator_t) );
+	RtlZeroMemory( (void*)who, sizeof(allocator_t) );
 	//make a node
 	node_t* nod = (node_t*)addr;
-	nod->pre = nod->next = NULL;
+	nod->prev = nod->next = NULL;
 	nod->size = size - sizeof(node_t);
 	//attach it to free table
 	HASH_APPEND( nod, who->free_table[MAX_HASH_ENTRY-1] );
@@ -224,32 +224,32 @@ void	mm_print_block(allocator_t* who)
 	size_t used_size, free_size;
 	node_t * nod;
 	uint eflags;
-	kprintf("Search the link table:\n");
+	KdPrintf("Search the link table:\n");
 	nod = who->first_node;
 	used_size=free_size=0;
-	local_irq_save(eflags);
+	ArLocalSaveIrq(eflags);
 	while( nod ){
 		if( IS_FREE_NODE(nod) ){
-		//	kprintf("[Free:%u]", nod->size+sizeof(node_t) );
+		//	KdPrintf("[Free:%u]", nod->size+sizeof(node_t) );
 			free_size += nod->size+sizeof(node_t);
 		}else{
-		//	kprintf("{Used:%u}", nod->size+sizeof(node_t) );
+		//	KdPrintf("{Used:%u}", nod->size+sizeof(node_t) );
 				used_size += nod->size+sizeof(node_t);
 		}
 		nod = nod->next;
 	}
-	kprintf("\nTotal used size: %u bytes, remaing %u bytes，total is %u bytes\n", used_size, free_size, used_size+free_size);
-	kprintf("Search the free table:\n");
+	KdPrintf("\nTotal used size: %u bytes, remaing %u bytes，total is %u bytes\n", used_size, free_size, used_size+free_size);
+	KdPrintf("Search the free table:\n");
 	for(i=0;i<MAX_HASH_ENTRY;i++){
-		kprintf("%u bytes\t", 1<<(i+5) );
+		KdPrintf("%u bytes\t", 1<<(i+5) );
 		nod = who->free_table[i];
 		while( nod ){
-			kprintf("[%u]", nod->size+sizeof(node_t) );
+			KdPrintf("[%u]", nod->size+sizeof(node_t) );
 			nod = nod->hash_next;
 		}
-		kprintf("\n");
+		KdPrintf("\n");
 	}
-	local_irq_restore(eflags);
+	ArLocalRestoreIrq(eflags);
 }
 
 void	mm_free_all(allocator_t * who)

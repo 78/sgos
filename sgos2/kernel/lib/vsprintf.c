@@ -8,8 +8,16 @@
 
 #include <sgos.h>
 #include <stdarg.h>
-#include <string.h>
 #include <ctype.h>
+
+// get string length
+static int strlen( const char* s )
+{
+	int l = 0;
+	for( ; *s; s++ )
+		l++;
+	return l;
+}
 
 unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 {

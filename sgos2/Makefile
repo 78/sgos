@@ -23,8 +23,8 @@ endef
 # Target
 all: check grub
 	make -C crt
-	make -C kernel
-	make -C apps
+	make -C kernel 
+#make -C apps
 	@echo OK!
 
 grub: scripts/menu.lst
@@ -36,7 +36,7 @@ check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
-	qemu -no-kqemu -m 512 -L ./qemu sgos2.img -soundhw pcspk
+	qemu -m 512 -L ./qemu sgos2.img -soundhw pcspk
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc

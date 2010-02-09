@@ -45,10 +45,10 @@ int device_mount( device_t* dev, const char* path )
 		printf("Failed to mount %s on %s\n", dev->name, path );
 		return fd;
 	}
-	// 设置节点类型为文件系统
-	vfs_ioctl( proc, fd, VFS_SET_TYPE, VFS_TYPE_FS );
 	// 设置节点值为该设备的文件描述符
 	vfs_ioctl( proc, fd, VFS_SET_VALUE, (uint)&dev->devFile );
+	// 设置节点类型为文件系统
+	vfs_ioctl( proc, fd, VFS_SET_TYPE, VFS_TYPE_FS );
 	return 0;
 }
 
