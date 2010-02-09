@@ -12,9 +12,9 @@ K_VIR_ADDR =			0xC0000000
 K_PHYS_START=			0x100000
 PAGE_SIZE=				(1<<12) ;//4KB
 ;//页面属性
-P_PRESENT=				0x01
-P_WRITE=				0x02
-P_USER=					0x04
+PAGE_ATTR_PRESENT=				0x01
+PAGE_ATTR_WRITE=				0x02
+PAGE_ATTR_USER=					0x04
 
 ;//在这里设置一个页目录，这里改动了，在page.c里也要改。
 PDE_ADDR=				0x00300000
@@ -37,7 +37,7 @@ MULTIBOOT_CHECKSUM=		-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 .global		_start
 .global		_multiboot_header
 .extern		K_STACK_ADDR
-.extern		_multiboot_init
+.extern		_ArSaveMultibootInformation
 _start:
 	jmp		multiboot_entry
 .align 4
@@ -66,7 +66,7 @@ multiboot_entry:
 	;//分页的目的是让内核能在0xC0000000的虚拟地址运行。
 	;//借助物理地址 [0x00301000,0x00302000) 来做一个临时分页表，当内存模块初始化之后，这里作废。
 	;//填充1个页表，映射物理内存前4MB
-	movl	$0x3, %eax		;//P_PRESENT | P_WRITE
+	movl	$0x3, %eax		;//PAGE_ATTR_PRESENT | PAGE_ATTR_WRITE
 	movl	$MAP_PAGE_NUM, %ecx
 	movl	$PTE_ADDR, %edi
 MAP_PTE:
@@ -75,10 +75,10 @@ MAP_PTE:
 	loop	MAP_PTE
 
 	;//虚拟地址 [0,0x400000)
-	movl	$(PTE_ADDR | P_PRESENT | P_WRITE), PDE_ADDR
+	movl	$(PTE_ADDR | PAGE_ATTR_PRESENT | PAGE_ATTR_WRITE), PDE_ADDR
 	
 	;//[0xC0000000,0xC0400000)
-	movl	$(PTE_ADDR | P_PRESENT | P_WRITE), PDE_ADDR + (K_VIR_ADDR >> 20) 
+	movl	$(PTE_ADDR | PAGE_ATTR_PRESENT | PAGE_ATTR_WRITE), PDE_ADDR + (K_VIR_ADDR >> 20) 
 	
 	;//设置当前页目录
 	movl	$PDE_ADDR, %eax
@@ -105,7 +105,7 @@ MAP_PTE:
 	;//mbi信息
 	movl	multiboot_info, %ebx
 	pushl	%ebx
-	call	_multiboot_init
+	call	_ArSaveMultibootInformation
 	;//不会在返回这里了。
 loop:
 	hlt

@@ -13,17 +13,17 @@
 
 #include <sgos.h>
 #include <arch.h>
-#include <debug.h>
-#include <string.h>
-#include <semaphore.h>
+#include <kd.h>
+#include <ipc.h>
 #include <bigblock.h>
 #include <mm.h>
+#include <rtl.h>
 
 #define HASH_APPEND( i, l ) { \
-	i->hash_next = l;	i->hash_pre = NULL;	if(l) l->hash_pre = i; l=i;	}
+	i->hash_next = l;	i->hash_prev = NULL;	if(l) l->hash_prev = i; l=i;	}
 #define HASH_DELETE( i, l ) { \
-	if( i->hash_pre ){ i->hash_pre->hash_next = i->hash_next; }else{ l = i->hash_next; }	\
-	if( i->hash_next ){ i->hash_next->hash_pre = i->hash_pre; } \
+	if( i->hash_prev ){ i->hash_prev->hash_next = i->hash_next; }else{ l = i->hash_next; }	\
+	if( i->hash_next ){ i->hash_next->hash_prev = i->hash_prev; } \
 	}
 
 #define IS_FREE_NODE(nod) (nod->attribute&FREE_NODE )
@@ -87,7 +87,7 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 			HASH_DELETE( nod, who->free_table[j] );
 			MAKE_OCCUPIED(nod);	//占用
 			if( rest>=PAGE_SIZE ){ //如果有余下空间，则添加到空闲散列表中。rest == 0 为理想状态
-				bnode_t* nod2 = (bnode_t*)kmalloc( sizeof(bnode_t) );
+				bnode_t* nod2 = (bnode_t*)MmAllocateKernelMemory( sizeof(bnode_t) );
 				if(!nod2){
 					PERROR("##memory used out.");
 					//离开临界区
@@ -100,9 +100,9 @@ void*	bb_alloc(bigblock_t* who, size_t siz)
 				//调整邻接链表
 				nod2->next = nod->next;
 				if( nod2->next )
-					nod2->next->pre = nod2;
+					nod2->next->prev = nod2;
 				nod->next = nod2;
-				nod2->pre = nod;
+				nod2->prev = nod;
 				//调整散列表
 				k = calc_hash_index( rest );
 				HASH_APPEND( nod2, who->free_table[k] );
@@ -139,25 +139,25 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 			j = calc_hash_index( nod->size );
 			HASH_DELETE( nod, who->free_table[j] );
 			//记下原来的左右节点
-			opre = nod->pre;
+			opre = nod->prev;
 			onext = nod->next;
 			//开始设置新的节点
 			right = (nod->addr+nod->size) - (addr+siz);
 			left = addr - nod->addr;//左边剩余大小
 			nod->size = siz;
 			if( left>=PAGE_SIZE ){ //左边有空闲足够添加到散列表中 
-				nl = (bnode_t*)kmalloc(sizeof(bnode_t));
+				nl = (bnode_t*)MmAllocateKernelMemory(sizeof(bnode_t));
 				if( !nl )
 					KERROR("##memory used out.");
 				nl->size = left; //新大小
 				nl->addr = nod->addr;
 				nl->next = nod; //右节点变了
-				nl->pre = opre;
+				nl->prev = opre;
 				if( opre )
 					opre->next = nl;
 				else
 					who->first_node = nl;
-				nod->pre = nl; //调整中间的节点
+				nod->prev = nl; //调整中间的节点
 				nod->addr = addr;
 				//调整散列表
 				k = calc_hash_index( left );
@@ -168,15 +168,15 @@ void*	bb_alloc_ex(bigblock_t* who, size_t addr, size_t siz )
 				nod->size += left;
 			}
 			if( right>=PAGE_SIZE ){ //右边有空闲足够添加到散列表中 
-				nr = (bnode_t*)kmalloc(sizeof(bnode_t));
+				nr = (bnode_t*)MmAllocateKernelMemory(sizeof(bnode_t));
 				if( !nr )
 					KERROR("##memory used out.");
 				nr->size = right;
 				nr->addr = addr + siz;
-				nr->pre = nod;
+				nr->prev = nod;
 				nr->next = onext;
 				if( onext )
-					onext->pre = nr;
+					onext->prev = nr;
 				nod->next = nr;
 				//调整散列表
 				k = calc_hash_index( right );
@@ -231,8 +231,8 @@ static bnode_t*	merge( bigblock_t* who, bnode_t* a, bnode_t* b, bnode_t* c )
 	//调整邻接链表
 	a->next = b->next;
 	if(a->next)
-		a->next->pre = a;
-	kfree(b);
+		a->next->prev = a;
+	MmFreeKernelMemory(b);
 	return a;
 }
 
@@ -260,9 +260,9 @@ size_t	bb_free(bigblock_t* who, void* p)
 	}
 	MAKE_FREE(nod);
 	siz = nod->size;
-	if( nod->pre && IS_FREE_NODE(nod->pre) ){
+	if( nod->prev && IS_FREE_NODE(nod->prev) ){
 		//和前面一块空闲块合并，
-		nod = merge(who, nod->pre, nod, nod->pre);
+		nod = merge(who, nod->prev, nod, nod->prev);
 	}
 	if( nod->next && IS_FREE_NODE(nod->next) ){
 		//和后面一块合并。调整大小
@@ -292,10 +292,10 @@ void* 	bb_realloc(bigblock_t* who, void* p, size_t siz)
 void	bb_init_block(bigblock_t* who, size_t addr, size_t size)
 {
 	//make it clear
-	memset( (void*)who, 0, sizeof(bigblock_t) );
+	RtlZeroMemory( (void*)who, sizeof(bigblock_t) );
 	//make a node
-	bnode_t* nod = (bnode_t*)kmalloc(sizeof(bnode_t));
-	nod->pre = nod->next = NULL;
+	bnode_t* nod = (bnode_t*)MmAllocateKernelMemory(sizeof(bnode_t));
+	nod->prev = nod->next = NULL;
 	nod->size = size;
 	nod->addr = addr;
 	//attach it to free table
@@ -303,7 +303,7 @@ void	bb_init_block(bigblock_t* who, size_t addr, size_t size)
 	MAKE_FREE( nod );
 	who->first_node = nod;
 	//init semaphore
-	sema_init( &who->semaphore );
+	IpcInitializeSemaphore( &who->semaphore );
 }
 
 
@@ -313,30 +313,30 @@ void	bb_print_block(bigblock_t* who)
 	int i;
 	size_t used_size, free_size;
 	bnode_t * nod;
-	kprintf("Search the link table:\n");
+	KdPrintf("Search the link table:\n");
 	nod = who->first_node;
 	used_size=free_size=0;
 	down( &who->semaphore );
 	while( nod ){
 		if( IS_FREE_NODE(nod) ){
-			kprintf("[Free:%u]", nod->size );
+			KdPrintf("[Free:%u]", nod->size );
 			free_size += nod->size;
 		}else{
-			kprintf("{Used:%u}", nod->size );
+			KdPrintf("{Used:%u}", nod->size );
 			used_size += nod->size;
 		}
 		nod = nod->next;
 	}
-	kprintf("\nTotal used size: %u bytes, remaing %u bytes，total is %u bytes\n", used_size, free_size, used_size+free_size);
-	kprintf("Search the free table:\n");
+	KdPrintf("\nTotal used size: %u bytes, remaing %u bytes，total is %u bytes\n", used_size, free_size, used_size+free_size);
+	KdPrintf("Search the free table:\n");
 	for(i=0;i<MAX_HASH_ENTRY;i++){
-		kprintf("%u bytes\t", 1<<(i+5) );
+		KdPrintf("%u bytes\t", 1<<(i+5) );
 		nod = who->free_table[i];
 		while( nod ){
-			kprintf("[%u]", nod->size );
+			KdPrintf("[%u]", nod->size );
 			nod = nod->hash_next;
 		}
-		kprintf("\n");
+		KdPrintf("\n");
 	}
 	up( &who->semaphore );
 }

@@ -33,7 +33,7 @@ int queue_create( queue_t* q, int size, queue_delete_func del, const char* name,
 	strncpy( q->name, name, QUEUE_NAME_LEN-1 );
 	/* sem not supported yet 
 	if( q->use_sem ){
-		q->semaphore = kmalloc(sizeof(sema_t));
+		q->semaphore = MmAllocateKernelMemory(sizeof(sema_t));
 		if(!q->semaphore)
 			return -ERR_NOMEM;
 		sema_init( q->semaphore );

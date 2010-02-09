@@ -5,37 +5,72 @@
 #include <sgos.h>
 #include <arch.h>
 #include <string.h>
-#include <debug.h>
-#include <process.h>
-#include <thread.h>
+#include <kd.h>
+#include <mm.h>
+#include <tm.h>
+#include <namespace.h>
 #include <bxml.h>
+#include <loader.h>
 #include <mm.h>
 #include <stdlib.h>
 
 #define EQU( str_a, str_b ) ( strcmp(bxml_readstr(bxml, str_a), str_b)==0 )
 
 // 从文件中加载可执行文件。
-int loader_load( PROCESS* proc, char* filename, MODULE** mod )
+int loader_load( PROCESS* proc, char* filename, uchar share, MODULE** mod )
 {
-/*
-	//make a message to fs server
+	//build a message to fs server
 	BXML_DATA* bxml;
 	size_t size;
 	uchar* data;
-	bxml = bxml_parse("<kmsg to=\"fs\" command=\"readall\" />");
-	bxml_writestr(bxml, ":file", filename );
-	bxml = kmsg_send( bxml );	//kmsg_send will help us free the bxml buffer.
-	if( !EQU(":result", "ok" ) ){
+	session_t sess;
+	int ret;
+	//获取vfs线程
+	sess.thread = (uint)name_match( "vfs" );
+	if( !sess.thread )
+		return -ERR_NOIMP;
+	//写消息
+	bxml = bxml_parse("<msg/>");
+	bxml_writestr(bxml, "/readall:file", filename );
+	//封装消息
+	size = bxml_buffer_size(bxml);
+	data = MmAllocateKernelMemory( size );
+	if( !data ){
 		bxml_free(bxml);
-		return -0x01;	//read file error.
+		return -ERR_NOMEM;
 	}
-	bxml_read( bxml, ":size", &size, sizeof(size) );
+	bxml_build( bxml, data, size );
+	//发送消息
+	ret = message_send( &sess, data, size, 0 );
+	kfree(data);
+	bxml_free(bxml);
+	if( ret < 0 )
+		return ret;
+	//等待回复
+	size = 0;
+	ret = message_recv( &sess, NULL, &size, MSG_PENDING );
+	if( ret != -ERR_NOBUF || !size )
+		return ret;
+	data = MmAllocateKernelMemory( size );
+	ret = message_recv( &sess, data, &size, 0 );
+	if( ret < 0 ){
+		kfree(data);
+		return ret;
+	}
+	bxml = bxml_parse( data );
+	kfree(data);
+	bxml_read( bxml, "/readall:size", &size, sizeof(size) );
+	if( !size ){
+		bxml_free(bxml);
+		return -ERR_IO;	//read file error.
+	}
 	if(size){
-		data = kmalloc( size );
-		bxml_read( bxml, ".", data, size );
+		data = MmAllocateKernelMemory( size );
+		bxml_read( bxml, "/readall", data, size );
+		ret = loader_process( proc, filename, data, share, mod );
+		kfree(data);
 	}
-*/
-	die("not implemented.");
+	bxml_free(bxml);
 	return 0;
 }
 
@@ -108,7 +143,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 			do export_num ++; while(bxml_movenext(bxml));	//获取符号数目
 			//分配存储空间
 			mod->export_num = 0;
-			mod->export_table = (SYMBOL_ENTRY*)kmalloc( export_num * sizeof(SYMBOL_ENTRY) );
+			mod->export_table = (SYMBOL_ENTRY*)MmAllocateKernelMemory( export_num * sizeof(SYMBOL_ENTRY) );
 			if( mod->export_table ){
 				//重新定位
 				bxml_redirect(bxml, "../export", 0);
@@ -137,7 +172,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 			do import_num ++; while(bxml_movenext(bxml));
 			//分配导入模块信息存储空间
 			mod->import_num = 0;
-			mod->import_modules = (MODULE**)kmalloc( import_num * sizeof(MODULE*) );
+			mod->import_modules = (MODULE**)MmAllocateKernelMemory( import_num * sizeof(MODULE*) );
 			if( mod->import_modules ){
 				//重新定位
 				bxml_redirect(bxml, "../module", 0);
@@ -149,7 +184,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 					mod_imp = module_get_by_name( proc, name ); //看看是否能直接得到
 					if( !mod_imp ){
 						//否则从文件系统中加载
-						if( loader_load(proc, name, &mod_imp) != 0 ){
+						if( loader_load(proc, name, 1, &mod_imp) != 0 ){
 							PERROR("##failed to load module: %s", name );
 							break;
 						}
@@ -177,7 +212,7 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 						//把该模块添加到导入模块链表
 					}
 					//back
-					tmp = (char*)kmalloc(1024);
+					tmp = (char*)MmAllocateKernelMemory(1024);
 					sprintf(tmp, "/program/import_table/module?name=%s", name );
 					bxml_redirect(bxml, tmp, 0 );
 					kfree(tmp);
@@ -196,12 +231,19 @@ int loader_process( PROCESS* proc, char* file, uchar* data, uchar share, MODULE*
 	if( mod->share ){
 		//若是共享库，则设置页面为只读，以便写时复制
 		module_attach( proc, mod );
+	}else{ 
+		int len = strlen(file);
+		if( file[len-4]=='.'&&file[len-3]=='r'&&file[len-2]=='u'&&
+			file[len-1]=='n' ){
+			if( proc->process_info )
+				proc->process_info->entry_address = mod->entry_address;
+		}
 	}
 	mod->reference = 1;
 	//导出参数
 	if( ret_mod )
 		*ret_mod = mod;
 	//加载成功
-//	kprintf("[%d]Module %s is loaded at 0x%X\n", proc->pid, file, mod->vir_addr);
+//	KdPrintf("[%d]Module %s is loaded at 0x%X\n", proc->pid, file, mod->vir_addr);
 	return 0;
 }

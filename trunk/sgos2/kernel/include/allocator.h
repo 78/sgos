@@ -11,10 +11,10 @@
 
 typedef struct node{
 	//邻接链表
-	struct node* pre;
+	struct node* prev;
 	struct node* next;
 	//Hash table
-	struct node* hash_pre;
+	struct node* hash_prev;
 	struct node* hash_next;
 	//分配描述
 	size_t attribute;

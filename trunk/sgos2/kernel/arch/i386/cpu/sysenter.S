@@ -1,10 +1,10 @@
 ;// perform a faster system call
 ;// 090818 implemeted.
 
-.global _sysenter_handler
+.global _ArAsmSysenterHandler
 ret_val:
 .long	0
-_sysenter_handler:
+_ArAsmSysenterHandler:
 	pushal
 	pushl	%ds
 	pushl	%es
@@ -17,7 +17,7 @@ _sysenter_handler:
 	pushl	%ecx
 	pushl	%ebx
 	sti
-	call	*_syscall_table(,%eax,4)
+	call	*_SystemCallTable(,%eax,4)
 	addl	$12, %esp
 	movl	%eax, ret_val
 	popl	%es

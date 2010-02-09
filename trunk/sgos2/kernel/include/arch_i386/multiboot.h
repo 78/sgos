@@ -7,7 +7,7 @@
 
 typedef struct multiboot_header 
 { 
-	t_32 magic; 
+	t_32 Magic; 
 	t_32 flags; 
 	t_32 checksum; 
 	t_32 header_addr; 

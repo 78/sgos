@@ -3,40 +3,41 @@
 
 #include <arch.h>
 #include <multiboot.h>
-#include <debug.h>
+#include <kd.h>
 
-extern void kinit();	//内核初始化入口
+extern void KeStartOs();	//内核初始化入口
 
 //multiboot.S结束时调用这个函数
-void multiboot_init( uint info_addr )
+void ArSaveMultibootInformation( size_t info_addr )
 {
 	//
-	//call kinit, never return
-	kinit( info_addr );
+	//call KeStartOs, never return
+	KeStartOs( info_addr );
 }
 
 //进一步设置x86保护模式
-#define SET_SYSTEM_GATE( vector, handle ) set_gate( vector, DA_386IGate | DA_DPL3, handle )
-int machine_init()
+#define SET_SYSTEM_GATE( vector, handle ) ArSetGate( vector, DA_386IGate | DA_DPL3, handle )
+int ArInitializeSystem()
 {
 	//init i386
 	//重新设置gdt
-	gdt_init();
+	ArInitializeGdt();
 	//设置isr，捕获各种机器异常
-	isr_init();
+	ArInitializeIsr();
 	//设置irq，捕获硬、软件中断
-	irq_init();
+	ArInitializeIrq();
 	//调试器
-	dbg_init();
+	ArInitializeDebugger();
 	//i387数学协处理器
-	fpu_init();
+	ArInitializeMathProcessor();
 	//vm86
-	vm86_init();
+	ArInitializeVm86();
 	//设置软中断
-	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)syscall_interrupt );
+	extern void* SystemCallInterrupt;
+	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)SystemCallInterrupt );
 	//初始化fastcall
-	fastcall_init();
+	ArInitializeFastcall();
 	//Real time clock
-	rtc_init();
+	ArStartRealTimeClock();
 	return 0;
 }

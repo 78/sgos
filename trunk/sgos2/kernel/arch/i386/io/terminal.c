@@ -1,10 +1,10 @@
 // Ported from SGOS1
 
 #include <sgos.h>
-#include <ctype.h>
-#include <debug.h>
-#include <string.h>
 #include <stdarg.h>
+#include <rtl.h>
+#include <ctype.h>
+#include <kd.h>
 #include <arch.h>
 #include <terminal.h>
 
@@ -23,20 +23,9 @@ static void next_line()
 {
 	_x=0;
 	_y++;
-	if(_y>=_h){	//是否需要滚屏？
+	if(_y>=_h)	//是否需要滚屏？
 		scroll_up();
-	}
 }
-/*
-// move the cursor to a position
-static int gotoxy( int x, int y)
-{
-	if( x * _w + y > _w*_h)
-		return -1;
-	_x = x;
-	_y = y;
-	return 0;
-}*/
 
 // move the cursor as you input a character
 static void move_cursor()
@@ -44,32 +33,32 @@ static void move_cursor()
 	//设置光标位置
 	int offset = _y * _w + _x;
 	//video[offset*2]=buffer[offset*2];
-	memcpyw( video+_y * _w, buffer+_y * _w , 80);	//刷新光标所在项
-	out_byte( 0x3D4, 14 );//指定访问14号寄存器
-	out_byte( 0x3D5, offset >> 8  );
-	out_byte( 0x3D4, 15 );
-	out_byte( 0x3D5, offset&0xFF );
+	memcpy16( video+_y * _w, buffer+_y * _w , 80);	//刷新光标所在项
+	ArOutByte( 0x3D4, 14 );//指定访问14号寄存器
+	ArOutByte( 0x3D5, offset >> 8  );
+	ArOutByte( 0x3D4, 15 );
+	ArOutByte( 0x3D5, offset&0xFF );
 }
 
 // clear the screen
-void clrscr()
+void ArClearScreen()
 {
-	memsetw((char*)buffer, style, _w*_h );
-	memcpyw( video, buffer, _w*_h);
+	memset16((char*)buffer, style, _w*_h );
+	memcpy16( video, buffer, _w*_h);
 	_x = 0;
 	_y = 0;
 	move_cursor();
 }
 
 // print a character
-void putchar(char ch)
+void ArPrintChar(char ch)
 {
-	out_byte(0xE9,ch);	//for bochs
+	ArOutByte(0xE9,ch);	//for bochs
 	uint eflags;
 	if(ch=='\t')
 	{
 		do{
-			putchar(' ');
+			ArPrintChar(' ');
 		}while( (_x-1)%4 );
 		return;
 	}
@@ -82,7 +71,7 @@ void putchar(char ch)
 		style = 0x0200;
 		break;
 	}
-	local_irq_save( eflags );
+	ArLocalSaveIrq( eflags );
 	//
 	if(ch=='\n')
 	{
@@ -106,14 +95,14 @@ void putchar(char ch)
 	}
 	//移动光标
 	move_cursor();
-	local_irq_restore( eflags );
+	ArLocalRestoreIrq( eflags );
 }
 
 // scroll up the screen
 static void scroll_up()
 {
-	memcpyw((char*)buffer,(char*)(buffer+_w),_w*(_h-1) );
-	memsetw((char*)(buffer+_w*(_h-1)), style ,_w);
-	memcpyw( video, buffer, _w*_h);
+	memcpy16((char*)buffer,(char*)(buffer+_w),_w*(_h-1) );
+	memset16((char*)(buffer+_w*(_h-1)), style ,_w);
+	memcpy16( video, buffer, _w*_h);
 	_y--;
 }

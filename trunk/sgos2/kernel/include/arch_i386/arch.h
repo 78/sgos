@@ -6,6 +6,7 @@
 #include <lock.h>
 #include <msr.h>
 #include <io.h>
+#include <mmop.h>
 
 #define RTC_FREQUENCY	200	//200Hz  这是时钟频率，具体在arch/i386/clock/rtc.c
 
@@ -25,19 +26,19 @@
 #define GD_TIB_INDEX	7
 
 #define PAGE_SIZE	4096
-#define PAGE_SIZE_BITS 12
-#define PAGE_ALIGN(a) ((a&0xFFF)?((a&0xFFFFF000)+0x1000):a)
+#define PAGE_SIZE_BITS	12
+#define PAGE_ALIGN(a)	((a&0xFFF)?((a&0xFFFFF000)+0x1000):a)
 #define KERNEL_BASE	0xC0000000
-#define PROC_PAGE_DIR_BASE	0xE0000000
-#define PROC_PAGE_DIR_END	0xE0400000
-#define PROC_PAGE_TABLE_MAP	0xBFC00000
+#define ALLSPACES_PAGEDIR_BEG	0xE0000000
+#define ALLSPACES_PAGEDIR_END	0xE0400000
+#define SPACE_PAGETABLE_BEG	0xBFC00000
 
-#define IS_KERNEL_MEMORY(addr) ( addr>=KERNEL_BASE && addr<PROC_PAGE_DIR_END )
-#define IS_USER_MEMORY(addr) ( addr <= PROC_PAGE_TABLE_MAP )
+#define IS_KERNEL_MEMORY(addr) ( addr >= KERNEL_BASE && addr < ALLSPACES_PAGEDIR_END )
+#define IS_USER_MEMORY(addr) ( addr <= SPACE_PAGETABLE_BEG )
 
 #define GET_STACK_POINTER(stk) __asm__ __volatile__("movl %%esp, %%eax" :"=a"(stk):)
-#define SET_INTR_GATE(vector, handle) set_gate(vector, DA_386IGate, handle)
-#define SET_TRAP_GATE(vector, handle) set_gate( vector, DA_386TGate, handle )
+#define SET_INTR_GATE(vector, handle) ArSetGate(vector, DA_386IGate, handle)
+#define SET_TRAP_GATE(vector, handle) ArSetGate( vector, DA_386TGate, handle )
 
 /* VM86 */
 #define MAKE_FARPTR(seg,off)	(((uint)(seg)<<16)|(ushort)(off))
@@ -50,7 +51,7 @@ uint LINEAR_TO_FARPTR(size_t ptr);	//vm86.c
 #define EFLAG_VM	((1<<17)|0x3000)
 #define EFLAG_IF	(1<<9)
 	
-struct THREAD;
+struct KThread;
 // gdt 
 // segment
 typedef struct SEGMENT_DESC
@@ -128,7 +129,7 @@ typedef struct I386_CONTEXT{
 	t_32	eip, cs, eflags, esp, ss;
 }I386_CONTEXT;
 
-typedef struct ARCH_THREAD{
+typedef struct ArchThread{
 	// 在第一次使用时由内核分配
 	I387_REGISTERS*	fsave;
 	// 当前是否使用了fpu
@@ -139,7 +140,7 @@ typedef struct ARCH_THREAD{
 	uint		vmflags;
 	// interrupt bit
 	int		vmflag_if;
-}ARCH_THREAD;
+}ArchThread;
 
 //paging
 typedef union PAGE_TABLE{
@@ -154,80 +155,84 @@ typedef union PAGE_TABLE{
 		unsigned global:1;
 		unsigned share:1;
 		unsigned allocated:1;
-		unsigned copy_on_write:1;
-		unsigned phys_addr:20;
+		unsigned copyOnWrite:1;
+		unsigned physicalAddress:20;
 	}a;
 }PAGE_TABLE, PAGE_DIR ;
-#define P_PRESENT	(1<<0)	//页面存在
-#define P_WRITE		(1<<1)	//页面可写
-#define P_USER		(1<<2)	//页面为用户级
-#define P_ACCESS	(1<<5)	//页面被访问过
+#define PAGE_ATTR_PRESENT	(1<<0)	//页面存在
+#define PAGE_ATTR_WRITE		(1<<1)	//页面可写
+#define PAGE_ATTR_USER		(1<<2)	//页面为用户级
+#define PAGE_ATTR_ACCESS	(1<<5)	//页面被访问过
+#define PAGE_ATTR_GLOBAL	(1<<8)	//全局页
+#define PAGE_ATTR_SHARE		(1<<9)	//系统定义：共享页
+#define PAGE_ATTR_ALLOCATED	(1<<10)	//系统定义：已分配
+#define PAGE_ATTR_COPYONWRITE	(1<<11)	//系统定义：写时复制
 
 #define halt() __asm__("hlt")
 #define stts() __asm__ __volatile__("movl %cr0, %eax; orl $8, %eax; movl %eax, %cr0")
 #define clts() __asm__ __volatile__("clts")
 
 //gdt
-void gdt_init();
-void set_gate( int vector, uchar desc_type, void* handle );
-void set_gdt_desc( int vector, uint base, uint limit, uint attribute );
-void set_idt_desc( int vector, uchar desc_type, void* handler );
-void set_ldt_desc( SEGMENT_DESC *desc, uint base, uint limit, uint attribute );
+void ArInitializeGdt();
+void ArSetGate( int vector, uchar desc_type, void* handle );
+void ArSetGdtEntry( int vector, uint base, uint limit, uint attribute );
+void ArSetIdtEntry( int vector, uchar desc_type, void* handler );
+void ArSetLdtEntry( SEGMENT_DESC *desc, uint base, uint limit, uint attribute );
 //isr
-void isr_init();
-void isr_uninstall( int isr );
-int isr_install( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) );
+void ArInitializeIsr();
+void ArUninstallIsr( int isr );
+int ArInstallIsr( int isr, void (*handler)(int err_code, const I386_REGISTERS *r) );
 //debug
-void dbg_dumpcpu( const I386_REGISTERS *r );
-void dbg_init();
+void ArDumpRegisters( const I386_REGISTERS *r );
+void ArInitializeDebugger();
 //irq
-void irq_init();
-void irq_mask( int irq, int enabled );
-void irq_uninstall( int irq );
-int irq_install( int irq, void (*handler)() );
+void ArInitializeIrq();
+void ArSetIrqMask( int irq, int enabled );
+void ArUninstallIrq( int irq );
+int ArInstallIrq( int irq, void (*handler)() );
 //syscall
 int syscall_interrupt();
 //init
-int machine_init();
+int ArInitializeSystem();
 //page
-extern uint kernel_page_dir;	//page dir for kernel
-int page_init( uint size );
-void load_page_dir(uint phys_addr);
-void dump_phys_pages();
-void free_phys_page( uint addr );
-uint get_phys_page();
-void reflush_pages();
-void load_page_dir(uint phys_addr);
-uint switch_page_dir(uint phys_addr);
-uint vir_to_phys( uint vir_addr );
-void init_page_dir(uint );
+extern uint KernelPageDirectory;	//page dir for kernel
+int ArInitializePaging( uint size );
+void ArLoadPageDirectory(uint phys_addr);
+void ArDumpPhysicalPages();
+void ArFreePhysicalPage( uint addr );
+uint ArGetPhysicalPage();
+void ArFlushPageDirectory();
+void ArFlushPageTableEntry( uint virt_addr );
+uint ArVirtualToPhysicalAddress( uint virt_addr );
+uint ArLoadPageDirectoryTemporary(uint );
+void ArInitializePageDirectory( uint virt_addr );
 //map
-uint map_temp_page( uint phys_addr );
-void unmap_temp_page( uint vir_addr );
-void map_one_page( uint dir, uint vir_addr, uint phys_addr, uint attr );
-void unmap_one_page( uint dir, uint vir_addr );
-void map_pages( uint dir, uint vir_addr, uint phys_addr, uint size, uint attr );
-void unmap_pages( uint dir, uint vir_addr, uint size );
+uint ArMapTemporaryPage( uint phys_addr );
+void ArMapOnePage( uint dir, uint virt_addr, uint phys_addr, uint attr, uint flag );
+void ArUnmapOnePage( uint dir, uint virt_addr );
+void ArMapMultiplePages( uint dir, uint virt_addr, uint phys_addr, uint size, uint attr, uint flag );
+void ArUnmapMultiplePages( uint dir, uint virt_addr, uint size );
+int ArQueryPageInformation( uint dir, uint virt_addr, uint* phys_addr, uint *attr );
 //dir
-uint get_page_dir();
-void free_page_dir(uint addr);
-void dir_init();
+uint ArAllocatePageDirecotry();
+void ArFreePageDirectory(uint addr);
+void ArInitializePageDirectoryManagement();
 //rtc
-void rtc_init();
+void ArStartRealTimeClock();
 //cpu
-void init_thread_regs( struct THREAD* thr, struct THREAD* parent,
+void ArInitializeThreadRegisters( struct KThread* thr, struct KThread* parent,
 	void* context, uint entry_addr, uint stack_addr );
-void arch_thread_cleanup( struct THREAD* thr );
-void switch_to( struct THREAD* cur, struct THREAD* thr );
-void start_threading();
-void fastcall_update_esp(uint kesp);
-void fastcall_init();
-void update_for_next_thread();
-void i386_switch( struct THREAD*, uint*, uint* );	//switch.S
-void vm86_init();	//vm86.c
-int bios_call( int interrupt, void* context, size_t siz );	//vm86.c
+void ArReleaseThreadResources( struct KThread* thr );
+void ArSwitchThread( struct KThread* cur, struct KThread* thr );
+void ArStartThreading();
+void ArUpdateFastcallEsp(uint kesp);
+void ArInitializeFastcall();
+void ArPrepareForNextThread();
+void ArAsmSwapContext( struct KThread*, uint*, uint* );	//switch.S
+void ArInitializeVm86();	//vm86.c
+int ArCallBiosService( int interrupt, void* context, size_t siz );	//vm86.c
 //fpu
-void fpu_check_and_save( struct THREAD* thr );
-void fpu_init();
+void ArCheckAndSaveFpu( struct KThread* thr );
+void ArInitializeMathProcessor();
 
 #endif

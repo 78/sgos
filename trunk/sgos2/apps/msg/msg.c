@@ -139,7 +139,7 @@ int	msg_recv_ex( messenger_t* msger, uint thread, uint flag )
 		msger->session.thread = 0;
 	ret = sys_recv( &msger->session, msger->buffer, &len, flag );
 	if( ret < 0 ){
-		if( -ret == ERR_NOMEM ){
+		if( -ret == ERR_NOBUF ){
 			free( msger->buffer );
 			msger->buffer_size = len;
 			msger->buffer = malloc( msger->buffer_size );

@@ -15,16 +15,16 @@ color light-green/black blink-red/black
 title SGOS2
 	root (hd0,0)
 	kernel /sgos2/kernel.bin root=c:
-	module /sgos2/api.bxm
-	module /sgos2/libc.bxm
-	module /sgos2/msg.bxm
-	module /sgos2/system.bxm
-	module /sgos2/vm86.com
-	module /sgos2/vfs.bxm
-	module /sgos2/vfs.run
-	module /sgos2/hd.run
-	module /sgos2/speaker.run
-	module /sgos2/start.run
+#	module /sgos2/api.bxm
+#	module /sgos2/libc.bxm
+#	module /sgos2/msg.bxm
+#	module /sgos2/system.bxm
+#	module /sgos2/vm86.com
+#	module /sgos2/vfs.bxm
+#	module /sgos2/vfs.run
+#	module /sgos2/hd.run
+#	module /sgos2/speaker.run
+#	module /sgos2/start.run
 
 # Halt the machine
 title Turn off power!

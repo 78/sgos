@@ -1,6 +1,6 @@
-.global _enter_threading_mode
+.global _ArAsmEnterThreadingMode
 ;// 主要是变更内核堆栈
-_enter_threading_mode:
+_ArAsmEnterThreadingMode:
 	pushl	%ebp
 	movl	%esp, %ebp
 	movl	0x08(%ebp), %esp
@@ -15,13 +15,13 @@ _enter_threading_mode:
 return:
 	ret
 
-.global _i386_switch
-_i386_switch:	;// 线程切换
+.global _ArAsmSwapContext
+_ArAsmSwapContext:	;// 线程切换
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushfl
 	push	%cs
-	push	$return_from_switch
+	push	$Return
 	subl	$8, %esp
 	pushal
 	pushl	%ds
@@ -40,7 +40,7 @@ _i386_switch:	;// 线程切换
 	addl	$8, %esp
 	iret
 
-return_from_switch:
+Return:
 	popl	%ebp
 	ret
 

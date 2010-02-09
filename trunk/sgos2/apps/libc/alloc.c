@@ -33,7 +33,10 @@ typedef struct node{
 #define MAKE_FREE(nod) (nod->attribute |= FREE_NODE)
 #define MAKE_OCCUPIED(nod) (nod->attribute &= ~FREE_NODE )
 
-#define MAX_HASH_ENTRY 15
+/* 
+ * 计算最大块链表 max = 2^(5+MAX_HASH_ENTRY)
+ */
+#define MAX_HASH_ENTRY 19 // max = 16MB
 #define HASH_APPEND( i, l ) { \
 	i->hash_next = l;	i->hash_pre = NULL;	if(l) l->hash_pre = i; l=i;	}
 #define HASH_DELETE( i, l ) { \
@@ -90,7 +93,7 @@ static void	unlock()
 
 void	__allocation_init();
 //基本分配函数
-//时间复杂度分析：最坏情况W(n)  一般情况O(1)
+//接近常数的时间复杂度
 void*	malloc(size_t siz)
 {
 	size_t m, k, i, j;
@@ -156,7 +159,7 @@ static node_t*	merge( node_t* a, node_t* b, node_t* c )
 }
 
 //基本释放函数。
-//时间复杂度分析：最坏情况W(1)  一般O(1)
+//常数的时间复杂度
 void	free(void* p)
 {
 	int k;
@@ -184,11 +187,12 @@ void	free(void* p)
 	unlock();
 }
 
-void*	alloc(size_t c, size_t n)
+void*	calloc(size_t c, size_t n)
 {
 	return malloc( c*n );
 }
 
+// 未真正实现realloc
 void* 	realloc(void* p, size_t siz)
 {
 	free(p);
