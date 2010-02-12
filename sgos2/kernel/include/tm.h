@@ -78,15 +78,15 @@ typedef struct KThread{
 	//线程运行时堆栈大小
 	uint				StackLimit;	
 	//判断是否是内核线程。
-	uchar				IsKernelThread;		
+	t_8				IsKernelThread;		
 	//是否在中断模式下。
-	uchar				IsInterrupted;
+	t_8				IsInterrupted;
 	//是否使用了数学协处理器
-	uchar				UsedMathProcessor;
+	t_8				UsedMathProcessor;
 	//是否在BIOS模式下
-	uchar				InBiosMode;
+	t_8				InBiosMode;
 	//线程内核堆栈
-	uchar				KernelStack[THREAD_KERNEL_STACK_SIZE];	
+	t_8				KernelStack[THREAD_KERNEL_STACK_SIZE];	
 }KThread;
 
 //these threads on the same state are linked by TmSchedule link

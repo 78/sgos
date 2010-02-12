@@ -26,6 +26,7 @@ static uint generateThreadId()
 }
 
 //初始化用户态线程信息块
+/*
 static void InitializeThreadInformation( KThread* thr )
 {
 	thr->UserModeThreadInformation = MmAllocateUserMemory(thr->Space, 
@@ -47,6 +48,7 @@ static void InitializeThreadInformation( KThread* thr )
 		ti->ThreadId = thr->ThreadId;
 	}
 }
+*/
 
 //由线程ID获得线程结构指针
 KThread* TmGetThreadById( uint tid )
@@ -122,10 +124,12 @@ KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
 			thr->StackBase = (uint)MmAllocateUserMemory( space, thr->StackLimit, 
 				PAGE_ATTR_WRITE, 0);
 	}
+	/* Do this in process management 
 	//初始化用户态信息
 	if( thr->IsKernelThread == 0 ){
 		InitializeThreadInformation( thr );
 	}
+	*/
 	//初始化寄存器
 	ArInitializeThreadRegisters( thr, TmGetCurrentThread(), NULL, entry_addr, 
 		thr->StackBase + thr->StackLimit );

@@ -47,7 +47,7 @@ void ArPrepareForNextThread()
 	}
 	//如果改变了地址空间，则更新页目录
 	if( MmGetCurrentSpace() != next->Space )
-		ArFlushPageDirectory( next->Space->PageDirectory );
+		ArLoadPageDirectory( &next->Space->PageDirectory );
 	//检查数学协处理器
 	ArCheckAndSaveFpu( ThreadingBox.running );
 }

@@ -5,6 +5,7 @@
 #include <multiboot.h>
 #include <tm.h>
 #include <mm.h>
+#include <ke.h>
 
 //内核初始化入口
 extern KSpace* CurrentSpace;
@@ -14,6 +15,7 @@ multiboot_info_t* mbi;	//=multiboot information
 //启动微内核程序
 void KeStartOs( size_t boot_info )
 {
+	KThread* init_thr;
 	size_t mem_size;
 	//before we do something, we initialize some important vars
 	CurrentSpace = NULL;	
@@ -48,25 +50,31 @@ void KeStartOs( size_t boot_info )
 	}
 	//init machine 
 	ArInitializeSystem();
-	//PageDirectory init
-	ArInitializePageDirectoryManagement();
-	//page management
+	//init page management
 	ArInitializePaging( mem_size );
+	//init space management.
+	MmInitializeSpaceManagement();
 	//init MmAllocateKernelMemory
 	MmInitializeKernelMemoryPool();
 	//init thread management.
 	TmInitializeThreadManagement();
 	//set running thread
 	TmInitializeScheduler();
-	//init space management.
-	MmInitializeSpaceManagement();
-	//init module management.
-	//ExInitializeModuleManagement();
+	// restore basic information
+	MmInitializeSpaceBasicInformation( MmGetCurrentSpace() );
+	//init global memory pool
+	MmInitializeGlobalMemoryPool();
+	// create an init thread for the init process
+	init_thr = TmCreateThread( MmGetCurrentSpace(), (size_t)KeStartOs, KERNEL_THREAD ); //用process_init来标记是内核线程
+	// set run time because no scheduler can be used at the present
+	init_thr->ScheduleInformation.clock = 10;
+	// set ready state!!
+	TmSetThreadState( init_thr, TS_READY );
 	//set running thread
 	//设置当前运行的线程
 	ThreadingBox.running = MmGetCurrentSpace()->FirstThread;
 	//启动线程
-	KdPrintf("Starting Multi-Threading Mode ...\n");
+	KdPrintf("Starting Multi-threading Mode ...\n");
 	ArStartThreading();
 	//never return here
 	KERROR("##Warning: kernel not ready.");
@@ -82,7 +90,7 @@ void KeBugCheck(const char *s )
 }
 
 //该线程定时出来点一下, 表示内核没有挂 - -
-void KeKeepAlive()
+static void KeKeepAlive()
 {
 	for(;;){
 		TmSleepThread(5000);
@@ -95,6 +103,8 @@ void KeResumeStart()
 {
 	KThread* thrLoad, *thrAlive;
 	extern void KeLoadBaseServices();
+	//加载
+	KdPrintf("boot_dev: %x  cmdline: %s\n", mbi->boot_device, KERNEL_BASE+mbi->cmdline );
 	KdPrintf("Starting Services ...\n");
 	thrLoad = TmCreateThread( MmGetCurrentSpace(), (size_t)KeLoadBaseServices, KERNEL_THREAD );
 	TmResumeThread( thrLoad );

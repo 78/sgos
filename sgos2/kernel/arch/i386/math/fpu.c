@@ -1,5 +1,5 @@
 // Hope it works!!
-// 090828 by Huang Guan
+// 090828 by Xiaoxia
 #include <arch.h>
 #include <tm.h>
 #include <kd.h>

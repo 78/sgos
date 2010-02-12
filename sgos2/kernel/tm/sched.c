@@ -185,7 +185,7 @@ void TmSchedule()
 	ArLocalSaveIrq(flags);
 	thr = NULL;
 	//next one
-	if( thr->ThreadState == TS_READY )
+	if( cur->ThreadState == TS_READY )
 		thr = cur->ScheduleInformation.next;
 	if(!thr || thr->ThreadState!=TS_READY)	//one round finished...
 		thr = ThreadingBox.ready;
@@ -202,7 +202,7 @@ void TmSchedule()
 		}
 	}else{
 		// No ready threads. Do some idle things!
-		if( thr->ThreadState == TS_IDLE )
+		if( thr && thr->ThreadState == TS_IDLE )
 			thr = cur->ScheduleInformation.next;
 		if( !thr )
 			thr = ThreadingBox.idle;
