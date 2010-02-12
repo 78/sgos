@@ -18,8 +18,9 @@
 typedef struct PAGE_INFO{
 	struct PAGE_INFO*	next;
 	struct PAGE_INFO*	prev;
-	size_t			phys_addr;	//物理内存地址
-	time_t			CreateTime;		//create time.
+	size_t			PhysicalAddress;	//物理内存地址
+	size_t			VirtualAddress;		//
+	size_t			AddressInSpace0;	//
 }PAGE_INFO;
 
 // 地址空间内存信息
@@ -33,6 +34,11 @@ typedef struct KMemoryInformation{
 	int			KernelMemoryCapacity;		//最大内核占用大小
 }KMemoryInformation;
 
+typedef struct KPageDirectory{
+	size_t	PhysicalAddress;
+	size_t	VirtualAddressInSpace0;
+}KPageDirectory;
+
 // 内核地址空间结构体。
 typedef struct KSpace{
 	int				SpaceId;		//地址空间唯一ID
@@ -45,7 +51,7 @@ typedef struct KSpace{
 	struct KThread*			RealTimeThread;		//实时线程
 	struct KMemoryInformation	MemoryInformation;	//内存信息
 	SpaceInformation*		UserModeSpaceInformation;	//用户态信息
-	uint				PageDirectory;		//PageDirectory
+	KPageDirectory			PageDirectory;		//PageDirectory
 	uchar				InBiosMode;		//是否使用VM86模式
 } KSpace;
 
@@ -58,6 +64,7 @@ KSpace* MmCreateSpace( KSpace* parent );
 int MmDestroySpace( KSpace* sp );
 //由id获取地址空间的指针
 KSpace* MmGetSpaceById( uint spid );
+void MmInitializeSpaceBasicInformation( KSpace* space );
 
 // kernel memory allocator
 void	MmInitializeKernelMemoryPool();
@@ -67,19 +74,29 @@ void	MmFreeKernelMemory(void* p);
 
 // user space memory allocator
 void	MmInitializeUserMemoryPool(KSpace*);
-void*	MmAllocateUserMemory(KSpace* space, size_t siz, uint attr, uint virtual);
-void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint pattr, uint virtual);
+void*	MmAllocateUserMemory(KSpace* space, size_t siz, uint attr, uint v);
+void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint pattr, uint v);
 int	MmIsUserMemoryAllocated(KSpace*, size_t addr );
 void	MmFreeUserMemory(KSpace*, void* p);
 int	MmWriteUserMemory( KSpace* space, size_t addr, void* data, size_t siz );
 int	MmWriteUserMemory( KSpace* space, size_t addr, void* data, size_t siz );
 int	MmSetUserMemoryAttribute( KSpace* space, size_t addr, size_t siz, uint attr );
 
+//global space memory allocator
+void	MmInitializeGlobalMemoryPool();
+void*	MmAllocateGlobalMemory( size_t siz, uint pattr, uint v);
+void	MmFreeGlobalMemory(void* p);
+int	MmIsGlobalMemoryAllocated(size_t addr);
+
 // physical
-int	MmAcquireMultiplePhysicalPages(uint dir, size_t addr, size_t siz, uint attr, uint flag);
-void	MmReleaseMultiplePhysicalPages(uint dir, size_t addr, size_t siz);
-int	MmAcquirePhysicalPage(uint dir, size_t addr, uint attr, uint flag);
-void	MmReleasePhysicalPage(uint dir, size_t addr);
+int	MmAcquireMultiplePhysicalPages( KSpace* space, size_t addr, size_t siz, uint attr, uint flag);
+void	MmReleaseMultiplePhysicalPages( KSpace* space, size_t addr, size_t siz);
+int	MmAcquirePhysicalPage( KSpace* space, size_t addr, uint attr, uint flag);
+void	MmReleasePhysicalPage( KSpace* space, size_t addr);
+void	MmDumpPhysicalPages();
+void	MmFreePhysicalPage( uint addr );
+uint	MmGetPhysicalPage();
+void	MmInitializePhysicalMemoryManagement( size_t bitmap_start, size_t bitmap_end, size_t mem_size );
 
 #endif
 

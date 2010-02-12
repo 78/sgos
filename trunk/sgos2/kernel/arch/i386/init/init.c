@@ -1,11 +1,10 @@
-//Huang Guan
+//Xiaoxia
 //090803
 
 #include <arch.h>
 #include <multiboot.h>
 #include <kd.h>
-
-extern void KeStartOs();	//内核初始化入口
+#include <ke.h>
 
 //multiboot.S结束时调用这个函数
 void ArSaveMultibootInformation( size_t info_addr )

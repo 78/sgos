@@ -3,7 +3,7 @@
  *
  *  Memory allocation management
  *
- *  Huang Guan  2009-6-18 Created.
+ *  Xiaoxia  2009-6-18 Created.
  *  gdxxhg@gmail.com
  *
  *  Description: This file mainly includes the functions about malloc, realloc, calloc, free 
@@ -73,7 +73,7 @@ void*	mm_alloc(allocator_t* who, size_t siz)
 	//在空闲块散列表中搜索合适的块
 	for( j=i; j<MAX_HASH_ENTRY; j++ ){
 		nod = who->free_table[j];
-		//patched by Huang Guan. added "&& nod->size!=siz"
+		//patched by Xiaoxia. added "&& nod->size!=siz"
 		while( nod && nod->size < siz )
 			nod = nod->hash_next;
 		if( nod ){	//找到可用块

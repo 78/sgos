@@ -20,6 +20,10 @@
 
 #define PROCESS_NAME_LEN	128
 
+// units
+#define	MB(a) (a<<20)
+#define KB(a) (a<<10)
+
 #ifndef NULL
 #define NULL			((void*)0)	//
 #endif

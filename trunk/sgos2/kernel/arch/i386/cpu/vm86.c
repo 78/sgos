@@ -1,4 +1,4 @@
-// 090826 Written by Huang Guan.
+// 090826 Written by Xiaoxia.
 // Please help fix up some problems.
 
 #include <sgos.h>

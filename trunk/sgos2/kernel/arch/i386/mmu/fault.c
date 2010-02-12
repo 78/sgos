@@ -1,6 +1,6 @@
 //pagefault
 //sgos2
-//huang guan 090806
+//Xiaoxia 090806
 
 #include <sgos.h>
 #include <arch.h>
@@ -20,6 +20,8 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 	//被访问或修改的内存地址
 	__asm__ __volatile__("movl %%cr2, %0" : "=r"( addr ) );
 	space = MmGetCurrentSpace();
+	if( space->SpaceId )
+		PERROR("Pagefault at 0x%X: code:%x", addr, err_code);
 	//stop scheduling, 为什么不允许调度？
 	TmSaveScheduleState(state);
 	//Enable IRQ
@@ -39,12 +41,11 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 				return 0;
 			}
 			// space==NULL表示地址空间尚未初始化，此时无需检查边界
-			if( space==NULL || MmIsKernelMemoryAllocated( addr ) ||
-				(addr>=ALLSPACES_PAGEDIR_BEG && addr<ALLSPACES_PAGEDIR_END) ){//是否允许？
+			if( addr==0xC0400004 || MmIsKernelMemoryAllocated( addr )  ){//是否允许？
 				int ret;
 				//末位清零，可以用&优化
 				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
-				ret = MmAcquirePhysicalPage( KernelPageDirectory, addr, 
+				ret = MmAcquirePhysicalPage( space, addr, 
 					PAGE_ATTR_ALLOCATED|PAGE_ATTR_WRITE, MAP_ATTRIBUTE );
 				TmRestoreScheduleState(state);
 				if( ret != 0 ){
@@ -58,7 +59,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			if( MmIsUserMemoryAllocated( space, addr ) ){	//
 				int ret;
 				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
-				ret = MmAcquirePhysicalPage( space->PageDirectory, addr, 
+				ret = MmAcquirePhysicalPage( space, addr, 
 					PAGE_ATTR_ALLOCATED|PAGE_ATTR_WRITE, MAP_ATTRIBUTE );
 				TmRestoreScheduleState(state);
 				return 1;
@@ -75,7 +76,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 			// 分配物理页面
 			uint phys_addr, temp_addr;
-			phys_addr= ArGetPhysicalPage();
+			phys_addr= MmGetPhysicalPage();
 			if( !phys_addr ){
 				TmRestoreScheduleState(state);
 				KERROR("##no page for allocation.");
@@ -87,7 +88,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			RtlCopyMemory32( (void*)temp_addr, (void*)addr, PAGE_SIZE>>2 );
 			ArLocalRestoreIrq( eflags );
 			//映射到分配的物理地址去。
-			ArMapOnePage( space->PageDirectory, addr, phys_addr, 
+			ArMapOnePage( &space->PageDirectory, addr, phys_addr, 
 				PAGE_ATTR_WRITE | PAGE_ATTR_USER, MAP_ADDRESS|MAP_ATTRIBUTE );
 			TmRestoreScheduleState(state);
 			return 1;

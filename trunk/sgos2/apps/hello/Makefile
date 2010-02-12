@@ -6,28 +6,26 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = hello
-LDFLAGS += ../../crt/crt.a
-LDFLAGS += ../libc/libc.dll ../system/system.dll
+LDFLAGS +=  -e_entry
 
-CXX = g++ $(CXXFLAGS)
+CXX = gcc $(CXXFLAGS)
 LD = ld $(LDFLAGS)
 OD = objdump $(ODFLAGS)
 LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
-OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp))
+OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c))
 
-all: $(PROGRAM).run
+all: $(PROGRAM).exe
 
-$(PROGRAM).run: $(OBJECTS)
+$(PROGRAM).exe: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$(PROGRAM).exe
 	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
-	$(LD2) $(PROGRAM).exe $@
 	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
-.cpp.o:
+.c.o:
 	$(CXX) -c -o $@ $<
 
 clean:

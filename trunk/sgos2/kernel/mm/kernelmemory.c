@@ -14,8 +14,8 @@ allocator_t km_block;
 void MmInitializeKernelMemoryPool()
 {
 	mm_init_block( &km_block, 
-		0xC0400000,			//address
-		0xE0000000-0xC0400000		//size
+		KERNEL_MEMORY_BEG,			//address
+		KERNEL_MEMORY_END - KERNEL_MEMORY_BEG	//size
 		);
 }
 

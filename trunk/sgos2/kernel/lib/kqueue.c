@@ -3,7 +3,7 @@
  *
  *  A Loop Queue
  *
- *  Copyright (C) 2008  Huang Guan
+ *  Copyright (C) 2008  Xiaoxia
  *
  *  2008-7-12 Created.
  *  2009-8-20 Ported for SGOS2

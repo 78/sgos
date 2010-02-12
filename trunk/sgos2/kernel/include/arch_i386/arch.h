@@ -25,16 +25,17 @@
 #define GD_TSS_INDEX	5
 #define GD_TIB_INDEX	7
 
-#define PAGE_SIZE	4096
+#define PAGE_SIZE	KB(4)
 #define PAGE_SIZE_BITS	12
 #define PAGE_ALIGN(a)	((a&0xFFF)?((a&0xFFFFF000)+0x1000):a)
 #define KERNEL_BASE	0xC0000000
-#define ALLSPACES_PAGEDIR_BEG	0xE0000000
-#define ALLSPACES_PAGEDIR_END	0xE0400000
-#define SPACE_PAGETABLE_BEG	0xBFC00000
+#define KERNEL_MEMORY_BEG	( KERNEL_BASE+ MB(4) )
+#define KERNEL_MEMORY_END	0xE0000000
+#define GLOBAL_MEMORY_BEG	KERNEL_MEMORY_END
+#define GLOBAL_MEMORY_END	( GLOBAL_MEMORY_BEG + MB(4) )
 
-#define IS_KERNEL_MEMORY(addr) ( addr >= KERNEL_BASE && addr < ALLSPACES_PAGEDIR_END )
-#define IS_USER_MEMORY(addr) ( addr <= SPACE_PAGETABLE_BEG )
+#define IS_KERNEL_MEMORY(addr) ( addr >= KERNEL_BASE )
+#define IS_USER_MEMORY(addr) ( addr < KERNEL_BASE )
 
 #define GET_STACK_POINTER(stk) __asm__ __volatile__("movl %%esp, %%eax" :"=a"(stk):)
 #define SET_INTR_GATE(vector, handle) ArSetGate(vector, DA_386IGate, handle)
@@ -52,6 +53,7 @@ uint LINEAR_TO_FARPTR(size_t ptr);	//vm86.c
 #define EFLAG_IF	(1<<9)
 	
 struct KThread;
+struct KPageDirectory;
 // gdt 
 // segment
 typedef struct SEGMENT_DESC
@@ -195,28 +197,19 @@ int syscall_interrupt();
 //init
 int ArInitializeSystem();
 //page
-extern uint KernelPageDirectory;	//page dir for kernel
+extern struct KPageDirectory KernelPageDirectory;	//page dir for kernel
 int ArInitializePaging( uint size );
-void ArLoadPageDirectory(uint phys_addr);
-void ArDumpPhysicalPages();
-void ArFreePhysicalPage( uint addr );
-uint ArGetPhysicalPage();
+void ArLoadPageDirectory(struct KPageDirectory* dir);
 void ArFlushPageDirectory();
 void ArFlushPageTableEntry( uint virt_addr );
-uint ArVirtualToPhysicalAddress( uint virt_addr );
-uint ArLoadPageDirectoryTemporary(uint );
-void ArInitializePageDirectory( uint virt_addr );
+void ArInitializePageDirectory( struct KPageDirectory* dir );
 //map
 uint ArMapTemporaryPage( uint phys_addr );
-void ArMapOnePage( uint dir, uint virt_addr, uint phys_addr, uint attr, uint flag );
-void ArUnmapOnePage( uint dir, uint virt_addr );
-void ArMapMultiplePages( uint dir, uint virt_addr, uint phys_addr, uint size, uint attr, uint flag );
-void ArUnmapMultiplePages( uint dir, uint virt_addr, uint size );
-int ArQueryPageInformation( uint dir, uint virt_addr, uint* phys_addr, uint *attr );
-//dir
-uint ArAllocatePageDirecotry();
-void ArFreePageDirectory(uint addr);
-void ArInitializePageDirectoryManagement();
+void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, uint attr, uint flag );
+void ArUnmapOnePage( struct KPageDirectory* dir, uint virt_addr );
+void ArMapMultiplePages( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, uint size, uint attr, uint flag );
+void ArUnmapMultiplePages( struct KPageDirectory* dir, uint virt_addr, uint size );
+int ArQueryPageInformation( struct KPageDirectory* dir, uint virt_addr, uint* phys_addr, uint *attr );
 //rtc
 void ArStartRealTimeClock();
 //cpu

@@ -1,5 +1,5 @@
 /*
- * Huang Guan
+ * Xiaoxia
  * 090803
  */
 
@@ -20,7 +20,7 @@ PAGE_ATTR_USER=					0x04
 PDE_ADDR=				0x00300000
 PTE_ADDR=				0x00301000
 MAP_PAGE_NUM=				1024
-K_STACK_ADDR=				0x00303000
+K_STACK_ADDR=				0x00303000 + K_VIR_ADDR
 
 ;//multiboot defines
 MULTIBOOT_PAGE_ALIGN=	(1 << 0)	;//modules are page aligned

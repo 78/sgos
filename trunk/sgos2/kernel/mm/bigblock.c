@@ -3,7 +3,7 @@
  *
  *  Memory allocation management (The second version)
  *
- *  Huang Guan  2009-8-16 Created.
+ *  Xiaoxia  2009-8-16 Created.
  *  gdxxhg@gmail.com
  *
  *  Description: 这个文件写得很烂，是从allocator改过来的。因为用户空间大块内存分配的比较少，频繁的小块分配

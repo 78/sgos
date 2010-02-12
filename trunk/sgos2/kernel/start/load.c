@@ -6,6 +6,7 @@
 #include <tm.h>
 #include <kd.h>
 #include <mm.h>
+#include <ke.h>
 
 //加载系统服务
 /*
@@ -20,7 +21,7 @@ static void start_service()
 		//根据环境信息加载程序。
 	}else if( space->module_addr ){
 		//根据内存地址加载
-		if( loader_process( space, space->name, (uchar*)space->module_addr, 
+		if( loader_process( space, space->name, (t_8*)space->module_addr, 
 			0, &mod ) < 0 ){
 			PERROR("##failed to load module %s", space->name );
 		}
@@ -56,18 +57,51 @@ static void start_service()
 }
 */
 
+// 内核下创建一个服务
+int KeCreateBaseService(const char* srvName, size_t addr, size_t siz )
+{
+	const char* ext;
+	int ret;
+	//check file extension
+	for( ext=srvName; *ext && *ext!='.'; ext++ )
+		;
+	if( *ext ){
+		if( ext[1]=='e' && ext[2]=='x' && ext[3]=='e' ){	//exe
+			//it's a PE Executable
+			KSpace* space;
+			size_t entry;
+			//创建地址空间
+			KdPrintf("Found Pe Executable: %s\n", srvName );
+			space = MmCreateSpace( MmGetCurrentSpace() );
+			if( (ret=KeLoadPeExecutable( space, addr, siz, &entry )) != 0 ){
+				PERROR("Load failed: %s, ret=%d\n", srvName, ret );
+				return ret;
+			}
+			KThread* srvThread;
+			srvThread = TmCreateThread( space, entry, USER_THREAD );
+			TmResumeThread( srvThread );
+		}else if( ext[1]=='c' && ext[2]=='o' && ext[3]=='m' ){//16位文件,BIOSCALL所需
+			//映射前1MB
+			KdPrintf("Installed bioscall service program at 0x%X\n", 0x10100 );
+			MmAllocateUserMemoryAddress(MmGetCurrentSpace(), 0x0, PAGE_SIZE, PAGE_ATTR_WRITE, ALLOC_VIRTUAL);
+			ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, 0, 
+				0, 1<<20, PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE, MAP_ADDRESS|MAP_ATTRIBUTE );
+			RtlCopyMemory( (void*)0x10100, (void*)addr, siz );
+		}
+	}
+	return 0;
+}
+
 //加载基础服务
 extern multiboot_info_t* mbi;
 void KeLoadBaseServices()
 {
 	KdPrintf("KeLoadBaseServices.\n");
-/*
 	//check module   内核需要加载的基本服务信息   
 	if (CHECK_FLAG (mbi->flags, 3)) 
 	{ 
 		module_t *mod; 
 		int i; 
-		char* ext;
 		mbi->mods_addr += KERNEL_BASE;	//修正地址
 		for (i = 0, mod = (module_t *) mbi->mods_addr; 
 			i < mbi->mods_count; i++, mod ++) {
@@ -75,39 +109,10 @@ void KeLoadBaseServices()
 			mod->mod_start += KERNEL_BASE;
 			mod->mod_end += KERNEL_BASE;
 			mod->string += KERNEL_BASE;
-			//check file extension
-			ext = strrchr( (char*)mod->string, '.' );
-			if( ext ){
-				if( strcmp(ext,".bxm")==0 ){	//动态链接库
-					//load it and share it 
-					if( loader_process( MmGetCurrentSpace(), (char*)mod->string, (uchar*)mod->mod_start, 
-						1, NULL ) < 0 ){
-						PERROR("##failed to load module %s", mod->string );
-					}
-				}else if( strcmp(ext,".sym")==0 ){//符号表
-					debug_set_symbol( mod->mod_start, mod->mod_end );
-				}else if( strcmp(ext,".run")==0 ){//执行文件
-					KSpace* space;
-					KThread* thr;
-					//创建地址空间
-					space = MmCreateSpace( MmGetCurrentSpace() );
-					space->module_addr = mod->mod_start;
-					space->module_size = mod->mod_end - mod->mod_start;
-					strncpy( space->name, (char*)mod->string, PROCESS_NAME_LEN-1 );
-					//为该进程创建一个内核线程来加载模块
-					thr = TmCreateThread( space, (uint)start_service, KERNEL_THREAD );
-					TmResumeThread( thr );
-				}else if( strcmp(ext,".com")==0 ){//16位文件,BIOSCALL所需
-					//映射前1MB
-					ArMapMultiplePages( MmGetCurrentSpace()->PageDirectory, 0, 0, 1<<20, PAGE_ATTR_USER|PAGE_ATTR_WRITE );
-					RtlCopyMemory( (void*)0x10100, (void*)mod->mod_start, mod->mod_end-mod->mod_start );
-				}
-			}
+			KeCreateBaseService( (char*)mod->string, mod->mod_start, 
+				mod->mod_end-mod->mod_start );
 		}
 	}
-	//加载
-	KdPrintf("boot_dev: %x  cmdline: %s\n", mbi->boot_device, mbi->cmdline );
-	*/
 	//加载结束。
 	TmTerminateThread( TmGetCurrentThread(), 0 );
 }

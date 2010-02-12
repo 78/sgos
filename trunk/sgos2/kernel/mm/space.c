@@ -7,7 +7,7 @@
 #include <rtl.h>
 
 KSpace* FirstSpace = NULL;		//初始地址空间
-extern uint KernelPageDirectory;	//内核进程页目录
+extern KPageDirectory KernelPageDirectory;	//内核进程页目录
 KSpace* CurrentSpace = NULL;		//当前地址空间
 static int spaceId = 0;		//空间ID计数器
 
@@ -35,7 +35,7 @@ KSpace* MmGetSpaceById( uint spid )
 }
 
 //设置地址空间基本信息
-static void InitializeSpaceBasicInformation( KSpace* space )
+void MmInitializeSpaceBasicInformation( KSpace* space )
 {
 	KMemoryInformation* mem_info;
 	space->SpaceId = GenerateSpaceId();
@@ -52,23 +52,15 @@ static void InitializeSpaceBasicInformation( KSpace* space )
 //第一个地址空间初始化
 void MmInitializeSpaceManagement()
 {
-	KThread* init_thr;
+	static KSpace init_space;
 	spaceId = 0;
-	FirstSpace = (KSpace*)MmAllocateKernelMemory( sizeof(KSpace) );
+	FirstSpace = (KSpace*)&init_space;
 	RtlZeroMemory( FirstSpace, sizeof(KSpace) );
 	FirstSpace->Magic = SPACE_MAGIC;
 	// use kernel page directory
 	FirstSpace->PageDirectory = KernelPageDirectory;
-	// restore basic information
-	InitializeSpaceBasicInformation( FirstSpace );
 	// set as current process
 	CurrentSpace = FirstSpace;
-	// create an init thread for the init process
-	init_thr = TmCreateThread( CurrentSpace, (uint)MmInitializeSpaceManagement, KERNEL_THREAD ); //用process_init来标记是内核线程
-	// set run time because no scheduler can be used at the present
-	init_thr->ScheduleInformation.clock = 10;
-	// set ready state!!
-	TmSetThreadState( init_thr, TS_READY );
 }
 
 //返回当前地址空间
@@ -96,11 +88,20 @@ KSpace* MmCreateSpace( KSpace* parent )
 	// 标识
 	space->Magic = SPACE_MAGIC;
 	// allocate a PageDirectory
-	space->PageDirectory = ArAllocatePageDirecotry();
+	if( (space->PageDirectory.VirtualAddressInSpace0 = 
+		(size_t)MmAllocateUserMemory( FirstSpace, PAGE_SIZE, PAGE_ATTR_WRITE, 0) )==0 ){
+		MmFreeKernelMemory( space );
+		return NULL;
+	}
+	if( ArQueryPageInformation( &FirstSpace->PageDirectory, 
+		space->PageDirectory.VirtualAddressInSpace0, &space->PageDirectory.PhysicalAddress, NULL )!=0 )
+	{
+		PERROR("ArQueryPageInformation failed. no physical page.");
+	}
 	// 映射内核空间 
-	ArInitializePageDirectory( space->PageDirectory ); //arch/*/page.c
+	ArInitializePageDirectory( &space->PageDirectory ); //arch/*/page.c
 	// restore basic information
-	InitializeSpaceBasicInformation( space );
+	MmInitializeSpaceBasicInformation( space );
 	// 设置用户
 	space->UserId = parent->UserId;
 	// 设置链表
