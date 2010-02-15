@@ -9,7 +9,7 @@
 KSpace* FirstSpace = NULL;		//初始地址空间
 extern KPageDirectory KernelPageDirectory;	//内核进程页目录
 KSpace* CurrentSpace = NULL;		//当前地址空间
-static int spaceId = 0;		//空间ID计数器
+static unsigned short spaceId = 0;		//空间ID计数器
 
 // 产生一个地址空间的ID
 static int GenerateSpaceId()
@@ -120,7 +120,7 @@ KSpace* MmCreateSpace( KSpace* parent )
 //销毁空间
 int MmDestroySpace( KSpace* space )
 {
-	KeBugCheck("not implemented.");
+	PERROR("MmDestroySpace not implemented.");
 	return 0;
 }
 

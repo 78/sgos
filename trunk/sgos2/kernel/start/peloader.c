@@ -16,20 +16,24 @@ static int CopyPeSegments( KSpace *space, FILEHDR* coffhdr, SECHDR* sechdr, size
 	int i;
 	for( i=0; i<coffhdr->usNumSec; i++ ){
 		size_t load_addr = sechdr[i].ulVAddr + base, virt_size = PAGE_ALIGN(sechdr[i].ulSize);
+		if( virt_size == 0 )//bss size could be zero!
+			virt_size = PAGE_SIZE;
 		uint attr = PAGE_ATTR_WRITE;
-		void* ptr = MmAllocateUserMemoryAddress(space, load_addr, virt_size, attr, 0 );
+		void* ptr = MmAllocateUserMemoryAddress(space, load_addr, virt_size, attr, ALLOC_ZERO );
 		if( ptr == NULL ){
-			PERROR("Failed to allocate memory at 0x%X.", load_addr );
+			PERROR("Failed to allocate memory at 0x%X. SpaceId:%X", load_addr, space->SpaceId );
 			return -5;
 		}
-		if( MmWriteUserMemory(space, load_addr, (void*)(addr+sechdr[i].ulSecOffset), 
-			sechdr[i].ulSize ) != sechdr[i].ulSize ){
-			PERROR("Failed to write allocated mem at 0x%X.", load_addr );
-			return -6;
-		}
-		if( sechdr[i].ulFlags&STYP_TEXT) {
-			attr &= ~PAGE_ATTR_WRITE;
-			MmSetUserMemoryAttribute( space, load_addr, virt_size, PAGE_ATTR_PRESENT|attr );
+		if( sechdr[i].ulSize > 0 ){
+			if( MmWriteUserMemory(space, load_addr, (void*)(addr+sechdr[i].ulSecOffset), 
+				sechdr[i].ulSize ) != sechdr[i].ulSize ){
+				PERROR("Failed to write allocated mem at 0x%X.", load_addr );
+				return -6;
+			}
+			if( sechdr[i].ulFlags&STYP_TEXT) {
+				attr &= ~PAGE_ATTR_WRITE;
+				MmSetUserMemoryAttribute( space, load_addr, virt_size, PAGE_ATTR_PRESENT|attr );
+			}
 		}
 	}
 	return 0;

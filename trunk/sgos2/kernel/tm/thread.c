@@ -8,7 +8,7 @@
 #include <rtl.h>
 
 // useless at the present
-static int threadId = 1;
+static unsigned short threadId = 1;
 
 // thread management.
 void TmInitializeThreadManagement()
@@ -17,12 +17,12 @@ void TmInitializeThreadManagement()
 }
 
 // just for fun :-)
-static uint generateThreadId()
+static uint GenerateThreadId(KSpace* space)
 {
 	uint tid = threadId;
 	if( (++threadId)%4 == 0 )
 		++threadId;
-	return tid;
+	return (space->SpaceId<<16) | tid;
 }
 
 //初始化用户态线程信息块
@@ -60,8 +60,10 @@ KThread* TmGetThreadById( uint tid )
 	thr = TmGetCurrentThread();
 	if( thr->ThreadId == tid )
 		return thr;
-	//否则在当前地址空间中查找
-	space = MmGetCurrentSpace();
+	//否则在地址空间中查找
+	space = MmGetSpaceById(tid>>16);
+	if( space == NULL )
+		return NULL;
 	//是否需要禁中断呢？？
 	ArLocalSaveIrq(flags);
 	for( thr=space->FirstThread; thr; thr=thr->next ){
@@ -70,16 +72,8 @@ KThread* TmGetThreadById( uint tid )
 			return thr;
 		}
 	}
-	//搜索所有地址空间
-	for( space=MmGetSpaceById(0)->child; space; space=space->next ){
-		for( thr=space->FirstThread; thr; thr=thr->next ){
-			if( thr->ThreadId == tid ){
-				ArLocalRestoreIrq(flags);
-				return thr;
-			}
-		}
-	}
 	ArLocalRestoreIrq(flags);
+	KdPrintf("Thread %x not found.\n", tid );
 	return NULL;
 }
 
@@ -107,7 +101,7 @@ KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
 	//调度信息
 	sched = &thr->ScheduleInformation;
 	//线程基本信息
-	thr->ThreadId = generateThreadId();
+	thr->ThreadId = GenerateThreadId(space);
 	thr->Space = space;
 	thr->ThreadState = TS_INIT;
 	thr->SchedulePriority = PRI_NORMAL;
@@ -152,7 +146,12 @@ int TmTerminateThread( KThread* thr, uint code )
 {
 	KSpace* space;
 	uint flags;
-	space = MmGetCurrentSpace();
+	if( thr == NULL ){
+		PERROR("thr == NULL");
+		return -ERR_WRONGARG;
+	}
+	KdPrintf("Thread %x exited with code: %d\n", thr->ThreadId, code );
+	space = thr->Space;
 	//如果线程睡眠了，怎么办？
 	down( &thr->Semaphore );
 	//线程退出码

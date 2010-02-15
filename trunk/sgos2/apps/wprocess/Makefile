@@ -5,7 +5,7 @@ LDFLAGS =
 ODFLAGS = -S
 
 #here defines the program information
-PROGRAM = hello
+PROGRAM = wprocess
 LDFLAGS +=  -e_ServiceEntry
 
 CXX = gcc $(CXXFLAGS)
@@ -15,8 +15,7 @@ LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
-OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c)) \
-	 ../api/api.o
+OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c))
 
 all: $(PROGRAM).exe
 

@@ -20,7 +20,7 @@ void MmInitializeGlobalMemoryPool()
 }
 
 // 分配全局空间内存
-void*	MmAllocateGlobalMemory( size_t siz, uint pattr, uint v)
+void*	MmAllocateGlobalMemory( size_t siz, uint pattr, uint flag)
 {
 	void *ptr;
 	int ret;
@@ -28,13 +28,16 @@ void*	MmAllocateGlobalMemory( size_t siz, uint pattr, uint v)
 	ptr = bb_alloc( &gb_block, siz );
 	if( ptr==NULL )
 		return NULL;
-	if( !v ){ //是否立刻分配物理地址
+	if( !(flag&ALLOC_VIRTUAL) ){ //是否立刻分配物理地址
 		ret = MmAcquireMultiplePhysicalPages( MmGetCurrentSpace(), (size_t)ptr, 
 			siz, pattr|PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED, MAP_ATTRIBUTE );
 		if( ret<0 ){ 
 			MmFreeGlobalMemory(ptr);
 			return NULL;
 		}
+	}else{
+		ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, (size_t)ptr, 0, siz,
+			PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED|pattr, MAP_ADDRESS|MAP_ATTRIBUTE );
 	}
 	return ptr;
 }

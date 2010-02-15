@@ -16,6 +16,7 @@ void ArSaveMultibootInformation( size_t info_addr )
 
 //进一步设置x86保护模式
 #define SET_SYSTEM_GATE( vector, handle ) ArSetGate( vector, DA_386IGate | DA_DPL3, handle )
+extern int* SystemCallService;
 int ArInitializeSystem()
 {
 	//init i386
@@ -32,8 +33,7 @@ int ArInitializeSystem()
 	//vm86
 	ArInitializeVm86();
 	//设置软中断
-	extern void* SystemCallInterrupt;
-	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, (void*)SystemCallInterrupt );
+	SET_SYSTEM_GATE( SYSTEM_INTERRUPT, &SystemCallService );
 	//初始化fastcall
 	ArInitializeFastcall();
 	//Real time clock

@@ -24,6 +24,10 @@
 #define	MB(a) (a<<20)
 #define KB(a) (a<<10)
 
+#ifndef INFINITE
+#define INFINITE	(-1)
+#endif
+
 #ifndef NULL
 #define NULL			((void*)0)	//
 #endif
@@ -89,7 +93,7 @@ typedef struct _DIRECTORY_ENTRY{
 
 typedef unsigned int ThreadId_t;
 typedef unsigned int SpaceId_t;
-/*
+
 //进程信息块
 typedef struct ProcessInformation{
 	char			ProcessName[PROCESS_NAME_LEN];	//进程名称
@@ -104,7 +108,7 @@ typedef struct ProcessInformation{
 	char*			CommandLine;			//命令行
 	char*			EnvironmentViriables;		//环境变量
 }ProcessInformation;
-*/
+
 
 typedef struct SpaceInformation{
 	
@@ -135,9 +139,58 @@ typedef struct Message{
 	uint	ThreadId;	//send to who
 	time_t	Time;		//sendtime
 	uint	Command;	//
-	uint	Arguments[12];	//Parameters
+	uint	Arguments[11];	//Parameters
+	uint	Code;		//Result Code
 	void*	Data;		//pointer of the data page
 }Message;
+#define MSG_KEEP			0x40000000
+//System Message
+#define	SystemId			0
+#define System_GetSystemInformation	0x00000001
+#define System_ExitThread		0x00001001
+#define System_TerminateThread		0x00001002
+#define System_GetCurrentThreadId	0x00001003
+#define System_CreateThread		0x00001004
+#define System_SleepThread		0x00001005
+#define System_WakeupThread		0x00001006
+#define System_ResumeThread		0x00001007
+#define System_SuspendThread		0x00001008
+#define System_JoinThread		0x00001009
+#define System_ExitSpace		0x00002001
+#define System_TerminateSpace		0x00002002
+#define System_GetCurrentSpaceId	0x00002003
+#define System_CreateSpace		0x00002004
+#define System_DestroySpace		0x00002005
+#define System_AllocateMemory		0x00002006
+#define System_FreeMemory		0x00002007
+#define System_WriteMemory		0x00002008
+#define System_ReadMemory		0x00002009
+#define System_QueryMemory		0x0000200A
+#define System_SetMemoryAttribute	0x0000200B
+#define System_AllocateGlobalMemory	0x0000200C
+#define System_FreeGlobalMemory		0x0000200D
+#define System_AcquirePhysicalPages	0x0000200E
+#define System_ReleasePhysicalPages	0x0000200F
+#define System_MapMemory		0x00002010
+
+// Service Manager
+#define SM_INFORMATION_SIZE	KB(4)
+#define SERVICE_NAME_LENGTH	20
+#define THREAD_TERM_EVENT	1
+#define PROCESS_TERM_EVENT	2
+#define SERVICE_TERM_EVENT	4
+
+#define Service_Notify			0x01
+#define Service_Remove			0x02
+#define Service_LookupById		0x03
+#define Service_LookupByName		0x04
+
+typedef struct ServiceInformation{
+	uint	ServiceId;
+	uint	EventFlag;
+	uint	ThreadId;
+	char	ServiceName[SERVICE_NAME_LENGTH];
+}ServiceInformation;
 
 // Intel x86 Cpu Registers
 typedef struct ThreadContext{
@@ -146,15 +199,17 @@ typedef struct ThreadContext{
 	t_32			eip, cs, eflags, esp, ss;
 }ThreadContext;
 
-//API 
-#define	MSG_SEND_TO_ALL		0
-#define MSG_KEEP		0x40000000
 
 #define ALLOC_WITH_ADDR		1
 
 #define MAP_ADDRESS		2
 #define MAP_ATTRIBUTE		4
+#define MAP_ZERO		8
 #define ALLOC_VIRTUAL		1
+#define ALLOC_ZERO		2
+
+#define MEMORY_ATTR_WRITE	(1<<1)	//页面可写
+#define MEMORY_ATTR_USER	(1<<2)	//页面为用户级
 
 //系统错误号
 #define ERR_NOMEM		1	//No memory
@@ -169,6 +224,7 @@ typedef struct ThreadContext{
 #define ERR_INVALID		10	//Invalid device
 #define ERR_IO			11	//IO error
 #define ERR_NOBUF		12	//Buffer too small
+#define ERR_TIMEOUT		13	//Timeout
 
 //线程优先级
 #define PRI_REALTIME		1	//单线程独占模式

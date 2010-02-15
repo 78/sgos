@@ -88,6 +88,11 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 	//设置新的值
 	if( flag&MAP_ADDRESS ){
 		te->a.physicalAddress = phys_addr>>12;
+		//if we map a page , we want it can be accessed, so it should be present!
+		if( phys_addr!=0 && (!te->a.present) && !(attr&PAGE_ATTR_PRESENT) )
+			te->a.present = 1;
+	}else{
+		phys_addr = te->a.physicalAddress<<12; //for map_zero
 	}
 	if( flag&MAP_ATTRIBUTE ){
 		if( attr&PAGE_ATTR_USER )
@@ -115,6 +120,11 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 			te->a.share = 1;
 		else
 			te->a.share = 0;
+	}
+	if( flag&MAP_ZERO ){
+		void* p = (void*)ArMapTemporaryPage( phys_addr );
+		if( p==NULL )
+			RtlZeroMemory( p, PAGE_SIZE );
 	}
 	ArLocalRestoreIrq( eflags );
 	if( &MmGetCurrentSpace()->PageDirectory == dir )

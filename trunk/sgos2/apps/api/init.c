@@ -1,9 +1,9 @@
-
+﻿
 #include <sgos.h>
 #include <api.h>
 
 //从fs里获得用户态线程信息块
-THREAD_INFO* thread_info()
+THREAD_INFO* GetThreadInformation()
 {
 	size_t addr;
 	__asm__ __volatile__ (
@@ -12,9 +12,9 @@ THREAD_INFO* thread_info()
 	return (THREAD_INFO*) addr; \
 }
 
-PROCESS_INFO* process_info()
+PROCESS_INFO* GetProcessInformation()
 {
-	return thread_info()->process_info;
+	return GetThreadInformation()->ProcessInformation;
 }
 
 //进程主线程用户态入口点
@@ -34,8 +34,8 @@ void __start_process()
 		extern int __do_execute( PROCESS_INFO* pi );
 		int ret = __do_execute( pi );
 		if( ret < 0 )
-			sys_thread_exit(ret);
+			Api_thread_exit(ret);
 		func = (void*)pi->entry_address;
 	}
-	sys_thread_exit(func());
+	Api_thread_exit(func());
 }
