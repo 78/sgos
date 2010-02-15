@@ -40,6 +40,8 @@ int	IpcSend(
 	Message*	usermsg, 	//消息正文
 	uint		flag		//发送参数
 );
+//Quick way of IpcSend
+int IpcQuickSend( uint tid, uint cmd, uint arg1, uint arg2 );
 
 //发送后，等待对方处理完毕，超时返回负值
 int	IpcCall( 

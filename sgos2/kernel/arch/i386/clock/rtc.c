@@ -8,7 +8,8 @@
 #define BCD_TO_HEX(bcd)	(bcd&0xf)+((bcd>>4)&0xf)*10
 
 //global variables, they may be accessed by another file
-unsigned rtc_time;      //unit: ms
+unsigned rtc_time;      //unit: clock
+unsigned rtc_millisecond; //unit: ms
 unsigned rtc_second;    //unit: s
 
 //设置时钟频率
@@ -20,10 +21,16 @@ void ArSetRealTimeClockFrequency(unsigned freq)
 	ArOutByte(0x40, div>>8);
 }
 
+unsigned ArGetMilliSecond()
+{
+	return rtc_millisecond;
+}
+
 //时钟中断
 static void rtc_interrupt(const I386_REGISTERS* r)
 {
 	rtc_time ++;
+	rtc_millisecond += 1000/RTC_FREQUENCY ;
 	//屏蔽时钟中断
 	ArSetIrqMask( RTC_INTERRUPT, 0 );
 	//EOI
@@ -31,7 +38,7 @@ static void rtc_interrupt(const I386_REGISTERS* r)
 	//开启中断 
 	ArLocalEnableIrq();
 	//更新时间
-	if( !(rtc_time % RTC_FREQUENCY) )
+	if( (rtc_time % RTC_FREQUENCY)==0 )
 		rtc_second ++;
 	//调度时钟
 	TmIncreaseTime();

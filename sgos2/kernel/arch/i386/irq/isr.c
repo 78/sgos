@@ -158,8 +158,8 @@ void ArHandleIsr(const I386_REGISTERS *r)
 		if (!handler ||
 			!handler(r->err_code, r) ){
 			KdPrintf("## Unhandled Exception ##\t"
-				"Description: %s\tCode: %d\n", 
-				exception_msg[ r->int_no ], r->err_code );
+				"%s\tCode: %d\tcr3:%x\n", 
+				exception_msg[ r->int_no ], r->err_code, MmGetCurrentSpace()->PageDirectory.PhysicalAddress );
 			ArDumpRegisters( r );
 			KERROR("Termiating %s[%d:%d]", "Thread", MmGetCurrentSpace()->SpaceId, TmGetCurrentThread()->ThreadId );
 		}

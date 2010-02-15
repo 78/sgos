@@ -103,9 +103,9 @@ void KeResumeStart()
 {
 	KThread* thrLoad, *thrAlive;
 	extern void KeLoadBaseServices();
-	//加载
 	KdPrintf("boot_dev: %x  cmdline: %s\n", mbi->boot_device, KERNEL_BASE+mbi->cmdline );
-	KdPrintf("Starting Services ...\n");
+	KeStartSystemThread();
+	//Load services
 	thrLoad = TmCreateThread( MmGetCurrentSpace(), (size_t)KeLoadBaseServices, KERNEL_THREAD );
 	TmResumeThread( thrLoad );
 	thrAlive = TmCreateThread( MmGetCurrentSpace(), (size_t)KeKeepAlive, KERNEL_THREAD );

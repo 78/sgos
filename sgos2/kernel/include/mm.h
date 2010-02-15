@@ -41,7 +41,7 @@ typedef struct KPageDirectory{
 
 // 内核地址空间结构体。
 typedef struct KSpace{
-	int				SpaceId;		//地址空间唯一ID
+	uint				SpaceId;		//地址空间唯一ID
 	uint				UserId;			//用户
 	uint				Magic;			//地址空间标识
 	struct KSpace*			prev, *next;		//地址空间链表，兄弟关系
@@ -79,7 +79,7 @@ void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint p
 int	MmIsUserMemoryAllocated(KSpace*, size_t addr );
 void	MmFreeUserMemory(KSpace*, void* p);
 int	MmWriteUserMemory( KSpace* space, size_t addr, void* data, size_t siz );
-int	MmWriteUserMemory( KSpace* space, size_t addr, void* data, size_t siz );
+int	MmReadUserMemory( KSpace* space, size_t addr, void* data, size_t siz );
 int	MmSetUserMemoryAttribute( KSpace* space, size_t addr, size_t siz, uint attr );
 
 //global space memory allocator

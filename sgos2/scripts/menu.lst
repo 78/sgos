@@ -21,6 +21,7 @@ title SGOS2
 #	module /sgos2/system.bxm
 	module /sgos2/vm86.com
 	module /sgos2/hello.exe
+	module /sgos2/servicemanager.exe
 #	module /sgos2/vfs.bxm
 #	module /sgos2/vfs.run
 #	module /sgos2/hd.run

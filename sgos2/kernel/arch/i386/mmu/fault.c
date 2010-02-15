@@ -56,7 +56,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 				PERROR("trying to write the unallocated KERNEL memory!!");
 			}
 		}else if( IS_USER_MEMORY( addr ) ){ //用户态
-			if( MmIsUserMemoryAllocated( space, addr ) ){	//
+			if( 0 && MmIsUserMemoryAllocated( space, addr ) ){	//
 				int ret;
 				addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 				ret = MmAcquirePhysicalPage( space, addr, 
@@ -70,7 +70,7 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 			PERROR("##write critical memory at 0x%X.", addr);
 		}
 	}else if(err_code&PAGE_ATTR_WRITE){//写了只读页面
-		if(err_code&PAGE_ATTR_USER){
+		if(0 && err_code&PAGE_ATTR_USER){
 			uint eflags;
 			//Copy On Write
 			addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
@@ -95,6 +95,9 @@ int pagefault_handler( int err_code, I386_REGISTERS* r )
 		}else{
 			PERROR("##kernel try to access read only page at 0x%X.", addr );
 		}
+	}else if(err_code&PAGE_ATTR_USER){
+		//
+		PERROR("##user try to access kernel memory.");
 	}
 	TmRestoreScheduleState(state);
 	//未能处理，则BSOD

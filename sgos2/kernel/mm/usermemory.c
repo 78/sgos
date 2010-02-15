@@ -89,7 +89,7 @@ int	MmSetUserMemoryAttribute( KSpace* space, size_t addr, size_t siz, uint attr 
 }
 
 // 分配指定地址的用户态空间内存
-void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint pattr, uint virtual)
+void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint pattr, uint flag)
 {
 	KMemoryInformation* info;
 	void *ptr;
@@ -115,21 +115,27 @@ void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint p
 		info->UserMemoryAllocated -= siz;
 		return NULL;
 	}
-	if( !virtual ){ //是否立刻分配物理地址
+	if( !(flag&ALLOC_VIRTUAL) ){ //是否立刻分配物理地址
+		uint mapFlag = MAP_ATTRIBUTE;
+		if( flag&ALLOC_ZERO )
+			mapFlag |= MAP_ZERO;
 		ret = MmAcquireMultiplePhysicalPages( space, (size_t)ptr, 
-			siz, pattr|PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED, MAP_ATTRIBUTE );
+			siz, pattr|PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED, mapFlag );
 		if( ret<0 ){ 
 			MmFreeUserMemory(space, ptr);
 			return NULL;
 		}
+	}else{
+		ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, (size_t)ptr, 0, siz,
+			PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED|pattr, MAP_ATTRIBUTE );
 	}
 	return ptr;
 }
 
 // 分配用户态空间的内存
-void*	MmAllocateUserMemory(KSpace* space, size_t siz, uint attr, uint virtual)
+void*	MmAllocateUserMemory(KSpace* space, size_t siz, uint attr, uint flag)
 {
-	return MmAllocateUserMemoryAddress( space, 0, siz, attr, virtual );
+	return MmAllocateUserMemoryAddress( space, 0, siz, attr, flag );
 }
 
 // 释放用户空间的内存

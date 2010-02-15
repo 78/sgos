@@ -1,11 +1,11 @@
 ;//ported from SGOS1
 ;//System call
 .extern _SystemCallTable
-.global _SystemCallInterrupt
+.global _SystemCallService
 ;//系统调用返回值
 ret_val:.long	0
 ;//系统调用中断底层处理函数
-_SystemCallInterrupt:
+_SystemCallService:
 	;//这里开启中断应该没问题，
 	;//当硬件中断发生时，会保存线程在内核下的上下文。
 	sti

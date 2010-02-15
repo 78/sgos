@@ -54,7 +54,9 @@ int ArInitializePaging(uint mem_size)
 		dir_entry[i].v = MmGetPhysicalPage();
 		void* p = (void*)ArMapTemporaryPage( dir_entry[i].v );
 		RtlZeroMemory32( p, PAGE_SIZE );
-		dir_entry[i].a.write = dir_entry[i].a.present = 1;
+		dir_entry[i].a.write = 
+		dir_entry[i].a.user = 
+		dir_entry[i].a.present = 1;
 	}
 	// 内核页目录未分配的清0
 	RtlZeroMemory32( dir_entry, 768 );

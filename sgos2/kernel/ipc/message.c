@@ -36,6 +36,18 @@ void IpcDestroyThreadMessageQueue( struct KThread* thr )
 	RtlDestroyQueue( &thr->MessageQueue );
 }
 
+// Quick way to send a message
+int IpcQuickSend( uint tid, uint cmd, uint arg1, uint arg2 )
+{
+	Message msg;
+	RtlZeroMemory( &msg, sizeof(Message) );
+	msg.ThreadId = tid;
+	msg.Command = cmd;
+	msg.Arguments[0] = arg1;
+	msg.Arguments[1] = arg2;
+	return IpcSend( &msg, 0 );
+}
+
 // Send a message to another thread.
 //发送后返回
 int	IpcSend( 
@@ -45,6 +57,8 @@ int	IpcSend(
 	KThread* thr_dest;
 	KMessage* kmsg;
 	thr_dest = TmGetThreadById( usermsg->ThreadId );
+	if( thr_dest == NULL )
+		return -ERR_WRONGARG;
 	down( &thr_dest->Semaphore );
 	// 在睡眠醒来后，目的线程可能已经终止，所以要检查状态 
 	if( thr_dest->ThreadState == TS_DEAD || thr_dest->ThreadState == TS_INIT ){
@@ -77,7 +91,7 @@ int	IpcCall(
 	int		timeout		//超时值
 ){
 	int ret = IpcSend( usermsg, flag );
-	if( ret != 0 )
+	if( ret!=0 || timeout==0 )
 		return ret;
 	TmSleepThread( timeout );
 	//determine if we have got the reply message
@@ -113,6 +127,8 @@ int	IpcReceive(
 	KQueueNode* nod;
 	uint flags;
 	int ret;
+	uint startSleepTime = ArGetMilliSecond();
+	thr_src = NULL;
 	if( usermsg->ThreadId != 0 )
 		thr_src = (KThread*)TmGetThreadById( usermsg->ThreadId );
 	thr_cur = TmGetCurrentThread();
@@ -127,10 +143,18 @@ _recv_search:
 	}
 	if( !kmsg ){
 		if( timeout!=0 ){
+			int rest;
+			if( timeout!=INFINITE ){
+				rest = timeout - (ArGetMilliSecond()-startSleepTime);
+				if( rest < 0 ) //timeout happens
+					return ERR_TIMEOUT;
+			}else{
+				rest = INFINITE;
+			}
 			//禁止中断发生的理由: ???
 			ArLocalSaveIrq( flags );
 			up( &thr_cur->Semaphore );
-			TmSleepThread( timeout );
+			TmSleepThread( rest );
 			ArLocalRestoreIrq( flags );
 			goto _recv_search;
 		}

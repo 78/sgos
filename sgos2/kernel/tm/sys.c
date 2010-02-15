@@ -21,57 +21,10 @@ void* SystemCallTable[] = {
 	//0-4
 	Api_Test,
 	Api_Print,
-	/*
-	sys_send,
-	sys_recv,
-	sys_virtual_alloc,
-	//5-9
-	sys_virtual_free,
-	sys_thread_exit,
-	sys_thread_create,
-	sys_thread_self,
-	sys_thread_detach,
-	//10-14
-	sys_thread_join,
-	sys_thread_wait,
-	sys_thread_suspend,
-	sys_thread_resume,
-	sys_thread_kill,
-	//15-19
-	sys_thread_set_priority,
-	sys_thread_get_priority, 
-	sys_thread_semget,
-	sys_thread_semop,
-	sys_thread_semctl,
-	//20-24
-	sys_process_create,
-	sys_process_kill,
-	sys_process_suspend,
-	sys_process_resume,
-	sys_process_self,
-	//25-29
-	sys_loader_open,
-	sys_loader_close,
-	sys_loader_symbol,
-	sys_namespace_create,
-	sys_namespace_delete,
-	//30-34
-	sys_namespace_match,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	//35-39
-	sys_iomap_get,
-	sys_iomap_set,
-	sys_irq_register,
-	sys_irq_unregister,
-	sys_vm_map,
-	//40-44
-	sys_bios_call,
-	*/
+	Api_Send,
+	Api_Receive,
+	Api_Reply,
 };
- 
 
 //返回计数
 uint Api_Test()
@@ -85,38 +38,33 @@ int Api_Print( const char* buf )
 {
 	return KdPrint( (char*)buf );
 }
-/* 
-//发送消息
-int sys_send( void* session, void* content, size_t len, uint flag )
+
+//Send a message
+int Api_Send( Message* msg, time_t timeout )
 {
-	KThread* dest;
-	if( !IS_USER_MEMORY((uint)content) || !IS_USER_MEMORY((uint)content+len) )
+	if( (size_t)msg + sizeof(Message) >= KERNEL_BASE )
 		return -ERR_WRONGARG;
-	dest = (KThread*)((session_t*)session)->thread;
-	if( !IS_THREAD(dest) )
-		return -ERR_WRONGARG;
-	return message_send( session, content, len, flag );
+	return IpcCall( msg, 0, timeout);
 }
 
-//接收消息
-int sys_recv( void* session, void* content, size_t* len, uint flag )
+//Receive a message
+int Api_Receive( Message* msg, time_t timeout )
 {
-	KThread* dest;
-	KSpace* space;
-	space = MmGetCurrentSpace();
-	if( !IS_WRITABLE(space, session, sizeof(session_t)) ||
-		!IS_WRITABLE(space, content, *len) || 
-		!IS_WRITABLE(space, len, sizeof(size_t)) ){
+	if( (size_t)msg + sizeof(Message) >= KERNEL_BASE )
 		return -ERR_WRONGARG;
-	}
-	dest = (KThread*)((session_t*)session)->thread;
-	if( dest && !IS_THREAD(dest) )
-		return -ERR_WRONGARG;
-	return message_recv( session, content, len, flag );
+	return IpcReceive( msg, 0, timeout );
 }
+
+int Api_Reply( Message* msg )
+{
+	PERROR("Not implemented.");
+	return -ERR_NOIMP;
+}
+
+/*
 
 //分配用户内存
-void* sys_virtual_alloc( size_t siz, size_t addr, uint flag )
+void* Api_virtual_alloc( size_t siz, size_t addr, uint flag )
 {
 	void* ptr;
 	if( flag & ALLOC_WITH_ADDR ){
@@ -128,13 +76,13 @@ void* sys_virtual_alloc( size_t siz, size_t addr, uint flag )
 }
 
 //释放内存
-void sys_virtual_free( void* p )
+void Api_virtual_free( void* p )
 {
 	MmFreeUserMemory( MmGetCurrentSpace(), p );
 }
 
 //退出线程
-void sys_thread_exit( int code )
+void Api_thread_exit( int code )
 {
 	//直接终止
 	KThread* thr;
@@ -148,7 +96,7 @@ void sys_thread_exit( int code )
 }
 
 //创建线程
-int sys_thread_create( size_t addr, uint* ret )
+int Api_thread_create( size_t addr, uint* ret )
 {
 	KThread* thr;
 	if( IS_USER_MEMORY(addr) &&
@@ -164,34 +112,34 @@ int sys_thread_create( size_t addr, uint* ret )
 }
 
 //返回当前线程ID
-uint sys_thread_self()
+uint Api_thread_self()
 {
 	return (uint)TmGetCurrentThread();
 }
 
 //脱离线程
-int sys_thread_detach( uint thread )
+int Api_thread_detach( uint thread )
 {
 	PERROR("##not implemented.");
 	return -ERR_NOIMP;
 }
 
 //等待线程结束
-int sys_thread_join( uint thread, int* code )
+int Api_thread_join( uint thread, int* code )
 {
 	PERROR("##not implemented.");
 	return -ERR_NOIMP;
 }
 
 //线程睡眠一段时间
-int sys_thread_wait( time_t ms )
+int Api_thread_wait( time_t ms )
 {
 	thread_wait( ms );
 	return 0;
 }
 
 //挂起线程
-int sys_thread_suspend( uint thread )
+int Api_thread_suspend( uint thread )
 {
 	KThread* thr;
 	if( !IS_THREAD(thread) )
@@ -202,7 +150,7 @@ int sys_thread_suspend( uint thread )
 }
 
 //启动线程
-int sys_thread_resume( uint thread )
+int Api_thread_resume( uint thread )
 {
 	KThread* thr;
 	if( !IS_THREAD(thread) )
@@ -213,7 +161,7 @@ int sys_thread_resume( uint thread )
 }
 
 //结束线程
-int sys_thread_kill( uint thread, int code )
+int Api_thread_kill( uint thread, int code )
 {
 	KThread* thr;
 	if( !IS_THREAD(thread) )
@@ -224,7 +172,7 @@ int sys_thread_kill( uint thread, int code )
 }
 
 //设置线程优先级
-int sys_thread_set_priority( uint thread, int pri )
+int Api_thread_set_priority( uint thread, int pri )
 {
 	KThread* thr;
 	if( !IS_THREAD(thread) )
@@ -245,7 +193,7 @@ int sys_thread_set_priority( uint thread, int pri )
 }
 
 //获取线程优先级
-int sys_thread_get_priority( uint thread, int* pri )
+int Api_thread_get_priority( uint thread, int* pri )
 {
 	KThread* thr;
 	if( !IS_THREAD(thread) )
@@ -255,7 +203,7 @@ int sys_thread_get_priority( uint thread, int* pri )
 }
 
 //返回一个空闲的信号量
-int sys_thread_semget(int value)
+int Api_thread_semget(int value)
 {
 	KSpace* space;
 	int i;
@@ -272,7 +220,7 @@ int sys_thread_semget(int value)
 	return -ERR_NOMEM;
 }
 
-int sys_thread_semop( int i, int op )
+int Api_thread_semop( int i, int op )
 {
 	KSpace* space;
 	space = MmGetCurrentSpace();
@@ -291,7 +239,7 @@ int sys_thread_semop( int i, int op )
 	return -ERR_WRONGARG;
 }
 
-int sys_thread_semctl( int i, int cmd )
+int Api_thread_semctl( int i, int cmd )
 {
 	KSpace* space;
 	space = MmGetCurrentSpace();
@@ -308,7 +256,7 @@ int sys_thread_semctl( int i, int cmd )
 }
 
 //创建进程
-int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint* retp )
+int Api_process_create( const char* cmdline, const char** var, void* cinfo, uint* retp )
 {
 	KSpace* curproc, *newproc;
 	KThread* init;
@@ -361,34 +309,34 @@ int sys_process_create( const char* cmdline, const char** var, void* cinfo, uint
 }
 
 //结束进程
-int sys_process_kill( uint space, int code )
+int Api_process_kill( uint space, int code )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //挂起进程
-int sys_process_suspend( uint space)
+int Api_process_suspend( uint space)
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //启动进程
-int sys_process_resume( uint space )
+int Api_process_resume( uint space )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //当前进程ID
-uint sys_process_self()
+uint Api_process_self()
 {
 	return (uint)MmGetCurrentSpace();
 }
 
 //加载器 返回加载id
-int sys_loader_open( char* file, uint* ret_mod )
+int Api_loader_open( char* file, uint* ret_mod )
 {
 	KSpace* space;
 	int ret, len;
@@ -405,21 +353,21 @@ int sys_loader_open( char* file, uint* ret_mod )
 }
 
 //卸载库
-int sys_loader_close( uint mod )
+int Api_loader_close( uint mod )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //获得过程
-size_t sys_loader_symbol( uint mod, char* name )
+size_t Api_loader_symbol( uint mod, char* name )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //命名空间
-int sys_namespace_create( uint thread, char* name )
+int Api_namespace_create( uint thread, char* name )
 {
 	KThread* thr;
 	int ret;
@@ -432,7 +380,7 @@ int sys_namespace_create( uint thread, char* name )
 	return ret;
 }
 
-int sys_namespace_delete( uint thread, char* name )
+int Api_namespace_delete( uint thread, char* name )
 {
 	KThread* thr;
 	int ret;
@@ -445,7 +393,7 @@ int sys_namespace_delete( uint thread, char* name )
 	return ret;
 }
 
-uint sys_namespace_match( char* name )
+uint Api_namespace_match( char* name )
 {
 	uint thread;
 	thread = (uint)name_match( name );
@@ -453,34 +401,34 @@ uint sys_namespace_match( char* name )
 }
 
 //返回io位图
-int sys_iomap_get( uchar* buf, size_t buf_size )
+int Api_iomap_get( uchar* buf, size_t buf_size )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //设置io位图 
-int sys_iomap_set( uchar* buf, size_t buf_len  )
+int Api_iomap_set( uchar* buf, size_t buf_len  )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 //注册irq消息
-int sys_irq_register( int tid, int irq )
+int Api_irq_register( int tid, int irq )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
-int sys_irq_unregister( int tid, int irq )
+int Api_irq_unregister( int tid, int irq )
 {
 	PERROR("not implemented.");
 	return -ERR_NOIMP;
 }
 
 // 进程虚拟内存映射到物理地址
-int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
+int Api_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
 {
 	//检查参数是否页对齐
 	if( vaddr%PAGE_SIZE || paddr%PAGE_SIZE || map_size%PAGE_SIZE )
@@ -501,7 +449,7 @@ int sys_vm_map( size_t vaddr, size_t paddr, size_t map_size, uint flag )
 }
 
 //BIOS调用
-int sys_bios_call( int interrupt, void* context, size_t siz )
+int Api_bios_call( int interrupt, void* context, size_t siz )
 {
 	if( TmGetCurrentThread()->process->UserId != ADMIN_USER )
 		return -ERR_LOWPRI;

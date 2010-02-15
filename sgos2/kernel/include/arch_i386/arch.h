@@ -212,6 +212,7 @@ void ArUnmapMultiplePages( struct KPageDirectory* dir, uint virt_addr, uint size
 int ArQueryPageInformation( struct KPageDirectory* dir, uint virt_addr, uint* phys_addr, uint *attr );
 //rtc
 void ArStartRealTimeClock();
+unsigned ArGetMilliSecond();
 //cpu
 void ArInitializeThreadRegisters( struct KThread* thr, struct KThread* parent,
 	void* context, uint entry_addr, uint stack_addr );

@@ -4,6 +4,7 @@
 
 #include <sgos.h>
 
+int KeStartSystemThread();
 int KeCreateBaseService();
 int KeLoadPeExecutable();
 int KeCreateRemoteThread();
