@@ -35,7 +35,7 @@ void IpcLockSemaphore( KSemaphore *sem )
 		//dont have it, then sleep
 		//跟队末尾
 		RtlPushFrontQueue( &sem->wait_queue, TmGetCurrentThread() );
-		TmSleepThread( INFINITE );
+		TmSleepThread( TmGetCurrentThread(), INFINITE );
 		//now, we have it!!
 	}
 	ArLocalRestoreIrq(eflags);

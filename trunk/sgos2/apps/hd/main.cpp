@@ -1,99 +1,91 @@
 #include <stdio.h>
-#include <system.h>
+#include <string.h>
+#include <sgos.h>
+#include <api.h>
 
-using namespace System;
-
-/* hd服务调用示例 
-读写磁盘消息
-<msg to="hd">
-	<ReadSector part=1 start=0 count=1 /> 
-</msg>
-<msg to="hd">
-	<WriteSector part=1 start=0 count=1>
-		...数据
-	</WriteSector>
-</msg>
-*/
-
-void replyError( Messenger& sender, int err_code, const char* err_str )
-{
-	sender.putString( "/error:string", err_str );
-	sender.putInt( "/error:code", err_code );
-}
+#define BUFFER_SIZE KB(64)
+#define MAX_SECTORS  (BUFFER_SIZE>>9)
+static uchar* bufferPage;
 
 /* 具体命令处理函数 */
 extern int lba_init();
 int lba_rw_sectors(t_8 dev, t_32 sec_start, t_32 sec_count, uchar *buf, int write);
-void parseCommand( Messenger& msgRecv )
+void parse( Message& msg )
 {
 	t_8 dev;
 	t_32 sec_start, sec_count;
-	uchar *buf;
-	msgRecv.redir("...");
-	Messenger sender = msgRecv.reply();
-	sender.parse("<msg/>");
-	string cmd = msgRecv.readName(".");
-	if( cmd == "ReadSector" ){
-		dev = msgRecv.getUInt(":part");
-		sec_start = msgRecv.getUInt(":start");
-		sec_count = msgRecv.getUInt(":count");
-		buf = new uchar[sec_count<<9];
-		if( buf == NULL ){
-			replyError( sender, ERR_NOMEM, "alloc failed." );
-		}else{
-			lba_rw_sectors( dev, sec_start, sec_count, buf, 0 );
-			sender.write("/ReadSector?result=ok", buf, sec_count<<9 );
-		}
-		delete []buf;
-	}else if( cmd == "WriteSector" ){
-		dev = msgRecv.getUInt(":part");
-		sec_start = msgRecv.getUInt(":start");
-		sec_count = msgRecv.getUInt(":count");
-		buf = new uchar[sec_count<<9];;
-		if( buf == NULL ){
-			replyError( sender, ERR_NOMEM, "alloc failed." );
-		}else{
-			msgRecv.read( ".", buf, sec_count<<9 );
-			lba_rw_sectors( dev, sec_start, sec_count, buf, 1 );
-			sender.mkdir("/WriteSector?result=ok");
-		}
-		delete []buf;
-	}else if( cmd == "Initialize" ){
-		lba_init();
-		sender.mkdir("/Initialize?result=ok");
-	}else{
-		printf("[hd]Unknown command: %s\n", cmd.cstr() );
-		replyError( sender, ERR_WRONGARG, "Unknown command." );
+	int ret;
+	switch( msg.Command ){
+	case Device_ReadSector:
+		dev = msg.Arguments[0];
+		sec_start = msg.Arguments[1];
+		sec_count = msg.Arguments[2];
+		printf("[HD]read sector %d,%d,%d\n", dev, sec_start, sec_count );
+		if( sec_count > MAX_SECTORS )
+			sec_count = MAX_SECTORS;
+		msg.Code = lba_rw_sectors( dev, sec_start, sec_count, bufferPage, 0 );
+		ret = SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)bufferPage,
+			(sec_count<<9), //Bytes
+			MAP_ADDRESS );
+		break;
+	case Device_WriteSector:
+		dev = msg.Arguments[0];
+		sec_start = msg.Arguments[1];
+		sec_count = msg.Arguments[2];
+		printf("[HD]write sector %d,%d,%d\n", dev, sec_start, sec_count );
+		if( sec_count > MAX_SECTORS )
+			sec_count = MAX_SECTORS;
+		SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)bufferPage,
+			(sec_count<<9), //Bytes
+			MAP_ADDRESS );
+		msg.Code = lba_rw_sectors( dev, sec_start, sec_count, bufferPage, 1 );
+		break;
+	default:
+		printf("[hd]Unknown command: %x\n", msg.Command );
+		msg.Code = -ERR_WRONGARG;
 	}
-	sender.send();
 }
 
 /* 服务主循环 
  * 某些服务可能需要多线程，便于并发处理消息。
- * 但speaker的资源只有1个，所以单个线程处理已经很适合。
 */
 int startService()
 {
-	//接收消息使者
-	Messenger msger;
+	//接收消息
+	Message msg;
+	int id;
 	//注册线程名称，其它程序便可以向此服务线程发送消息
-	Thread current = Thread::ThisThread();
-	current.createName("hd");
+	id = SmNotifyService( 0, 0, "HD" );
+	if( id < 0 ){
+		printf("[Harddisk]add service failed.\n");
+		SysExitSpace((uint)-1);
+	}
 	//初始化驱动程序
 	lba_init();
-	for(;;){
-		//Pending for messenger
-		msger.receive();
-		parseCommand( msger );
-		
+	//获取一个页面存放数据
+	bufferPage = (uchar*)SysAllocateMemory( SysGetCurrentSpaceId(), BUFFER_SIZE, MEMORY_ATTR_WRITE, 0 );
+	if( bufferPage == NULL ){
+		printf("[HD] bufferPage == NULL \n");
+		SysExitSpace( (uint)-2);
 	}
-	current.deleteName("hd");
+	printf("[HD]Starting hd service ...\n");
+	for(;;){
+		//Pending for messages
+		int result = WaitMessage(&msg);
+		if( result < 0 ){
+			printf("[HD]Failed to receive message: result = %d\n", result );
+			continue;
+		}
+		msg.Code = 0;
+		parse( msg );
+		ReplyMessage( &msg );
+	}
+	SmRemoveService( id );
 	return 0;
 }
 
 int main()
 {
-	printf("Starting hd service ...\n");
 	return startService();
 }
 

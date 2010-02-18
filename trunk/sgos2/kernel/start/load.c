@@ -111,6 +111,8 @@ void KeLoadBaseServices()
 			mod->string += KERNEL_BASE;
 			KeCreateBaseService( (char*)mod->string, mod->mod_start, 
 				mod->mod_end-mod->mod_start );
+			//wait for the service to initialize...
+			TmSleepThread(TmGetCurrentThread(), 100); 
 		}
 	}
 	//加载结束。

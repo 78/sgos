@@ -93,7 +93,7 @@ void KeBugCheck(const char *s )
 static void KeKeepAlive()
 {
 	for(;;){
-		TmSleepThread(5000);
+		TmSleepThread(TmGetCurrentThread(), 5000);
 		KdPrint(".");
 	}
 }

@@ -5,5 +5,5 @@
 
 void sleep(unsigned int ms)
 {
-	sys_thread_wait(ms);
+	SysSleepThread(ms);
 }

@@ -14,14 +14,12 @@ extern "C" void _alloca()
 extern "C" int main();
 extern "C" void __run_exit_func();
 extern "C" void __allocation_init();
-extern "C" void __pthread_init();
 extern "C" int mainCRTStartup()
 {
 	int ret;
 	unsigned *p;
 	// init memory
 	__allocation_init();
-	__pthread_init();
 	// call ctors
 	p = get_ctors();
 	for( p=&p[1]; *p; p++ )

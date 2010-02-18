@@ -5,9 +5,9 @@ LDFLAGS =
 ODFLAGS = -S
 
 #here defines the program information
-PROGRAM = hd
+PROGRAM = harddisk
 LDFLAGS += ../../crt/crt.a
-LDFLAGS += ../libc/libc.dll ../system/system.dll
+LDFLAGS += ../../libc/libc.a ../../api/api.a
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)
@@ -18,12 +18,11 @@ IMAGE = ../../sgos2.img
 
 OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp))
 
-all: $(PROGRAM).run
+all: $(PROGRAM).exe
 
-$(PROGRAM).run: $(OBJECTS)
+$(PROGRAM).exe: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$(PROGRAM).exe
 	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
-	$(LD2) $(PROGRAM).exe $@
 	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
@@ -32,6 +31,5 @@ $(PROGRAM).run: $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
-	$(RM) $(PROGRAM).run
 	$(RM) $(PROGRAM).dmp
 	$(RM) $(PROGRAM).exe

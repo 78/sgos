@@ -16,7 +16,7 @@ WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
 OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c)) \
-	 ../api/api.o
+	 ../../api/api.a ../../libc/libc.a
 
 all: $(PROGRAM).exe
 

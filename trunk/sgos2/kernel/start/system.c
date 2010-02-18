@@ -38,8 +38,10 @@ static void DoTmMessage(Message* msg )
 			result = thread->ThreadId;
 		break;
 	case System_SleepThread:
-		result = TmSleepThread( msg->Arguments[0] );
-		break;
+		//Note: SleepThread  no reply because a message reply will wakup the thread.
+		thread = TmGetThreadById( msg->ThreadId );
+		result = TmSleepThread( thread, msg->Arguments[0] );
+		return; 
 	case System_WakeupThread:
 		thread = TmGetThreadById( msg->Arguments[0] );
 		if( thread == NULL )
@@ -122,6 +124,14 @@ static void DoMmMessage(Message* msg )
 			result = (uint)MmAllocateUserMemory( space, msg->Arguments[1], 
 				msg->Arguments[2], msg->Arguments[3] );
 		break;
+	case System_AllocateAddress:
+		space = MmGetSpaceById( msg->Arguments[0] );
+		if( space == NULL )
+			result = -ERR_WRONGARG;
+		else
+			result = (uint)MmAllocateUserMemoryAddress( space, msg->Arguments[1], 
+				msg->Arguments[2], msg->Arguments[3], msg->Arguments[4] );
+		break;
 	case System_FreeMemory:
 		space = MmGetSpaceById( msg->Arguments[0] );
 		if( space == NULL )
@@ -182,8 +192,16 @@ static void DoMmMessage(Message* msg )
 		if( space == NULL )
 			result = -ERR_WRONGARG;
 		else
-			ArMapMultiplePages( &space->PageDirectory, msg->Arguments[1], msg->Arguments[2],
-				msg->Arguments[3], msg->Arguments[4], msg->Arguments[5] );
+			ArMapMultiplePages( &space->PageDirectory, msg->Arguments[1], msg->Arguments[3],
+				msg->Arguments[2], msg->Arguments[4], msg->Arguments[5] );
+		break;
+	case System_SwapMemory:
+		space = MmGetSpaceById( msg->Arguments[0] );
+		if( space == NULL )
+			result = -ERR_WRONGARG;
+		else
+			result = MmSwapMultiplePhysicalPages( space, msg->Arguments[1], MmGetSpaceById(SPACEID(msg->ThreadId)),
+				msg->Arguments[2], msg->Arguments[3], msg->Arguments[4] );
 		break;
 	default:
 		PERROR("## What? command = 0x%x", msg->Command );
@@ -206,7 +224,7 @@ static void SystemMessageLoop()
 	Message msg;
 	KdPrintf("System thread started.\n");
 	for(;;){
-		RtlZeroMemory(&msg, sizeof(Message));
+		msg.ThreadId = ANY_THREAD;
 		int result = IpcReceive( &msg, 0, INFINITE );
 		uint cmd = msg.Command;
 		if( result<0 ){

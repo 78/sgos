@@ -1,9 +1,9 @@
 
 #include <sgos.h>
 #include <stdio.h>
-#include <system.h>
+#include <api.h>
 #include "buffer.h"
-#include "vfs.h"
+#include "fsservice.h"
 
 
 int main()
@@ -27,17 +27,16 @@ int main()
 		printf("[vfs]fs_init failed :%d\n", ret );
 		return ret;
 	}
-	//虚拟文件系统服务初始化
+	//虚拟文件系统服务初始化, install rootfs!!
 	ret = vfs_init();
 	if( ret<0 ){
-		printf("[vfs]vfs_init failed :%d\n", ret );
+		printf("[vfs]rootfs_init failed :%d\n", ret );
 		return ret;
 	}
+	extern void device_startService();
+	device_startService();
 	//
-	for(;;){
-		printf("-");
-		System::Thread::Sleep(10000);
-	}
+	SysExitThread(0);
 	return 0;
 }
 
