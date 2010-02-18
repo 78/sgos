@@ -214,23 +214,26 @@ int TmSuspendThread( KThread* thr )
 }
 
 //睡眠线程。注意，中断情况下不可以睡眠。
-int TmSleepThread(uint ms)
+int TmSleepThread(KThread* thread, uint ms)
 {
-	KThread* cur = TmGetCurrentThread();
 	if( ms == INFINITE ){
-		TmSetThreadState( cur, TS_SLEEP );
-		TmSchedule();
-		ASSERT( cur->ThreadState != TS_SLEEP );
+		TmSetThreadState( thread, TS_SLEEP );
+		if( thread == TmGetCurrentThread() ){
+			TmSchedule();
+			ASSERT( thread->ThreadState != TS_SLEEP );
+		}
 	}else{
 		uint flags;
 		//关中断，禁止线程切换
 		ArLocalSaveIrq( flags );
 		//如果此时被中断，则clock可能被更改了。。。
-		cur->ScheduleInformation.clock = ms;
-		TmSetThreadState( cur, TS_WAIT );
+		thread->ScheduleInformation.clock = ms;
+		TmSetThreadState( thread, TS_WAIT );
 		ArLocalRestoreIrq( flags );
-		TmSchedule();
-		ASSERT( cur->ThreadState != TS_WAIT );
+		if( thread == TmGetCurrentThread() ){
+			TmSchedule();
+			ASSERT( thread->ThreadState != TS_WAIT );
+		}
 	}
 	return 0;
 }

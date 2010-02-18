@@ -69,7 +69,7 @@ void MmFreePhysicalPage( uint addr )
 	uint i;
 	i = PHYS_ADDR_TO_PAGE_INDEX( addr );
 	if( i < page_front || i >= total_pages ){
-		PERROR("##wrong addr: 0x%X", addr );
+//		PERROR("##wrong addr: 0x%X", addr );
 		return;
 	}
 	if( !page_ref[i] ){
@@ -147,3 +147,30 @@ uint ArVirtualToPhysicalAddress( uint virt_addr )
 	return ((te->a.physicalAddress)<<12);
 }
 */
+
+int MmSwapPhysicalPage( KSpace* destSp, size_t dest_addr, KSpace* srcSp, size_t src_addr, uint flag )
+{
+	size_t paS, paD;
+	uint atS, atD;
+	if( ArQueryPageInformation( &destSp->PageDirectory, dest_addr, &paD, &atD ) < 0 ||
+		ArQueryPageInformation( &srcSp->PageDirectory, src_addr, &paS, &atS ) < 0 )
+		return -ERR_INVALID;
+	if( !(atD&PAGE_ATTR_ALLOCATED) || !(atS&PAGE_ATTR_ALLOCATED) )
+		return -ERR_INVALID;
+	ArMapOnePage( &destSp->PageDirectory, dest_addr, paS, atS, flag );
+	ArMapOnePage( &srcSp->PageDirectory, src_addr, paD, atD, flag );
+	return 0;
+}
+
+int MmSwapMultiplePhysicalPages( KSpace* destSp, size_t dest_addr, KSpace* srcSp, size_t src_addr, size_t siz, uint flag )
+{
+	uint count;
+	int result; 
+	if( dest_addr % PAGE_SIZE || src_addr % PAGE_SIZE || siz % PAGE_SIZE )
+		return 0;
+	count = siz >> PAGE_SIZE_BITS;
+	for( ; count; count--, dest_addr+=PAGE_SIZE, src_addr+=PAGE_SIZE )
+		if( ( result = MmSwapPhysicalPage( destSp, dest_addr, srcSp, src_addr, flag ) ) < 0 )
+			return siz-count*PAGE_SIZE;
+	return siz;
+}

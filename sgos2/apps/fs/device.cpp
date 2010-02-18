@@ -3,155 +3,157 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <system.h>
-#include <queue.h>
-#include "vfs.h"
+#include <api.h>
+#include "fsservice.h"
 
-using namespace System;
+#define MAX_DEVICE 256
+uint deviceThread;
+device_t * deviceList[MAX_DEVICE];
+int	deviceCount = 0;
 
-Thread* devThread;
-queue_t devQueue;
-
-/* 注册消息 
-<msg to="dev">
-	<register driver="hd" part=1 />
-</msg>
-
-*/
-
-static int search_device( const void* p, const void* q )
+// 由设备名获取设备
+device_t* device_find( const char* name )
 {
-	if( strcmp( ((device_t*)p)->name, (const char*)q)==0 )
-		return 1;
+	device_t* dev;
+	for(int i=0; i<deviceCount; i++ ){
+		dev = deviceList[i];
+		if( dev->devFile->name!=name && strcmp( dev->devFile->name, name)==0)
+			return dev;
+	}
 	return 0;
 }
 
-// 由设备名获取设备
-device_t* device_find( const char* devName )
-{
-	qnode_t* nod;
-	device_t* dev;
-	dev = (device_t*)queue_search( &devQueue, (void*)devName, search_device, &nod );
-	return dev;
-}
-
+/*
 // 在文件系统中安装设备
 int device_mount( device_t* dev, const char* path )
 {
-	uint proc = 0;
 	int fd;
-	fd = vfs_open( proc, path, FILE_READ, FILE_FLAG_CREATE );
+	fd = vfs_open( path, FILE_READ, FILE_FLAG_CREATE );
 	if( fd<0 ){
-		printf("Failed to mount %s on %s\n", dev->name, path );
+		printf("Failed to mount %s on %s\n", dev->devFile->name, path );
 		return fd;
 	}
 	// 设置节点值为该设备的文件描述符
-	vfs_ioctl( proc, fd, VFS_SET_VALUE, (uint)&dev->devFile );
+	vfs_ioctl( proc, fd, ROOTFS_SET_VALUE, (uint)dev->devFile );
 	// 设置节点类型为文件系统
-	vfs_ioctl( proc, fd, VFS_SET_TYPE, VFS_TYPE_FS );
+	vfs_ioctl( proc, fd, ROOTFS_SET_TYPE, ROOTFS_TYPE_FS );
 	return 0;
 }
-
-// 检查是否已经注册过该设备
-static int check_if_registered( const void* p, const void* q )
-{
-	if( strcmp( ((device_t*)p)->driver, ((device_t*)q)->driver )==0 &&
-		((device_t*)p)->devID == ((device_t*)q)->devID )
-		return 1;
-	return 0;
-}
+*/
 
 // 注册设备
-device_t* device_register( const char* driver, uint part )
+device_t* device_register( uint type, uint thread, uint part, char* name )
 {
-	qnode_t* nod;
+	//检查该设备是否已经注册过。
+	for( int i=0; i<deviceCount; i++ )
+		if( deviceList[i]->thread == thread &&
+			deviceList[i]->devID == part ){
+			return 0; //Already registered
+		}
+	if( deviceCount >= MAX_DEVICE ){
+		printf("[vfs] too many devices in the list.\n");
+		return 0;
+	}
 	device_t* dev = (device_t*)malloc( sizeof(device_t) );
-	if( dev==NULL ){
-		printf("[vfs]Failed to malloc memory for new device.\n");
-		return (device_t*)0;
+	deviceList[deviceCount] = dev;
+	deviceCount ++;
+	if( dev==0 ){
+		printf("[vfs]Failed to malloc memory for new device %s.\n", name );
+		return 0;
 	}
 	memset( dev, 0, sizeof(device_t) );
-	strncpy( dev->driver, driver, NAME_LEN-1 );
+	strncpy( dev->driver, name, SERVICE_NAME_LENGTH-1 );
 	dev->devID = part;
-	//检查该设备是否已经注册过。
-	if( queue_search( &devQueue, dev, check_if_registered, &nod ) ){
-		free(dev);
-		return (device_t*)0;
-	}
-	// 初始化设备缓冲区
-	queue_create( &dev->bufferQueue, 0, 0, "bufQueue", 0 );
+	dev->thread = thread;
 	// 检测文件系统类型
 	dev->fs = fs_detect( dev );
-	if( strcmp( dev->driver, "root" )==0 ){
-		strcpy( dev->name, "/" );
+	if( dev->fs == 0 ){
+		printf("[vfs]Failed to install fs on %s:%d\n", dev->driver, dev->devID );
 	}else{
-		// 如果文件系统没有为设备分配设备名，则随机分配
-		if( !dev->name[0] ){
-			qnode_t* nod;
-			dev->name[0]='c';
-			dev->name[1]=':';
-			for(;dev->name[0]<='z';dev->name[0]++ ){
-				if( device_find( dev->name )==NULL )
-					break;
-			}
-			// 如果得不到设备名怎么办？
-			if( dev->name[0]>='z'){
-				sprintf(dev->name, "%d", rand());
-			}
-			printf("[vfs]Registered dev %s for %s:%d\n", dev->name, driver, part );
-		}
-		if( !dev->fs ){
-			printf("[vfs]Failed to install fs on %s:%d\n", dev->driver, dev->devID );
+		file_t* f = dev->devFile;
+		if( type == DEV_TYPE_ROOT ){
+			strcpy( f->name, "/" );
 		}else{
+			// 如果文件系统没有为设备分配设备名，则随机分配
+			if( !f->name[0] ){
+				f->name[0]='c';
+				f->name[1]=':';
+				for(;f->name[0]<='z';f->name[0]++ ){
+					if( device_find( f->name )==0 )
+						break;
+				}
+				// 如果得不到设备名怎么办？
+				if( f->name[0]>'z'){
+					sprintf(f->name, "%s:%d", name, part);
+				}
+				printf("[vfs]Registered dev %s for %s:%d\n", f->name, name, part );
+			}
 			//把该设备安装到根目录下
-			char path[NAME_LEN+10];
-			sprintf(path, "/%s", dev->name );
-			device_mount( dev, path );
+		//	char path[NAME_LEN+10];
+		//	sprintf(path, "/%s", f->name );
+		//	device_mount( dev, path );
 		}
 	}
-	// 加入到队列中
-	queue_push_front( &devQueue, dev );
 	return dev;
 }
+
 
 // 设备注册服务
 static void dev_service()
 {
-	printf("[vfs]dev_service started.\n");
-	Messenger msgRecv;
-	string cmd;
+	Message msg;
 	int ret;
-	Thread current = Thread::ThisThread();
-	current.createName("dev");
+	ret = SmNotifyService( DeviceManagerId, 0, "DeviceManager" );
+	if( ret < 0 ){
+		printf("[vfs]notify service failed. ret=%d\n", ret );
+		SysExitSpace((uint)-1);
+	}
+	printf("[vfs]dev_service started.\n");
 	for(;;){
-		ret = msgRecv.receive();
+		memset( &msg, 0, sizeof(msg) );
+		ret = WaitMessage(&msg);
 		if( ret<0 ){
-			printf("[vfs]error in dev_service()\n");
+			printf("[vfs]receive error in dev_service()\n");
+			continue;
+		}
+		msg.Code = 0;
+		switch( msg.Command ){
+		case Device_Register:
+		{
+			printf("[vfs]Register %s\n", (char*)&msg.Arguments[3] );
+			ReplyMessage( &msg );
+			device_t *d = device_register( 
+				msg.Arguments[0], //Device Type
+				msg.Arguments[1], //ServiceThreadId
+				msg.Arguments[2], //Device No. 
+				(char*)&msg.Arguments[3]  //Device Name  
+				);
 			break;
 		}
-		msgRecv.redir("...");
-		cmd = msgRecv.readName(".");
-		if( cmd=="register" ){
-			device_register( msgRecv.getString(":driver"),
-				msgRecv.getUInt(":part") );
-		}else if( cmd=="unregister" ){
+		case Device_Unregister:
 			//Not implemented.
+			msg.Code = -ERR_NOIMP;
+			ReplyMessage( &msg );
+			break;
 		}
 	}
-	current.deleteName("dev");
-	Thread::Exit(0);
+	SmRemoveService( DeviceManagerId );
+	SysExitThread(0);
 }
 
 // 设备服务初始化
 int device_init()
 {
-	int ret;
-	ret = queue_create(&devQueue, 0, 0, "devQueue", 0 );
-	if( ret<0 )
-		return ret;
-	devThread = new Thread( (void*)dev_service );
-	devThread->start();
-	printf("[vfs]device_init() OK!\n");
+	deviceCount = 0;
+	memset( deviceList, 0, sizeof(deviceList));
+	deviceThread = SysCreateThread( SysGetCurrentSpaceId(), (size_t)&dev_service );
 	return 0;
 }
+
+void device_startService()
+{
+	SysResumeThread(deviceThread);
+}
+
+
 

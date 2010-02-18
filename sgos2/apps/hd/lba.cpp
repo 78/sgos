@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include <system.h>
+#include <api.h>
 #include "hd.h"
-
-using namespace System;
-using namespace System::Service;
+#include "port.h"
 
 typedef struct PARTITION_INFO{
 	unsigned long start;	//其实扇区
@@ -17,6 +15,7 @@ static HD_PARAMS hd_param[MAX_HD];
  * 其中 part[0]记录第一个硬盘的全部信息, part[1]是第一个硬盘第一个分区的信息。
  */
 static PARTITION_INFO part[5*MAX_HD];
+
 
 int lba_rw_sectors(t_8 dev, t_32 sec_start, t_32 sec_count, uchar *buf, int write)
 {
@@ -42,7 +41,7 @@ int lba_rw_sectors(t_8 dev, t_32 sec_start, t_32 sec_count, uchar *buf, int writ
 	}
 	while(sec_count){
 		while( ( inbyte(HD_STATUS) & 0xf ) != STAT_DRQ )
-			Thread::Sleep(1);
+			SysSleepThread(1);
 		if(write)
 			WRITE_WORDS(HD_DATA, buf, 256);	/*写端口数据*/
 		else
@@ -63,36 +62,48 @@ static uchar readCMOS(uchar p)
 //向vfs注册设备
 static void registerDevice( uint part )
 {
-	Messenger msger;
-	msger.parse("<msg to=\"dev\"><register driver=\"hd\" /></msg>");
-	msger.putUInt("/register:part", part );
-	while( msger.send()<0 )
-		Thread::Sleep(100);;
+	uint tid ;
+	Message msg;
+	while( !(tid= SmGetServiceThreadById( DeviceManagerId )) )
+		SysSleepThread(500);
+	msg.ThreadId = tid;
+	msg.Command = Device_Register;
+	msg.Arguments[0] = DEV_TYPE_HD;
+	msg.Arguments[1] = SysGetCurrentThreadId();
+	msg.Arguments[2] = part;
+	strcpy( (char*)&msg.Arguments[3], "HDPartition" );
+	Api_Send( &msg, 0 );
+	Api_Receive( &msg, 3000 ); //wait for reply.
 }
 
-#define LPValue(m) ( *(size_t*)m )
+#define LPValue(m) ( *(size_t*)(m) )
 //获取硬盘数据
 int lba_init()
 {
-	int i, ret;
+	int i, ret, sid = SysGetCurrentSpaceId();
+	size_t p;
 	uchar* boot = new uchar[512];
 	memset( part, 0, sizeof(part) );
+	p = (size_t)SysAllocateMemory( sid, 1<<20, MEMORY_ATTR_WRITE, ALLOC_VIRTUAL );
+	if( p == 0 ){
+		printf("[HD]Allocate failed.\n");
+		return -ERR_NOMEM;
+	}
 	//请求内核映射前1MB内存
-	ret = Service::MapMemory( 0, 0, 1<<20, MAP_READONLY );
+	ret = SysMapMemory( sid, p, 1<<20, 0, 0, MAP_ADDRESS );
 	if( ret < 0 ){
-		printf("lba_init failed to map memory: 0x%X\n", ret );
+		printf("[HD]lba_init failed to map memory: 0x%X\n", ret );
 		delete[] boot;
 		return ret;
 	}
 	//硬盘1数据
-	memcpy(&hd_param[0], (void*)R2L(LPValue(0x00000104)), sizeof(HD_PARAMS));
-	memcpy(&hd_param[1], (void*)R2L(LPValue(0x00000118)), sizeof(HD_PARAMS));
+	memcpy(&hd_param[0], (void*)(p+R2L(LPValue(p+0x00000104))), sizeof(HD_PARAMS));
+	memcpy(&hd_param[1], (void*)(p+R2L(LPValue(p+0x00000118))), sizeof(HD_PARAMS));
 	//取消映射
-	Service::UnmapMemory( 0, 1<<20 );
-	
+	SysFreeMemory( sid, (void*)p );
 	if( !readCMOS(0x12)&0xff )
 	{
-		printf("no AT hard disks.\n");
+		printf("[HD]no AT hard disks.\n");
 		delete[] boot;
 		return -1;
 	}
@@ -105,14 +116,14 @@ int lba_init()
 		//硬盘总扇区数
 		part[i*5].sectors = hd_param[i].heads * hd_param[i].SPT * hd_param[i].cyls;
 		if(!hd_param[i].cyls) break;
-//		printf("hd_param[%d] Size: %d MB\n", i, part[i*5].sectors*512/1024/1024);
+		printf("[HD]hd_param(%d) Size: %d MB\n", i, part[i*5].sectors*512/1024/1024);
 		//读分区表Partition Tables
 		//Just for Real Hard Disk!!
 		PARTITION* p;
 		lba_rw_sectors( i*5, 0, 1, boot, 0 );
 		if( boot[510]!=0x55||(uchar)boot[511]!=0xAA )
 		{
-			printf("bad partitiion table.\n");
+			printf("[HD]bad partitiion table.\n");
 			break;
 		}
 		p = (PARTITION*)(boot + 0x1BE);
@@ -124,9 +135,9 @@ int lba_init()
 				part[i*5+j].start = p->skipSectors;	//相对扇区起始位置
 				part[i*5+j].sectors = p->allSectors;	//总扇区数
 				if( p->allSectors){
+					printf("[HD]Partition%d: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
+						part[i*5+j].start, part[i*5+j].sectors);
 					registerDevice( i*5+j );
-//					printf("Disk[%d]: start_sector:0x%X   total_sectors:0x%X\n", i*5+j, 
-//						part[i*5+j].start, part[i*5+j].sectors);
 				}
 			}
 		}

@@ -3,8 +3,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
-#include "../fs/vfs.h"
-#include "../fs/buffer.h"
+#include "fsservice.h"
+#include "buffer.h"
 #include "fat32.h"
 #include "unicode.h"
 

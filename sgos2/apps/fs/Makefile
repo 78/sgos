@@ -6,9 +6,9 @@ LDFLAGS = -shared
 ODFLAGS = -S
 
 #here defines the program information
-PROGRAM = vfs
-LDFLAGS += --image-base 0x00400000 ../../crt/crt.a \
-	../libc/libc.dll ../system/system.dll ../vfs/vfs.dll
+PROGRAM = filesystem
+LDFLAGS += ../../crt/crt.a \
+	../../libc/libc.a ../../api/api.a
 
 CXX = g++ $(CXXFLAGS)
 CC = gcc $(CCFLAGS)
@@ -21,12 +21,11 @@ IMAGE = ../../sgos2.img
 OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp)) \
 	$(patsubst %.c,%.o,  $(wildcard *.c))
 
-all: $(PROGRAM).run
+all: $(PROGRAM).exe
 
-$(PROGRAM).run: $(OBJECTS)
+$(PROGRAM).exe: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$(PROGRAM).exe
 	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
-	$(LD2) $(PROGRAM).exe $@
 	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
@@ -37,6 +36,5 @@ $(PROGRAM).run: $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
-	$(RM) $(PROGRAM).run
 	$(RM) $(PROGRAM).dmp
 	$(RM) $(PROGRAM).exe

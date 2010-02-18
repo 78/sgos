@@ -6,7 +6,7 @@
  * 作用：Virtual Resource System
  * 更新日期：2007-1-2 14:30
  	2007-1-2 14:34	Huang Guan
- 	增加vfsControlFile里几个操作，完善vfsOpenFile。
+ 	增加rootfsControlFile里几个操作，完善rootfsOpenFile。
  *	Ported from SGOS1 for SGOS2
  * 作者：Huang Guan
  *
@@ -16,7 +16,7 @@
 #include <sgos.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../fs/vfs.h"
+#include "fsservice.h"
 /*
  * 计算机资源管理系统
  */
@@ -33,22 +33,22 @@ typedef struct PATH_NODE{
 }PNode, *PPNode;
 
 // 通过标准文件接口进行控制
-static int vfsSetupSystem(file_t* file, device_t* dev);
-static int vfsOpenFile(file_t* file, const char* name);
-static int vfsReadFile(file_t* file, uchar* buf, size_t count);
-static int vfsWriteFile(file_t* file, const uchar* buf, size_t count);
-static int vfsControlFile(file_t* file, size_t cmd, size_t arg);
-static int vfsRenameFile(file_t* file, char* name);
+static int rootfsSetupSystem(file_t* file, device_t* dev);
+static int rootfsOpenFile(file_t* file, const char* name);
+static int rootfsReadFile(file_t* file, uchar* buf, size_t count);
+static int rootfsWriteFile(file_t* file, const uchar* buf, size_t count);
+static int rootfsControlFile(file_t* file, size_t cmd, size_t arg);
+static int rootfsRenameFile(file_t* file, char* name);
 
-static int vfsSetupSystem(file_t* f, device_t* dev)
+static int rootfsSetupSystem(file_t* f, device_t* dev)
 {
 	if( strcmp( dev->driver, "root" ) != 0 )
 		return -ERR_INVALID;
 	//对设备创建一个根节点
 	dev->devFSInfo = (void*)malloc(sizeof(PNode));
 	PPNode p = (PPNode)(dev->devFSInfo);
-	strcpy( p->name, "vfs" );
-	p->type = VFS_TYPE_DIR;
+	strcpy( p->name, "rootfs" );
+	p->type = ROOTFS_TYPE_DIR;
 	p->flag = 0;
 	p->value = 0;
 	//节点链表
@@ -62,25 +62,25 @@ static int vfsSetupSystem(file_t* f, device_t* dev)
 	return 0;
 }
 
-static int vfsOpenFile(file_t* f, const char* name)
+static int rootfsOpenFile(file_t* f, const char* name)
 {
-	//printf("vfsOpenFile: %s parentid:%d\n", name, f->parent );
+	//printf("rootfsOpenFile: %s parentid:%d\n", name, f->parent );
 	PPNode gNod = (PPNode)f->device->devFSInfo;
 	PPNode pNod = (PPNode)f->parent->data;
-	if( pNod->type ==VFS_TYPE_DIR )
+	if( pNod->type ==ROOTFS_TYPE_DIR )
 	{
 		PPNode p = pNod->child;
 		for(;p;p=p->next ){
 			if( strcmp(p->name, name)==0 )
 			{
 				switch( p->type ){
-				case VFS_TYPE_DIR:
+				case ROOTFS_TYPE_DIR:
 				//是目录
 					f->attribute |= FILE_ATTR_DIR;
 					f->dir = 1;
 					f->data = (uint)p;
 					break;
-				case VFS_TYPE_FS:
+				case ROOTFS_TYPE_FS:
 				//是文件系统？
 				{
 					file_t* f2 = (file_t*)p->value;
@@ -90,14 +90,14 @@ static int vfsOpenFile(file_t* f, const char* name)
 					break;
 				}
 				default:
-					printf("[vfs]unknown node type p->name:%s p->type=%d\n", 
+					printf("[rootfs]unknown node type p->name:%s p->type=%d\n", 
 						p->name, p->type );
 					return -ERR_WRONGARG;
 				}
 				f->size = 0;
 				f->pos = 0;
 				//是只读？
-				if( !(p->flag&VFS_FLAG_WRITE) )
+				if( !(p->flag&ROOTFS_FLAG_WRITE) )
 					f->attribute|=FILE_ATTR_RDONLY;
 				//printf("p->name:%s p->type=%d\n", p->name, p->type );
 				return 0;
@@ -124,43 +124,43 @@ static int vfsOpenFile(file_t* f, const char* name)
 				return 0;
 			}
 		}
-		printf("[vfs]vfsOpenFile: File not found %s in %s.\n", name, pNod->name);
+		printf("[rootfs]rootfsOpenFile: File not found %s in %s.\n", name, pNod->name);
 		return -ERR_WRONGARG;
 	}//非目录，不可搜索
-	printf("[vfs]vfsOpenFile: not a directory %s in %s.\n", name, pNod->name);
+	printf("[rootfs]rootfsOpenFile: not a directory %s in %s.\n", name, pNod->name);
 	return -ERR_WRONGARG;
 }
 
-static int vfsReadFile(file_t* f, uchar* buf, size_t count)
+static int rootfsReadFile(file_t* f, uchar* buf, size_t count)
 {
 	PPNode gNod = (PPNode)f->device->devFSInfo;
 	PPNode p = (PPNode)f->data;
 	return -ERR_NOIMP;
 }
 
-static int vfsWriteFile(file_t* f, const uchar* buf, size_t count)
+static int rootfsWriteFile(file_t* f, const uchar* buf, size_t count)
 {
 	PPNode gNod = (PPNode)f->device->devFSInfo;
 	PPNode p = (PPNode)f->data;
 	return -ERR_NOIMP;
 }
 
-static int vfsRenameFile(file_t* f, char* name)
+static int rootfsRenameFile(file_t* f, char* name)
 {
 	PPNode gNod = (PPNode)f->device->devFSInfo;
 	PPNode p = (PPNode)f->data;
 	return -ERR_NOIMP;
 }
 
-static int vfsControlFile(file_t* f, t_32 cmd, t_32 arg)
+static int rootfsControlFile(file_t* f, t_32 cmd, t_32 arg)
 {
 	PPNode gNod = (PPNode)f->device->devFSInfo;
 	PPNode p = (PPNode)f->data;
 	switch( cmd ){
-	case VFS_SET_TYPE:			//set the type of node
+	case ROOTFS_SET_TYPE:			//set the type of node
 		p->type = arg;
 		break;
-	case VFS_SET_VALUE:		//give the node a value!!
+	case ROOTFS_SET_VALUE:		//give the node a value!!
 		p->value = arg;
 		break;
 	default:
@@ -169,15 +169,15 @@ static int vfsControlFile(file_t* f, t_32 cmd, t_32 arg)
 	return 0;
 }
 
-//vfs文件系统
+//rootfs文件系统
 //直接供文件系统服务使用
-fs_t fs_vfs = {
-	"vfs", 
-	vfsSetupSystem,		//SetupSystem
-	vfsOpenFile,			//OpenFile
-	vfsReadFile,			//ReadFile
-	vfsWriteFile,			//WriteFile
-	vfsControlFile,		//Control
-	vfsRenameFile,		//Rename
+fs_t fs_rootfs = {
+	"rootfs", 
+	rootfsSetupSystem,		//SetupSystem
+	rootfsOpenFile,			//OpenFile
+	rootfsReadFile,			//ReadFile
+	rootfsWriteFile,		//WriteFile
+	rootfsControlFile,		//Control
+	rootfsRenameFile,		//Rename
 };
 

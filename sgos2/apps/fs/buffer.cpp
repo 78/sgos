@@ -5,83 +5,107 @@
 #include <sgos.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <system.h>
-#include <queue.h>
-#include "vfs.h"
+#include <api.h>
+#include "fsservice.h"
 #include "buffer.h"
 
-using namespace System;
-
-queue_t	empty_buffer;
+buffer_t*	freebuf_head = 0;
+buffer_t*	freebuf_tail = 0;
 
 static void delete_buffer( const void* ptr )
 {
 	buffer_t* buf = (buffer_t*)ptr;
-	free(buf->data);
+	SysFreeMemory(SysGetCurrentSpaceId(), buf->data);
 	free(buf);
 }
 
-static int search_buffer( const void* ptr, const void* block )
+static buffer_t* freebuf_get()
 {
-	if( ((buffer_t*)ptr)->block == (size_t)block )
-		return 1;
-	// continue searching
-	return 0;
+	buffer_t* buf = freebuf_head;
+	if( buf == 0 )
+		return 0;
+	if( buf->next )
+		buf->next->prev = 0;
+	else
+		freebuf_tail = 0;
+	freebuf_head = buf->next;
+	return buf;
+}
+
+static void freebuf_put( buffer_t *buf )
+{
+	if( freebuf_tail )
+		freebuf_tail->next = buf;
+	buf->prev = freebuf_tail;
+	buf->next = 0;
+	freebuf_tail = buf;
+	if( freebuf_head == 0 )
+		freebuf_head = freebuf_tail;
 }
 
 // 向设备发送读取消息
 static int readBlock( buffer_t *buf )
 {
-	Messenger msger;
-	msger.parse("<msg></msg>");
+	Message msg;
+	int result;
+	memset( &msg, 0, sizeof(msg) );
 	// 目标驱动
-	msger.putString( ":to", buf->device->driver );
-	// 读扇区操作
-	msger.mkdir("ReadSector");
+	msg.ThreadId = buf->device->thread;
+	// 扇区操作
+	msg.Command = Device_ReadSector;
 	// 设备ID
-	msger.putUInt( ":part", buf->device->devID );
-	// 读取扇区号
-	msger.putUInt( ":start", BLOCK_TO_SECTOR(buf->block) );
-	// 读取扇区数
-	msger.putUInt( ":count", BLOCK_TO_SECTOR(1) );
+	msg.Arguments[0] = buf->device->devID;
+	// 扇区号
+	msg.Arguments[1] = BLOCK_TO_SECTOR(buf->block);
+	// 扇区数
+	msg.Arguments[2] = BLOCK_TO_SECTOR(1);
+	// 数据缓冲地址
+	msg.Large[0] = (size_t)buf->data;
 	// 发送请求
-	msger.request();
-	if( msger.redir("/error") ){
-		printf("[vfs]read Device error: %s\n", msger.getString("/error:string") );
-		return -msger.getInt("/error:code");
-	}else if(msger.redir("/ReadSector")){
-		msger.read( ".", buf->data, BLOCK_SIZE );
+	result = Api_Send( &msg, 0 ); 
+	if( result < 0 )
+		return -ERR_UNKNOWN;
+	result = Api_Receive( &msg, INFINITE );
+	if( result < 0 ){
+		printf("[vfs]receive message failed. \n");
+		return result;
+	}
+	if( msg.Code < 0 ){
+		printf("[vfs]read buffer failed. The device %d has a problem.\n", buf->device->devID);
+		return msg.Code;
 	}
 	return 0;
 }
 
 static int writeBlock( buffer_t * buf )
 {
-	Messenger msger;
-	msger.parse("<msg></msg>");
+	Message msg;
+	int result;
+	memset( &msg, 0, sizeof(msg) );
 	// 目标驱动
-	msger.putString( ":to", buf->device->driver );
+	msg.ThreadId = buf->device->thread;
 	// 扇区操作
-	msger.mkdir("WriteSector");
+	msg.Command = Device_WriteSector;
 	// 设备ID
-	msger.putUInt( ":part", buf->device->devID );
+	msg.Arguments[0] = buf->device->devID;
 	// 扇区号
-	msger.putUInt( ":start", BLOCK_TO_SECTOR(buf->block) );
+	msg.Arguments[1] = BLOCK_TO_SECTOR(buf->block);
 	// 扇区数
-	msger.putUInt( ":count", BLOCK_TO_SECTOR(1) );
+	msg.Arguments[2] = BLOCK_TO_SECTOR(1);
 	// 数据内容
-	msger.write( ".", buf->data, BLOCK_SIZE );
+	msg.Large[0] = (size_t)buf->data;
 	// 发送请求
-	msger.request();
-	if( msger.redir("/error") ){
-		printf("[vfs]write Device error: %s\n", msger.getString("/error:string") );
-		return -msger.getInt("/error:code");
-	}else {
-		msger.redir("/WriteSector");
-		if( strcmp(msger.getString(":result"), "ok")!=0 ){
-			printf("[vfs]write Device failed.\n");
-			return -ERR_UNKNOWN;
-		}
+	result = Api_Send( &msg, 0 ); 
+	if( result < 0 )
+		return -ERR_UNKNOWN;
+	result = Api_Receive( &msg, INFINITE );
+	if( result < 0 ){
+		printf("[vfs]receive message failed. \n");
+		return result;
+	}
+	if( msg.Code < 0 ){
+		printf("[vfs]write buffer failed. The device %d has a problem.\n", buf->device->devID);
+		return msg.Code;
 	}
 	return 0;
 }
@@ -90,23 +114,23 @@ static int writeBlock( buffer_t * buf )
 int buffer_init( size_t buf_mem )
 {
 	int ret, blk_count;
+	int sid = SysGetCurrentSpaceId();
 	buffer_t *buf;
-	ret = queue_create( &empty_buffer, 0, delete_buffer, "buffer_queue", 0 );
-	if( ret<0 )
-		return ret;
-	blk_count = buf_mem>>BLOCK_SIZE_BITS;
+	freebuf_head = 
+	freebuf_tail = 0;
+	blk_count = buf_mem >> BLOCK_SIZE_BITS;
 	for( int i=0; i<blk_count; i++ ){
 		buf = (buffer_t*)malloc(sizeof(buffer_t));
-		if( buf == NULL ){
+		if( buf == 0 ){
 			return -ERR_NOMEM;
 		}
 		memset( buf, 0, sizeof(buffer_t) );
-		buf->data = (uchar*)malloc( BLOCK_SIZE );
-		if( buf == NULL ){
+		buf->data = (uchar*)SysAllocateMemory( sid, BLOCK_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
+		if( buf == 0 ){
 			return -ERR_NOMEM;
 		}
-		// put empty buffer to empty queue.
-		queue_push_front( &empty_buffer, buf );
+		// put empty buffer to empty chain. 
+		freebuf_put( buf );
 	}
 	printf("[vfs]buffer_init OK!\n");
 	return 0;
@@ -115,20 +139,21 @@ int buffer_init( size_t buf_mem )
 // 获取缓冲区
 buffer_t* buffer_get( device_t* dev, size_t block )
 {
-	qnode_t* nod;
 	buffer_t* buf;
 	//临界区....
-	buf = (buffer_t*)queue_search( &dev->bufferQueue, (void*)block, search_buffer, &nod );
-	if( buf ){
-		buf->reference ++;
-		return buf;
+	for( buf=dev->firstBuffer; buf; buf=buf->next ){
+		if( buf->block == block ){
+			buf->reference ++;
+			return buf;
+		}
 	}
 	//可以查找最近释放的几个块，看有没有需要的
+	//Not implemented!
 	//若无，则随便获取一个空闲块
-	buf = (buffer_t*)queue_pop_front( &empty_buffer );
+	buf = freebuf_get();
 	if( !buf ){
 		printf("[vfs]buffer_get failed: no empty buffer.\n");
-		return (buffer_t*)0;
+		return 0;
 	}
 	if( buf->dirty )
 		writeBlock(buf);
@@ -138,30 +163,35 @@ buffer_t* buffer_get( device_t* dev, size_t block )
 	buf->dirty = 0;
 	//读取块数据
 	if( readBlock( buf )<0 ){
-		queue_push_front( &empty_buffer, buf );
+		freebuf_put( buf );
 		printf("[vfs]readBlock failed.\n");
 		return (buffer_t*)0;
 	}
 	//添加到设备中
-	queue_push_front( &dev->bufferQueue, buf );
+	if( dev->firstBuffer )	
+		dev->firstBuffer->prev = buf;
+	buf->next = dev->firstBuffer;
+	dev->firstBuffer = buf;
 	//设置引用计数
 	buf->reference = 1;
 	return buf;
 }
 
 // 释放缓冲区
+#define CHAIN_DELETE( i, l ) { \
+	if( i->prev ){ i->prev->next = i->next; }else{ l = i->next; }	\
+	if( i->next ){ i->next->prev = i->prev; } \
+	}
 void buffer_put( buffer_t* buf )
 {
-	qnode_t* nod;
 	device_t* dev = buf->device;
+	if( buf->reference==0 )
+		printf("[vfs]##BUG at buffer_put buf->reference==0\n");
 	//临界区....
-	buf = (buffer_t*)queue_quick_search( &dev->bufferQueue, (void*)buf, &nod );
-	if( buf && buf->reference>0 ){
-		buf->reference --;
-		if( buf->reference == 0 ){
-			queue_remove( &dev->bufferQueue, nod );
-			queue_push_front( &empty_buffer, buf );
-		}
+	buf->reference --;
+	if( buf->reference == 0 ){
+		CHAIN_DELETE( buf, dev->firstBuffer );
+		freebuf_put( buf );
 	}
 }
 
@@ -169,16 +199,12 @@ void buffer_put( buffer_t* buf )
 void buffer_sync()
 {
 	buffer_t* buf;
-	int cont = 1;
-	do{
-		buf = (buffer_t*)queue_pop_front( &empty_buffer );
+	//临界区
+	for( buf = freebuf_head; buf; buf=buf->next ){
 		if( buf->device ){
 			if( buf->dirty )
 				writeBlock(buf);
 			buf->device = (device_t*)0;
-		}else{
-			cont = 0;
 		}
-		queue_push_back( &empty_buffer, buf );
-	}while( cont );
+	}
 }

@@ -75,7 +75,7 @@ int RtlPushFrontQueue( KQueue* q, void* data )
 {
 	KQueueNode* nod;
 	if( q->cur_num>=q->max_num ){
-		PERROR("##QUEUE %s is full.", q->name );
+		PERROR("##QUEUE %s is full max:%d.", q->name, q->max_num );
 		return -ERR_NOMEM;
 	}
 	nod = MmAllocateKernelMemory(sizeof(KQueueNode));
@@ -161,24 +161,26 @@ void RtlRemoveQueueElement( KQueue* q, KQueueNode* nod )
 	if( nod->prev )
 		nod->prev->next = nod->next;
 	else
-		q->back = NULL;
+		q->back = nod->next;
 	if( nod->next )
 		nod->next->prev = nod->prev;
 	else
-		q->front = NULL;
+		q->front = nod->prev;
+	-- q->cur_num;
 	//离开临界区
 	if( q->use_sem )
 		IpcUnlockSemaphore( q->semaphore );
 	MmFreeKernelMemory( nod );
 }
 
+// Note: Search start from the back!
 void* RtlSearchQueue( KQueue* q, void* v, KQueueSearcher search, KQueueNode** ret_nod )
 {
 	KQueueNode * nod = NULL;
 	//进入临界区
 	if( q->use_sem )
 		IpcLockSemaphore( q->semaphore );
-	for( nod=q->front; nod; nod=nod->prev )
+	for( nod=q->back; nod; nod=nod->next )
 	{
 		if( search( nod->v, v ) )
 			break;
@@ -199,7 +201,7 @@ void* RtlQuickSearchQueue( KQueue* q, void* v, KQueueNode** ret_nod )
 	//进入临界区
 	if( q->use_sem )
 		IpcLockSemaphore( q->semaphore );
-	for( nod=q->front; nod; nod=nod->prev )
+	for( nod=q->back; nod; nod=nod->next )
 	{
 		if( nod->v == v )
 			break;

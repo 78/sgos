@@ -83,14 +83,13 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 	te = table + ((virt_addr<<10)>>22);
 	if( newpage )
 		RtlZeroMemory32( te, PAGE_SIZE>>2 );
-	if( flag&MAP_ADDRESS && te->v && te->a.present && te->a.physicalAddress!=(phys_addr>>12) && te->a.write )
-		PERROR("## Leaking memory at %X phys:%x  oldPhys:%x", virt_addr, phys_addr, te->a.physicalAddress<<12 );
 	//设置新的值
 	if( flag&MAP_ADDRESS ){
 		te->a.physicalAddress = phys_addr>>12;
 		//if we map a page , we want it can be accessed, so it should be present!
-		if( phys_addr!=0 && (!te->a.present) && !(attr&PAGE_ATTR_PRESENT) )
+		if( (!te->a.present) && !(attr&PAGE_ATTR_PRESENT) ){
 			te->a.present = 1;
+		}
 	}else{
 		phys_addr = te->a.physicalAddress<<12; //for map_zero
 	}

@@ -3,10 +3,11 @@
 
 #include <sgos.h>
 #include <queue.h>
-#include "vfs.h"
+#include "fsservice.h"
 
 // 缓冲区块结构
 typedef struct BUFFER{
+	struct BUFFER	*next, *prev;
 	// 指向所属设备
 	device_t	*device;
 	// 指向块号
@@ -22,7 +23,7 @@ typedef struct BUFFER{
 }buffer_t;
 
 // 磁盘缓冲区初始化
-int		buffer_init( size_t buf_mem );
+EXTERN int		buffer_init( size_t buf_mem );
 // 获取缓冲区
 EXTERN buffer_t*	buffer_get( device_t* dev, size_t block );
 // 释放缓冲区

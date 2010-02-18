@@ -1,11 +1,18 @@
 //API for SGOS2
 
 #include "apiImplement.h"
-#include "../../kernel/include/apidef.h"
+#include "../kernel/include/apidef.h"
+#include <stdio.h>
 
 int ReplyMessage( Message* msg )
 {
 	return Api_Send( msg, 0 );
+}
+
+int WaitMessage( Message* msg )
+{
+	msg->ThreadId = ANY_THREAD;
+	return ReceiveMessage( msg, INFINITE );
 }
 
 int ReceiveMessage( Message* msg, time_t timeout )
@@ -102,17 +109,17 @@ int SendMessageEx( uint dest, uint cmd, uint *arg1, uint *arg2, uint *arg3, uint
 	return result;
 }
 
-void ExitSpace(uint code)
+void SysExitSpace(uint code)
 {
 	SendMessage( SystemId, System_ExitSpace, &code, NULL, NULL, NULL, NULL );
 }
 
-void ExitThread(uint code)
+void SysExitThread(uint code)
 {
 	SendMessage( SystemId, System_ExitThread, &code, NULL, NULL, NULL, NULL );
 }
 
-void* AllocateGlobalMemory( size_t siz, uint attr, uint flag )
+void* SysAllocateGlobalMemory( size_t siz, uint attr, uint flag )
 {
 	void* ptr;
 	uint result = SendMessage( SystemId, System_AllocateGlobalMemory, &siz, &attr, 
@@ -122,17 +129,17 @@ void* AllocateGlobalMemory( size_t siz, uint attr, uint flag )
 	return ptr;
 }
 
-void FreeGlobalMemory( void* p )
+void SysFreeGlobalMemory( void* p )
 {
 	SendMessage( SystemId, System_FreeGlobalMemory, (void*)&p, NULL, NULL, NULL, NULL );
 }
 
-int GetSystemInformation( void* p )
+int SysGetSystemInformation( void* p )
 {
 	//System_GetSystemInformation
 }
 
-int TerminateThread( uint tid, uint code )
+int SysTerminateThread( uint tid, uint code )
 {
 	int result;
 	result = SendMessage( SystemId, System_TerminateThread, &tid, &code, NULL, NULL, &code );
@@ -141,7 +148,7 @@ int TerminateThread( uint tid, uint code )
 	return code;
 }
 
-uint GetCurrentThreadId()
+uint SysGetCurrentThreadId()
 {
 	int result;
 	uint code;
@@ -151,7 +158,7 @@ uint GetCurrentThreadId()
 	return code;
 }
 
-int CreateThread( uint sid, size_t proc_addr )
+int SysCreateThread( uint sid, size_t proc_addr )
 {
 	int result;
 	uint code;
@@ -161,17 +168,15 @@ int CreateThread( uint sid, size_t proc_addr )
 	return code;
 }
 
-int SleepThread( uint ms )
+int SysSleepThread( uint ms )
 {
-	int result;
-	uint code;
-	result = SendMessage( SystemId, System_SleepThread, &ms, NULL, NULL, NULL, &code );
-	if( result < 0 )
-		return result;
-	return code;
+	Message msg = {SystemId, 0, System_SleepThread};
+	msg.Arguments[0] = ms;
+	int result = Api_Send( &msg, INFINITE );
+	return result;
 }
 
-int WakeupThread( uint tid )
+int SysWakeupThread( uint tid )
 {
 	int result;
 	uint code;
@@ -181,7 +186,7 @@ int WakeupThread( uint tid )
 	return code;
 }
 
-int ResumeThread( uint tid )
+int SysResumeThread( uint tid )
 {
 	int result;
 	uint code;
@@ -191,7 +196,7 @@ int ResumeThread( uint tid )
 	return code;
 }
 
-int SuspendThread( uint tid )
+int SysSuspendThread( uint tid )
 {
 	int result;
 	int code;
@@ -201,7 +206,7 @@ int SuspendThread( uint tid )
 	return code;
 }
 
-int JoinThread( uint tid, time_t timeout )
+int SysJoinThread( uint tid, time_t timeout )
 {
 	int result;
 	int code;
@@ -211,7 +216,7 @@ int JoinThread( uint tid, time_t timeout )
 	return code;
 }
 
-int TerminateSpace( uint sp )
+int SysTerminateSpace( uint sp )
 {
 	int result;
 	int code;
@@ -221,7 +226,7 @@ int TerminateSpace( uint sp )
 	return code;
 }
 
-uint GetCurrentSpaceId( )
+uint SysGetCurrentSpaceId( )
 {
 	int result;
 	uint code;
@@ -231,7 +236,7 @@ uint GetCurrentSpaceId( )
 	return code;
 }
 
-int CreateSpace( uint parent )
+int SysCreateSpace( uint parent )
 {
 	int result;
 	int code;
@@ -241,7 +246,7 @@ int CreateSpace( uint parent )
 	return code;
 }
 
-int DestroySpace( uint sp, uint code )
+int SysDestroySpace( uint sp, uint code )
 {
 	int result;
 	result = SendMessage( SystemId, System_DestroySpace, &sp, &code, NULL, NULL, &code );
@@ -250,7 +255,7 @@ int DestroySpace( uint sp, uint code )
 	return code;
 }
 
-void* AllocateMemory( uint sp, uint siz, uint attr, uint flag )
+void* SysAllocateMemory( uint sp, uint siz, uint attr, uint flag )
 {
 	int result;
 	void* ptr;
@@ -260,26 +265,37 @@ void* AllocateMemory( uint sp, uint siz, uint attr, uint flag )
 	return ptr;
 }
 
-void FreeMemory( uint sp, void* ptr )
+void* SysAllocateMemoryAddress( uint sp, size_t addr, uint siz, uint attr, uint flag )
+{
+	int result;
+	void* ptr;
+	result = SendMessageEx( SystemId, System_AllocateAddress, &sp, &addr, &siz, &attr, &flag, 
+		NULL, NULL, NULL, (void*)&ptr );
+	if( result < 0 )
+		return NULL;
+	return ptr;
+}
+
+void SysFreeMemory( uint sp, void* ptr )
 {
 	SendMessage( SystemId, System_FreeMemory, &sp, (void*)&ptr, NULL, NULL, NULL );
 }
 
-int WriteMemory( uint sp, size_t addr, void* ptr, size_t count )
+int SysWriteMemory( uint sp, size_t addr, void* ptr, size_t count )
 {
 	int code;
 	SendMessage( SystemId, System_WriteMemory, &sp, &addr, (void*)&ptr, &count, &code );
 	return code;
 }
 
-int ReadMemory( uint sp, size_t addr, void* ptr, size_t count )
+int SysReadMemory( uint sp, size_t addr, void* ptr, size_t count )
 {
 	int code;
 	SendMessage( SystemId, System_ReadMemory, &sp, &addr, (void*)&ptr, &count, &code );
 	return code;
 }
 
-int QueryMemory( uint sp, uint addr, size_t *phys_addr, uint* attr )
+int SysQueryMemory( uint sp, uint addr, size_t *phys_addr, uint* attr )
 {
 	int result;
 	int code;
@@ -289,7 +305,7 @@ int QueryMemory( uint sp, uint addr, size_t *phys_addr, uint* attr )
 	return code;
 }
 
-int SetMemoryAttribute( uint sp, size_t addr, size_t siz, uint attr )
+int SysSetMemoryAttribute( uint sp, size_t addr, size_t siz, uint attr )
 {
 	int result;
 	int code;
@@ -299,7 +315,7 @@ int SetMemoryAttribute( uint sp, size_t addr, size_t siz, uint attr )
 	return code;
 }
 
-int AcquirePhysicalPages( uint sp, size_t addr, size_t siz )
+int SysAcquirePhysicalPages( uint sp, size_t addr, size_t siz )
 {
 	int result;
 	int code;
@@ -309,7 +325,7 @@ int AcquirePhysicalPages( uint sp, size_t addr, size_t siz )
 	return code;
 }
 
-int ReleasePhysicalPages( uint sp, size_t addr, size_t siz )
+int SysReleasePhysicalPages( uint sp, size_t addr, size_t siz )
 {
 	int result;
 	int code;
@@ -319,12 +335,23 @@ int ReleasePhysicalPages( uint sp, size_t addr, size_t siz )
 	return code;
 }
 
-int MapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr, uint flag )
+int SysMapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr, uint flag )
 {
 	int result;
 	int code;
 	result = SendMessageEx( SystemId, System_MapMemory, &sp, &addr, &siz, &phys_addr, &attr, 
 		&flag, NULL, NULL, &code );
+	if( result < 0 )
+		return result;
+	return code;
+}
+
+int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, uint flag )
+{
+	int result;
+	int code;
+	result = SendMessageEx( SystemId, System_SwapMemory, &dest_sp, &dest_addr, &src_addr, 
+		&siz, &flag, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;

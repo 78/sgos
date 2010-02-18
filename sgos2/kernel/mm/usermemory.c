@@ -126,7 +126,7 @@ void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint p
 			return NULL;
 		}
 	}else{
-		ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, (size_t)ptr, 0, siz,
+		ArMapMultiplePages( &space->PageDirectory, (size_t)ptr, 0, siz,
 			PAGE_ATTR_USER|PAGE_ATTR_ALLOCATED|pattr, MAP_ATTRIBUTE );
 	}
 	return ptr;

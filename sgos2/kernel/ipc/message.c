@@ -80,6 +80,11 @@ int	IpcSend(
 	up( &thr_dest->Semaphore );
 	//wake up the thread
 	TmWakeupThread( thr_dest );
+#if 0
+	if( usermsg->Command != System_SleepThread )
+		KdPrintf("%x sendto %x  cmd:%x arg1:%d\n", kmsg->Source->ThreadId, kmsg->Destination->ThreadId, 
+			usermsg->Command, usermsg->Arguments[0] );
+#endif
 	return 0;	//success
 }
 
@@ -93,9 +98,9 @@ int	IpcCall(
 	int ret = IpcSend( usermsg, flag );
 	if( ret!=0 || timeout==0 )
 		return ret;
-	TmSleepThread( timeout );
+	TmSleepThread( TmGetCurrentThread(), timeout );
 	//determine if we have got the reply message
-	PERROR("## waring!, not implemented.");
+	//PERROR("## waring!, not implemented.");
 	return 0;
 }
 
@@ -129,7 +134,7 @@ int	IpcReceive(
 	int ret;
 	uint startSleepTime = ArGetMilliSecond();
 	thr_src = NULL;
-	if( usermsg->ThreadId != 0 )
+	if( usermsg->ThreadId != ANY_THREAD )
 		thr_src = (KThread*)TmGetThreadById( usermsg->ThreadId );
 	thr_cur = TmGetCurrentThread();
 _recv_search:
@@ -147,14 +152,14 @@ _recv_search:
 			if( timeout!=INFINITE ){
 				rest = timeout - (ArGetMilliSecond()-startSleepTime);
 				if( rest < 0 ) //timeout happens
-					return ERR_TIMEOUT;
+					return -ERR_TIMEOUT;
 			}else{
 				rest = INFINITE;
 			}
 			//禁止中断发生的理由: ???
 			ArLocalSaveIrq( flags );
 			up( &thr_cur->Semaphore );
-			TmSleepThread( rest );
+			TmSleepThread( thr_cur, rest );
 			ArLocalRestoreIrq( flags );
 			goto _recv_search;
 		}
@@ -181,5 +186,10 @@ _recv_search:
 	}
 	//设置来源
 	usermsg->ThreadId = kmsg->Source->ThreadId;
+#if 0
+	if( usermsg->Command != System_SleepThread )
+		KdPrintf("%x recv from %x  cmd:%x arg1:%d\n", thr_cur->ThreadId, usermsg->ThreadId, 
+			usermsg->Command, usermsg->Arguments[0] );
+#endif
 	return ret;
 }

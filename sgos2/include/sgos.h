@@ -20,12 +20,17 @@
 
 #define PROCESS_NAME_LEN	128
 
+// basic information
+#define PAGE_SIZE	KB(4)
+#define PAGE_SIZE_BITS	12
+#define PAGE_ALIGN(a)	((a&0xFFF)?((a&0xFFFFF000)+0x1000):a)
+
 // units
 #define	MB(a) (a<<20)
 #define KB(a) (a<<10)
 
 #ifndef INFINITE
-#define INFINITE	(-1)
+#define INFINITE	((unsigned)(-1))
 #endif
 
 #ifndef NULL
@@ -49,23 +54,23 @@
 #define FILE_ATTR_SYSTEM	4	//系统文件，不允许用户直接访问。
 #define FILE_ATTR_HIDDEN	8	//隐藏文件
 
-//VFS (Copied from SGOS1)
+//ROOTFS (Copied from SGOS1)
 //Control
-#define VFS_SET_TYPE		1
-#define VFS_SET_VALUE		2
+#define ROOTFS_SET_TYPE		1
+#define ROOTFS_SET_VALUE		2
 //Type
-#define VFS_TYPE_NULL 		0	//空文件
-#define VFS_TYPE_FS		1	//子文件系统
-#define VFS_TYPE_DEV		2	//设备文件
-#define VFS_TYPE_DIR		3	//目录文件
-#define VFS_TYPE_STRING		4	//字符串
-#define VFS_TYPE_PIPE		5	//管道
-#define VFS_TYPE_DEVSYS		6	//设备系统
+#define ROOTFS_TYPE_NULL 		0	//空文件
+#define ROOTFS_TYPE_FS		1	//子文件系统
+#define ROOTFS_TYPE_DEV		2	//设备文件
+#define ROOTFS_TYPE_DIR		3	//目录文件
+#define ROOTFS_TYPE_STRING		4	//字符串
+#define ROOTFS_TYPE_PIPE		5	//管道
+#define ROOTFS_TYPE_DEVSYS		6	//设备系统
 //Flag
-#define VFS_FLAG_TEMP		1	//临时文件
-#define VFS_FLAG_KERNEL		2	//内核文件，用户进程禁止访问
-#define VFS_FLAG_READ		4	//可读
-#define VFS_FLAG_WRITE		8	//可写
+#define ROOTFS_FLAG_TEMP		1	//临时文件
+#define ROOTFS_FLAG_KERNEL		2	//内核文件，用户进程禁止访问
+#define ROOTFS_FLAG_READ		4	//可读
+#define ROOTFS_FLAG_WRITE		8	//可写
 
 #define SEEK_CUR		0
 #define SEEK_SET		1
@@ -81,6 +86,7 @@
 #ifndef STDERR
 #define STDERR 2
 #endif
+
 
 //目录搜索
 typedef struct _DIRECTORY_ENTRY{
@@ -109,7 +115,8 @@ typedef struct ProcessInformation{
 	char*			EnvironmentViriables;		//环境变量
 }ProcessInformation;
 
-
+//Space
+#define SPACEID(a) (a>>16)
 typedef struct SpaceInformation{
 	
 }SpaceInformation;
@@ -139,11 +146,12 @@ typedef struct Message{
 	uint	ThreadId;	//send to who
 	time_t	Time;		//sendtime
 	uint	Command;	//
-	uint	Arguments[11];	//Parameters
-	uint	Code;		//Result Code
-	void*	Data;		//pointer of the data page
+	uint	Arguments[10];	//Parameters
+	int	Code;		//Result Code
+	size_t	Large[2];	//pointer of the data page
 }Message;
 #define MSG_KEEP			0x40000000
+#define ANY_THREAD			((uint)(-1))
 //System Message
 #define	SystemId			0
 #define System_GetSystemInformation	0x00000001
@@ -172,9 +180,12 @@ typedef struct Message{
 #define System_AcquirePhysicalPages	0x0000200E
 #define System_ReleasePhysicalPages	0x0000200F
 #define System_MapMemory		0x00002010
+#define System_SwapMemory		0x00002011
+#define System_AllocateAddress		0x00002012
 
 // Service Manager
 #define SM_INFORMATION_SIZE	KB(4)
+#define SI_MAX   (SM_INFORMATION_SIZE/sizeof(ServiceInformation))
 #define SERVICE_NAME_LENGTH	20
 #define THREAD_TERM_EVENT	1
 #define PROCESS_TERM_EVENT	2
@@ -192,6 +203,36 @@ typedef struct ServiceInformation{
 	char	ServiceName[SERVICE_NAME_LENGTH];
 }ServiceInformation;
 
+//wProcess Service
+#define wProcessId		2
+#define wProcess_Create		0x0001
+#define wProcess_Terminate	0x0002
+#define wProcess_Suspend	0x0003
+#define wProcess_Resume		0x0004
+
+//Harddisk Service
+#define HarddiskId		3
+
+//FileSystem Service
+#define FileSystemId		4
+#define File_Open		0x0001
+#define File_Close		0x0002
+#define File_Read		0x0003
+#define File_Write		0x0004
+#define File_Seek		0x0005
+#define File_SetSize		0x0006
+#define File_Control		0x0007
+
+//Device Manager Service
+#define DeviceManagerId		5
+#define Device_Register		0x0001
+#define Device_Unregister	0x0002
+#define Device_ReadSector	0x0001
+#define Device_WriteSector	0x0002
+#define DEV_TYPE_ROOT		0x0000
+#define DEV_TYPE_FLOPPY		0x0001
+#define DEV_TYPE_HD		0x0002
+
 // Intel x86 Cpu Registers
 typedef struct ThreadContext{
 	t_32			gs, fs, es, ds;
@@ -207,6 +248,7 @@ typedef struct ThreadContext{
 #define MAP_ZERO		8
 #define ALLOC_VIRTUAL		1
 #define ALLOC_ZERO		2
+#define ALLOC_SWAP		4
 
 #define MEMORY_ATTR_WRITE	(1<<1)	//页面可写
 #define MEMORY_ATTR_USER	(1<<2)	//页面为用户级

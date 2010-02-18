@@ -115,7 +115,7 @@ int TmTerminateThread( KThread* thr, uint code );
 int TmWakeupThread( KThread* thr );
 int TmResumeThread( KThread* thr );
 int TmSuspendThread( KThread* thr );
-int TmSleepThread( uint ms );
+int TmSleepThread( KThread* thr, uint ms );
 void TmJoinThread( KThread* thr );
 void TmInitializeThreadManagement();
 KThread* TmGetThreadById( uint tid );
