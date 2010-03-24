@@ -65,7 +65,7 @@ static void registerDevice( uint part )
 	uint tid ;
 	Message msg;
 	while( !(tid= SmGetServiceThreadById( DeviceManagerId )) )
-		SysSleepThread(500);
+		SysSleepThread(200);
 	msg.ThreadId = tid;
 	msg.Command = Device_Register;
 	msg.Arguments[0] = DEV_TYPE_HD;

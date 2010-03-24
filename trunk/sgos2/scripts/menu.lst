@@ -16,11 +16,11 @@ title SGOS2
 	root (hd0,0)
 	kernel /sgos2/kernel.bin root=c:
 	module /sgos2/vm86.com
-	module /sgos2/hello.exe
 	module /sgos2/servicemanager.exe
 	module /sgos2/filesystem.exe
-#	module /sgos2/wprocess.exe
 	module /sgos2/harddisk.exe
+#	module /sgos2/hello.exe
+	module /sgos2/wprocess.exe
 
 # Halt the machine
 title Turn off power!

@@ -148,7 +148,19 @@ buffer_t* buffer_get( device_t* dev, size_t block )
 		}
 	}
 	//可以查找最近释放的几个块，看有没有需要的
-	//Not implemented!
+	for( buf=freebuf_tail; buf; buf=buf->prev ){
+		if( buf->device==dev && buf->device->devID==dev->devID && buf->block == block ){
+			if( buf->next )
+				buf->next->prev = buf->prev;
+			else
+				freebuf_tail = buf->prev;
+			if( buf->prev )
+				buf->prev->next = buf->next;
+			else
+				freebuf_head = buf->next;
+			goto Found;
+		}
+	}
 	//若无，则随便获取一个空闲块
 	buf = freebuf_get();
 	if( !buf ){
@@ -167,13 +179,15 @@ buffer_t* buffer_get( device_t* dev, size_t block )
 		printf("[vfs]readBlock failed.\n");
 		return (buffer_t*)0;
 	}
+Found:
 	//添加到设备中
 	if( dev->firstBuffer )	
 		dev->firstBuffer->prev = buf;
 	buf->next = dev->firstBuffer;
+	buf->prev = 0;
 	dev->firstBuffer = buf;
 	//设置引用计数
-	buf->reference = 1;
+	++ buf->reference;
 	return buf;
 }
 

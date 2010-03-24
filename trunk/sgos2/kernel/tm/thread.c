@@ -77,8 +77,8 @@ KThread* TmGetThreadById( uint tid )
 	return NULL;
 }
 
-//创建一个线程
-KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
+//创建线程，初始化相关信息
+KThread* TmCreateAdvancedThread( KSpace* space, size_t entry_addr, size_t stack_limit, size_t stack_base, ThreadInformation* ti, int flag )
 {
 	KThread* thr;
 	SCHEDULE_INFO* sched;
@@ -105,8 +105,9 @@ KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
 	thr->Space = space;
 	thr->ThreadState = TS_INIT;
 	thr->SchedulePriority = PRI_NORMAL;
+	thr->UserModeThreadInformation = ti;
 	thr->EntryAddress = entry_addr;
-	thr->StackLimit = THREAD_STACK_SIZE;
+	thr->StackLimit = stack_limit;
 	if( flag & BIOS_THREAD )
 		thr->InBiosMode = 1;
 	if( flag & KERNEL_THREAD ){//创建用户态线程？？
@@ -114,16 +115,19 @@ KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
 	}else{
 		thr->IsKernelThread = 0;
 		//用户态线程堆栈
-		if( !thr->InBiosMode)
-			thr->StackBase = (uint)MmAllocateUserMemory( space, thr->StackLimit, 
-				PAGE_ATTR_WRITE, 0);
+		if( !thr->InBiosMode){
+			thr->StackLimit = stack_limit;
+			thr->StackBase = stack_base;
+			if( stack_limit < PAGE_SIZE )
+				thr->StackLimit = THREAD_STACK_SIZE;
+			if( stack_base == 0 )
+				thr->StackBase = (uint)MmAllocateUserMemory( space, thr->StackLimit, 
+					PAGE_ATTR_WRITE, 0);
+			if( ti == NULL )
+				thr->UserModeThreadInformation = (ThreadInformation*)MmAllocateUserMemory( space, PAGE_SIZE, 
+					PAGE_ATTR_WRITE, ALLOC_ZERO|ALLOC_HIGHMEM );
+		}
 	}
-	/* Do this in process management 
-	//初始化用户态信息
-	if( thr->IsKernelThread == 0 ){
-		InitializeThreadInformation( thr );
-	}
-	*/
 	//初始化寄存器
 	ArInitializeThreadRegisters( thr, TmGetCurrentThread(), NULL, entry_addr, 
 		thr->StackBase + thr->StackLimit );
@@ -141,6 +145,12 @@ KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
 	return thr;
 }
 
+//创建一个线程
+KThread* TmCreateThread( KSpace* space, size_t entry_addr, uint flag )
+{
+	return TmCreateAdvancedThread( space, entry_addr, 0, 0, NULL, flag );
+}
+
 //结束线程
 int TmTerminateThread( KThread* thr, uint code )
 {
@@ -154,6 +164,11 @@ int TmTerminateThread( KThread* thr, uint code )
 	space = thr->Space;
 	//如果线程睡眠了，怎么办？
 	down( &thr->Semaphore );
+	if( thr == TmGetCurrentThread() )
+		//禁止切换线程
+		ArLocalSaveIrq(flags);
+	//设置状态为死亡
+	TmSetThreadState( thr, TS_DEAD );
 	//线程退出码
 	thr->ExitCode = code;
 	//清空消息队列
@@ -165,15 +180,12 @@ int TmTerminateThread( KThread* thr, uint code )
 	//回收堆栈
 	if( !thr->IsKernelThread )//用户态线程？？
 		MmFreeUserMemory( space, (void*)thr->StackBase );
-	//禁止切换线程，因为当状态为死亡后，被时钟切换后就再也回不来了
-	ArLocalSaveIrq(flags);
-	//设置状态为死亡
-	TmSetThreadState( thr, TS_DEAD );
 	//Wakeup all related sleeping threads
 	IpcDestroySemaphore( &thr->Semaphore );
 	//唤醒所有join线程
 	IpcDestroySemaphore( &thr->JoinSemaphore );
-	ArLocalRestoreIrq(flags);
+	if( thr == TmGetCurrentThread() )
+		ArLocalRestoreIrq(flags);
 	//线程切换
 	TmSchedule();
 	return 0;

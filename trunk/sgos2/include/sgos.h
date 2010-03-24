@@ -48,11 +48,13 @@
 #define FILE_FLAG_CREATE	1
 #define FILE_FLAG_APPEND	2
 #define FILE_FLAG_DELETE	4	//关闭文件时候自动删除
+#define FILE_FLAG_NOBUF		8	//不使用缓冲区
 
 #define FILE_ATTR_RDONLY	1	//只读文件
 #define FILE_ATTR_DIR		2	//目录文件
 #define FILE_ATTR_SYSTEM	4	//系统文件，不允许用户直接访问。
 #define FILE_ATTR_HIDDEN	8	//隐藏文件
+
 
 //ROOTFS (Copied from SGOS1)
 //Control
@@ -112,7 +114,7 @@ typedef struct ProcessInformation{
 	int			MainThreadId;			//主线程id
 	void*			GlobalStorage;			//进程变量存储地址
 	char*			CommandLine;			//命令行
-	char*			EnvironmentViriables;		//环境变量
+	char*			EnvironmentVariables;		//环境变量
 }ProcessInformation;
 
 //Space
@@ -128,7 +130,7 @@ typedef struct ThreadInformation{
 	size_t			StackLimit;		//08 堆栈大小
 	void*			OtherInformation;	//0C 线程其它信息
 	void*			ProcessInformation;	//10 进程信息块地址
-	void*			Unused;			//14 保留
+	char*			Unused;			//14 未使用
 	struct ThreadInformation*Self;			//18 指向线程信息块地址
 	char*			Environment;		//1C 线程环境信息
 	uint			ProcessId;		//20 进程id
@@ -182,6 +184,7 @@ typedef struct Message{
 #define System_MapMemory		0x00002010
 #define System_SwapMemory		0x00002011
 #define System_AllocateAddress		0x00002012
+#define System_DuplicateMemory		0x00002013
 
 // Service Manager
 #define SM_INFORMATION_SIZE	KB(4)
@@ -223,6 +226,21 @@ typedef struct ServiceInformation{
 #define File_SetSize		0x0006
 #define File_Control		0x0007
 
+//用户文件操作API
+typedef struct FILEBUF{
+	size_t	bufpos;		//缓冲区在文件中的位置
+	uchar*	bufptr;		//缓冲页面
+	size_t	bufsize;	//缓冲区大小
+	size_t	filesize;	//文件大小
+	int	curpos;		//当前读写指针
+	time_t	ctime;		//文件创建时间
+	time_t	mtime;		//文件修改时间
+	uint	attr;		//文件属性
+	uint	flag;		//文件打开参数
+	uint	mode;		//文件读写模式
+	int	fd;		//
+}FILEBUF;
+
 //Device Manager Service
 #define DeviceManagerId		5
 #define Device_Register		0x0001
@@ -249,6 +267,10 @@ typedef struct ThreadContext{
 #define ALLOC_VIRTUAL		1
 #define ALLOC_ZERO		2
 #define ALLOC_SWAP		4
+#define ALLOC_RANDOM		8
+#define ALLOC_HIGHMEM		16
+#define ALLOC_LOWMEM		32
+#define ALLOC_LAZY		64
 
 #define MEMORY_ATTR_WRITE	(1<<1)	//页面可写
 #define MEMORY_ATTR_USER	(1<<2)	//页面为用户级
@@ -267,6 +289,7 @@ typedef struct ThreadContext{
 #define ERR_IO			11	//IO error
 #define ERR_NOBUF		12	//Buffer too small
 #define ERR_TIMEOUT		13	//Timeout
+#define ERR_DISPOSED		14	//The object is disposed.
 
 //线程优先级
 #define PRI_REALTIME		1	//单线程独占模式

@@ -146,7 +146,7 @@ int device_init()
 {
 	deviceCount = 0;
 	memset( deviceList, 0, sizeof(deviceList));
-	deviceThread = SysCreateThread( SysGetCurrentSpaceId(), (size_t)&dev_service );
+	deviceThread = SysCreateThread( SysGetCurrentSpaceId(), (size_t)&dev_service, 0, 0, 0 );
 	return 0;
 }
 

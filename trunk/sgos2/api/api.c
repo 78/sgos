@@ -158,11 +158,12 @@ uint SysGetCurrentThreadId()
 	return code;
 }
 
-int SysCreateThread( uint sid, size_t proc_addr )
+int SysCreateThread( uint sid, size_t proc_addr, size_t stack_limit, size_t stack_base, void* ti )
 {
 	int result;
 	uint code;
-	result = SendMessage( SystemId, System_CreateThread, &sid, &proc_addr, NULL, NULL, &code );
+	result = SendMessageEx( SystemId, System_CreateThread, &sid, &proc_addr, &stack_limit, 
+		&stack_base, (void*)&ti, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -281,35 +282,11 @@ void SysFreeMemory( uint sp, void* ptr )
 	SendMessage( SystemId, System_FreeMemory, &sp, (void*)&ptr, NULL, NULL, NULL );
 }
 
-int SysWriteMemory( uint sp, size_t addr, void* ptr, size_t count )
-{
-	int code;
-	SendMessage( SystemId, System_WriteMemory, &sp, &addr, (void*)&ptr, &count, &code );
-	return code;
-}
-
-int SysReadMemory( uint sp, size_t addr, void* ptr, size_t count )
-{
-	int code;
-	SendMessage( SystemId, System_ReadMemory, &sp, &addr, (void*)&ptr, &count, &code );
-	return code;
-}
-
 int SysQueryMemory( uint sp, uint addr, size_t *phys_addr, uint* attr )
 {
 	int result;
 	int code;
 	result = SendMessage( SystemId, System_QueryMemory, &sp, &addr, (void*)phys_addr, (void*)attr, &code );
-	if( result < 0 )
-		return result;
-	return code;
-}
-
-int SysSetMemoryAttribute( uint sp, size_t addr, size_t siz, uint attr )
-{
-	int result;
-	int code;
-	result = SendMessage( SystemId, System_SetMemoryAttribute, &siz, &addr, &siz, &attr, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -352,6 +329,17 @@ int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, 
 	int code;
 	result = SendMessageEx( SystemId, System_SwapMemory, &dest_sp, &dest_addr, &src_addr, 
 		&siz, &flag, NULL, NULL, NULL, &code );
+	if( result < 0 )
+		return result;
+	return code;
+}
+
+int SysDuplicateMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz )
+{
+	int result;
+	int code;
+	result = SendMessage( SystemId, System_DuplicateMemory, &dest_sp, &dest_addr, &src_addr, 
+		&siz, &code );
 	if( result < 0 )
 		return result;
 	return code;

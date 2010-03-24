@@ -25,13 +25,16 @@
 #define GD_TSS_INDEX	5
 #define GD_TIB_INDEX	7
 
-#define KERNEL_BASE	0xC0000000
+#define KERNEL_BASE		0xC0000000
 #define KERNEL_MEMORY_BEG	( KERNEL_BASE+ MB(4) )
 #define KERNEL_MEMORY_END	0xE0000000
+#define KERNEL_MEMORY_POOL_BEG	KERNEL_MEMORY_BEG
+#define KERNEL_MEMORY_POOL_END	0xD0000000
 #define GLOBAL_MEMORY_BEG	KERNEL_MEMORY_END
 #define GLOBAL_MEMORY_END	( GLOBAL_MEMORY_BEG + MB(4) )
 
-#define IS_KERNEL_MEMORY(addr) ( addr >= KERNEL_BASE )
+#define IS_KERNEL_MEMORY(addr) ( addr >= KERNEL_BASE && addr < KERNEL_MEMORY_END )
+#define IS_GLOBAL_MEMORY(addr) ( addr >= GLOBAL_MEMORY_BEG )
 #define IS_USER_MEMORY(addr) ( addr < KERNEL_BASE )
 
 #define GET_STACK_POINTER(stk) __asm__ __volatile__("movl %%esp, %%eax" :"=a"(stk):)
@@ -164,7 +167,6 @@ typedef union PAGE_TABLE{
 #define PAGE_ATTR_ACCESS	(1<<5)	//页面被访问过
 #define PAGE_ATTR_GLOBAL	(1<<8)	//全局页
 #define PAGE_ATTR_SHARE		(1<<9)	//系统定义：共享页
-#define PAGE_ATTR_ALLOCATED	(1<<10)	//系统定义：已分配
 #define PAGE_ATTR_COPYONWRITE	(1<<11)	//系统定义：写时复制
 
 #define halt() __asm__("hlt")

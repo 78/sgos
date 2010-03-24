@@ -46,7 +46,7 @@ int ArInitializePaging(uint mem_size)
 	// KdPrintf("Allocating tables for kernel space\n");
 	dir_entry = (PAGE_DIR*)0xC0300000;
 	//虚拟地址
-	KernelPageDirectory.VirtualAddressInSpace0 = (size_t)dir_entry;
+	KernelPageDirectory.VirtualAddress = (size_t)dir_entry;
 	//内核进程页目录
 	KernelPageDirectory.PhysicalAddress = 0x00300000;
 	// 分配内核3G-4G的页表，0xC0000000 - 0xC0400000 已分配，所以 +1
@@ -91,8 +91,8 @@ void ArFlushPageTableEntry( uint virt_addr )
 //初始化页目录 
 void ArInitializePageDirectory( struct KPageDirectory* dir )
 {
-	PAGE_DIR* dir_entry = (PAGE_DIR*)dir->VirtualAddressInSpace0;
-	PAGE_DIR* kdir_entry = (PAGE_DIR*)KernelPageDirectory.VirtualAddressInSpace0;
+	PAGE_DIR* dir_entry = (PAGE_DIR*)dir->VirtualAddress;
+	PAGE_DIR* kdir_entry = (PAGE_DIR*)KernelPageDirectory.VirtualAddress;
 	// 复制内核3G-4G的页表，0xC0000000 - 0xFFFFFFFF
 	RtlCopyMemory32( dir_entry + 768, kdir_entry + 768, 1024-768 );
 	// 未分配的清0

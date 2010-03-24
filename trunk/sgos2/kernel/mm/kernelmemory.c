@@ -7,16 +7,25 @@
 #include <kd.h>
 #include <mm.h>
 
+KVirtualMemory KernelVirtualMemory;
 //Kernel Memory Information Pool
 allocator_t km_block;
 
 // 内核内存初始化
 void MmInitializeKernelMemoryPool()
 {
+	MmAcquirePhysicalPage( MmGetCurrentSpace(), KERNEL_MEMORY_BEG, PAGE_ATTR_WRITE, 
+		MAP_ATTRIBUTE);
 	mm_init_block( &km_block, 
 		KERNEL_MEMORY_BEG,			//address
 		KERNEL_MEMORY_END - KERNEL_MEMORY_BEG	//size
 		);
+	MmInitializeSpaceBasicInformation( MmGetCurrentSpace() );
+	MmInitializeVirtualMemory( &KernelVirtualMemory, KERNEL_MEMORY_BEG, KERNEL_MEMORY_END );
+	// Allocate for KernelMemoryPool
+	if( MmAllocateVirtualMemory( &KernelVirtualMemory, KERNEL_MEMORY_POOL_BEG, 
+		KERNEL_MEMORY_POOL_END-KERNEL_MEMORY_POOL_BEG, PAGE_ATTR_WRITE, ALLOC_LAZY ) == NULL )
+		KeBugCheck("Allocation failed for kernel virtual memory.");
 }
 
 // 分配内核内存

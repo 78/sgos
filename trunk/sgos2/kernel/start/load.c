@@ -83,9 +83,8 @@ int KeCreateBaseService(const char* srvName, size_t addr, size_t siz )
 		}else if( ext[1]=='c' && ext[2]=='o' && ext[3]=='m' ){//16位文件,BIOSCALL所需
 			//映射前1MB
 			KdPrintf("Installed bioscall service program at 0x%X\n", 0x10100 );
-			MmAllocateUserMemoryAddress(MmGetCurrentSpace(), 0x0, PAGE_SIZE, PAGE_ATTR_WRITE, ALLOC_VIRTUAL);
 			ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, 0, 
-				0, 1<<20, PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE, MAP_ADDRESS|MAP_ATTRIBUTE );
+				0, MB(1), PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE, MAP_ADDRESS|MAP_ATTRIBUTE );
 			RtlCopyMemory( (void*)0x10100, (void*)addr, siz );
 		}
 	}

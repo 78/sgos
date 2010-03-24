@@ -31,7 +31,8 @@ static void DoTmMessage(Message* msg )
 		result = msg->ThreadId;
 		break;
 	case System_CreateThread:
-		thread = TmCreateThread( MmGetSpaceById(msg->Arguments[0]), msg->Arguments[1], USER_THREAD );
+		thread = TmCreateAdvancedThread( MmGetSpaceById(msg->Arguments[0]), msg->Arguments[1], msg->Arguments[2], 
+			msg->Arguments[3], (ThreadInformation*)msg->Arguments[4], USER_THREAD );
 		if( thread == NULL )
 			result = -ERR_UNKNOWN;
 		else
@@ -92,7 +93,7 @@ static void DoMmMessage(Message* msg )
 			msg->Arguments[0] );
 		MmDestroySpace( space );
 		return;
-	case System_TerminateSpace:
+	case System_DestroySpace:
 		MmDestroySpace( MmGetSpaceById(msg->Arguments[0]) );
 		break;
 	case System_AllocateGlobalMemory:
@@ -139,22 +140,6 @@ static void DoMmMessage(Message* msg )
 		else
 			MmFreeUserMemory( space, (void*)msg->Arguments[1] );
 		break;
-	case System_WriteMemory:
-		space = MmGetSpaceById( msg->Arguments[0] );
-		if( space == NULL )
-			result = -ERR_WRONGARG;
-		else
-			result = MmWriteUserMemory( space, msg->Arguments[1],
-				(void*)msg->Arguments[2], msg->Arguments[3] );
-		break;
-	case System_ReadMemory:
-		space = MmGetSpaceById( msg->Arguments[0] );
-		if( space == NULL )
-			result = -ERR_WRONGARG;
-		else
-			result = MmReadUserMemory( space, msg->Arguments[1],
-				(void*)msg->Arguments[2], msg->Arguments[3] );
-		break;
 	case System_QueryMemory:
 		space = MmGetSpaceById( msg->Arguments[0] );
 		if( space == NULL )
@@ -162,14 +147,6 @@ static void DoMmMessage(Message* msg )
 		else
 			result = ArQueryPageInformation( &space->PageDirectory, msg->Arguments[1],
 				&msg->Arguments[2], &msg->Arguments[3] );
-		break;
-	case System_SetMemoryAttribute:
-		space = MmGetSpaceById( msg->Arguments[0] );
-		if( space == NULL )
-			result = -ERR_WRONGARG;
-		else
-			result = MmSetUserMemoryAttribute( space, msg->Arguments[1],
-				msg->Arguments[2], msg->Arguments[3] );
 		break;
 	case System_AcquirePhysicalPages:
 		space = MmGetSpaceById( msg->Arguments[0] );
@@ -192,8 +169,16 @@ static void DoMmMessage(Message* msg )
 		if( space == NULL )
 			result = -ERR_WRONGARG;
 		else
-			ArMapMultiplePages( &space->PageDirectory, msg->Arguments[1], msg->Arguments[3],
+			result = MmMapMemory( space, msg->Arguments[1], msg->Arguments[3],
 				msg->Arguments[2], msg->Arguments[4], msg->Arguments[5] );
+		break;
+	case System_DuplicateMemory:
+		space = MmGetSpaceById( msg->Arguments[0] );
+		if( space == NULL )
+			result = -ERR_WRONGARG;
+		else
+			result = MmDuplicateMultiplePhysicalPages( space, msg->Arguments[1], MmGetSpaceById(SPACEID(msg->ThreadId)),
+				msg->Arguments[2], msg->Arguments[3] );
 		break;
 	case System_SwapMemory:
 		space = MmGetSpaceById( msg->Arguments[0] );

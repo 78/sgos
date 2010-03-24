@@ -96,7 +96,7 @@ void ArInitializeThreadRegisters( KThread* thr, KThread* parent,
 			r->fs = GD_USER_TIB;
 			r->cs = GD_USER_CODE;
 		}
-		r->eflags = 0x202;	//标志寄存器
+		r->eflags = 0x202;
 		if( thr->Space->UserId == ADMIN_USER ){
 			//允许系统线程使用IO
 			//r->eflags |= EFLAG_IOPL3;

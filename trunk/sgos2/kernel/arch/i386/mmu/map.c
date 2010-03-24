@@ -27,7 +27,7 @@ int ArQueryPageInformation( struct KPageDirectory* dir, uint virt_addr, uint* ph
 	uint eflags;
 	ASSERT( virt_addr%PAGE_SIZE == 0 );
 	// get page directory entry
-	de = (PAGE_DIR*)dir->VirtualAddressInSpace0 + (virt_addr>>22);
+	de = (PAGE_DIR*)dir->VirtualAddress + (virt_addr>>22);
 	if( !de->v )	//no table
 		return -1;
 	// disable interrupts when we use ArMapTemporaryPage(spinlock is a must too)
@@ -47,12 +47,6 @@ int ArQueryPageInformation( struct KPageDirectory* dir, uint virt_addr, uint* ph
 			*attr |= PAGE_ATTR_WRITE;
 		if( d.a.present )
 			*attr |= PAGE_ATTR_PRESENT;
-		if( d.a.allocated )
-			*attr |= PAGE_ATTR_ALLOCATED;
-		if( d.a.copyOnWrite )
-			*attr |= PAGE_ATTR_COPYONWRITE;
-		if( d.a.share )
-			*attr |= PAGE_ATTR_SHARE;
 	}
 	return 0;
 }
@@ -66,7 +60,7 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 	ASSERT( phys_addr%PAGE_SIZE == 0 &&
 		virt_addr%PAGE_SIZE == 0 );
 	// get page directory entry
-	de = (PAGE_DIR*)dir->VirtualAddressInSpace0 + (virt_addr>>22);
+	de = (PAGE_DIR*)dir->VirtualAddress + (virt_addr>>22);
 	if( !de->v ){	//no table
 		newpage = 1;
 		de->v = MmGetPhysicalPage();
@@ -104,21 +98,8 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 			te->a.write = 0;
 		if( attr&PAGE_ATTR_PRESENT )
 			te->a.present = 1;
-		else{
+		else
 			te->a.present = 0;
-		}
-		if( attr&PAGE_ATTR_ALLOCATED )
-			te->a.allocated = 1;
-		else
-			te->a.allocated = 0;
-		if( attr&PAGE_ATTR_COPYONWRITE )
-			te->a.copyOnWrite = 1;
-		else
-			te->a.copyOnWrite = 0;
-		if( attr&PAGE_ATTR_SHARE )
-			te->a.share = 1;
-		else
-			te->a.share = 0;
 	}
 	if( flag&MAP_ZERO ){
 		void* p = (void*)ArMapTemporaryPage( phys_addr );
