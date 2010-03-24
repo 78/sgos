@@ -38,7 +38,7 @@ EXTERN void SysFreeGlobalMemory( void* p );
 EXTERN int SysGetSystemInformation( void* p );
 EXTERN int SysTerminateThread( uint tid, uint code );
 EXTERN uint SysGetCurrentThreadId();
-EXTERN int SysCreateThread( uint sid, size_t proc_addr );
+EXTERN int SysCreateThread( uint sid, size_t proc_addr, size_t stack_limit, size_t stack_base, void* ti );
 EXTERN int SysSleepThread( uint ms );
 EXTERN int SysWakeupThread( uint tid );
 EXTERN int SysResumeThread( uint tid );
@@ -59,6 +59,7 @@ EXTERN int SysAcquirePhysicalPages( uint sp, size_t addr, size_t siz );
 EXTERN int SysReleasePhysicalPages( uint sp, size_t addr, size_t siz );
 EXTERN int SysMapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr, uint flag );
 EXTERN int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, uint flag );
+EXTERN int SysDuplicateMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz );
 
 //clock.c
 EXTERN uint _GetTickCount();
@@ -70,13 +71,14 @@ EXTERN int SmRemoveService( uint serviceId );
 EXTERN int SmNotifyService( uint serviceId, uint eventFlag, const char* name );
 
 //filesystem.c
-EXTERN int FsOpenFile;
-EXTERN int FsCloseFile;
-EXTERN int FsWriteFile;
-EXTERN int FsReadFile;
-EXTERN int FsMoveFile;
-EXTERN int FsSetFileSize;
-EXTERN int FsReadDirecotry;
+EXTERN FILEBUF* FsOpenFile( const char* fname, uint mode, uint flag );
+EXTERN void FsCloseFile( FILEBUF* fb );
+EXTERN int FsReadFile( FILEBUF* fb, uchar* buf, int count );
+EXTERN int FsWriteFile( FILEBUF* fb, uchar* buf, int count );
+EXTERN int FsSetFilePointer( FILEBUF* fb, int pos, int method );
+EXTERN int FsSetFileSize( FILEBUF* fb, size_t newsize );
+EXTERN int FsControlFile( FILEBUF* fb, uint cmd, uint arg );
+EXTERN int FsReadDirectory( FILEBUF* fb, DIRENTRY* buf, int count );
 
 //process.c
 

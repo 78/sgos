@@ -352,7 +352,7 @@ static int fat32_writeclu( file_t* f, t_32 clu, char* clu_data )
 	FAT32DEV* fat = (FAT32DEV*)f->device->devFSInfo;
 	char* data = clu_data;	//数据缓冲区
 	t_32 block, pos, write=0, write_size;
-	block = (fat->dataAddr / fat->bytPerSec + (clu - 2) * fat->secPerClu ) / 2;	//fat数据区偏移
+	block = (fat->dataAddr / fat->bytPerSec + (clu - 2) * fat->secPerClu ) / (BLOCK_SIZE/SECTOR_SIZE);	//fat数据区偏移
 	write_size = fat->bytPerClu;	//读的大小
 	//下面这个干什么了？？？090804 HG :-(
 	//再次移植，还是没时间看懂 090901 HG :-(
@@ -388,13 +388,13 @@ static char* fat32_readclu( file_t* f, t_32 clu )
 	char* clu_data = (char*)malloc( fat->bytPerClu );
 	char* data = clu_data;	//数据缓冲区
 	t_32 block, pos, read=0, read_size;
-	block = (fat->dataAddr/512 + (clu-2)*fat->secPerClu)/2;	//fat数据区偏移
+	block = (fat->dataAddr/fat->bytPerSec + (clu-2)*fat->secPerClu)/(BLOCK_SIZE/SECTOR_SIZE);//fat数据区偏移
 	read_size = fat->bytPerClu;	//读的大小
 	//下面一句好强大。。
 	pos = ( (fat->dataAddr%BLOCK_SIZE) +
 	  (((clu-2)%BLOCK_SIZE)*fat->bytPerClu)%BLOCK_SIZE
 		)%BLOCK_SIZE;	//偏移
-	//printf("[fat32]block: %d  pos: %d\n", block, pos );
+//	printf("[fat32]block: %d  pos: %d\n", block, pos );
 	while( read_size>0 )
 	{
 		read = BLOCK_SIZE - pos;
@@ -700,7 +700,7 @@ read_clu:
 static int open_enumerator( char* fname, int size, time_t* ctime,
 	time_t* mtime, int attr, int cluster, file_t* f_new, char* comp_name )
 {
-	//printf("Comparing %s & %s\n", fname, comp_name );
+//	printf("Comparing %s & %s\n", fname, comp_name );
 	if( strnicmp( fname, comp_name, FILE_NAME_LEN )==0 )
 	{
 		f_new->pos = 0;
@@ -727,6 +727,7 @@ int fat32_open( file_t* f, const char *name )
 		strncpy( f->name, name, FILE_NAME_LEN );
 		return 0;
 	}
+	while(1);
 	//找不到文件
 	if( f->flag & FILE_FLAG_CREATE ) //创建
 	{

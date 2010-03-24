@@ -20,7 +20,7 @@ void parse( Message& msg )
 		dev = msg.Arguments[0];
 		sec_start = msg.Arguments[1];
 		sec_count = msg.Arguments[2];
-		printf("[HD]read sector %d,%d,%d\n", dev, sec_start, sec_count );
+	//	printf("[HD]read sector %d,%d,%d\n", dev, sec_start, sec_count );
 		if( sec_count > MAX_SECTORS )
 			sec_count = MAX_SECTORS;
 		msg.Code = lba_rw_sectors( dev, sec_start, sec_count, bufferPage, 0 );
@@ -32,7 +32,7 @@ void parse( Message& msg )
 		dev = msg.Arguments[0];
 		sec_start = msg.Arguments[1];
 		sec_count = msg.Arguments[2];
-		printf("[HD]write sector %d,%d,%d\n", dev, sec_start, sec_count );
+	//	printf("[HD]write sector %d,%d,%d\n", dev, sec_start, sec_count );
 		if( sec_count > MAX_SECTORS )
 			sec_count = MAX_SECTORS;
 		SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)bufferPage,
@@ -63,7 +63,7 @@ int startService()
 	//初始化驱动程序
 	lba_init();
 	//获取一个页面存放数据
-	bufferPage = (uchar*)SysAllocateMemory( SysGetCurrentSpaceId(), BUFFER_SIZE, MEMORY_ATTR_WRITE, 0 );
+	bufferPage = (uchar*)SysAllocateMemory( SysGetCurrentSpaceId(), BUFFER_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
 	if( bufferPage == NULL ){
 		printf("[HD] bufferPage == NULL \n");
 		SysExitSpace( (uint)-2);

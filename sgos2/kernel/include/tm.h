@@ -111,6 +111,7 @@ extern THREAD_BOX	ThreadingBox;	//调度线程盒子
 //函数定义
 KThread* TmGetCurrentThread();
 KThread* TmCreateThread( struct KSpace* space, size_t entry_addr, uint flag );
+KThread* TmCreateAdvancedThread( struct KSpace* space, size_t entry_addr, size_t stack_limit, size_t stack_base, ThreadInformation* ti, int flag );
 int TmTerminateThread( KThread* thr, uint code );
 int TmWakeupThread( KThread* thr );
 int TmResumeThread( KThread* thr );

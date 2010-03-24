@@ -45,7 +45,7 @@ void assert_err(char* file, char* function, int line, int b )
 	KdPrintf("[%s]%s(%d): Assertion failed.\n", file, function, line );
 	thr = TmGetCurrentThread();
 	if( thr ){
-		KdPrintf("Terminated. tid:%d SpaceId:%d\n", thr->ThreadId, thr->Space->SpaceId );
+		KdPrintf("Terminated. tid:%x SpaceId:%x\n", thr->ThreadId, thr->Space->SpaceId );
 		TmTerminateThread( thr, -1 );
 	}else
 		KeBugCheck("System halted.");

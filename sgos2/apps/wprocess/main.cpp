@@ -2,15 +2,17 @@
 #include <api.h>
 #include <stdio.h>
 #include <string.h>
+#include "module.h"
 
-
+extern void ProcessTest();
 static void ServiceMessageLoop()
 {
 	Message msg = {0};
 	int result;
 	printf("[wprocess]Program started.\n");
+	ProcessTest();
 	for( ;; ){
-		result = ReceiveMessage( &msg, INFINITE );
+		result = WaitMessage( &msg );
 		if( result < 0 ){
 			printf("[wprocess] Failed in Api_Receive: result = %d\n", result );
 			continue;
@@ -41,9 +43,10 @@ static void ServiceMessageLoop()
 
 int main()
 {
-	printf("SpaceId: %d\n", GetCurrentSpaceId() );
+	printf("[wprocess]SpaceId: %d\n", SysGetCurrentSpaceId() );
 	//Add Me
-	NotifyService( 0, 0, "wProcess" );
+	if( SmNotifyService( 0, 0, "wProcess" ) < 0 )
+		printf("[wprocess]Failed to add service.\n");
 	//Do Service Loop
 	ServiceMessageLoop();
 	return 0;

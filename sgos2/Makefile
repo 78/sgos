@@ -36,7 +36,7 @@ check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
 
 run:
-	qemu -m 512 -L ./qemu sgos2.img -soundhw pcspk
+	qemu -m 64 -L ./qemu sgos2.img -soundhw pcspk
 
 bochsdbg:
 	bochsdbg -q -f scripts/bochsrc.bxrc
@@ -46,7 +46,7 @@ bochs:
 
 windbg:
 	start insight kernel/kernel &
-	start qemu -no-kqemu -m 512 -s -S -L ./qemu sgos2.img &
+	start qemu -no-kqemu -m 64 -s -S -L ./qemu sgos2.img &
 
 debug:
 	qemu -no-kqemu -m 32 -s -S -L ./qemu sgos2.img &

@@ -6,10 +6,10 @@
 #include <kd.h>
 #include <rtl.h>
 
-KSpace* FirstSpace = NULL;		//初始地址空间
 extern KPageDirectory KernelPageDirectory;	//内核进程页目录
-KSpace* CurrentSpace = NULL;		//当前地址空间
-static unsigned short spaceId = 0;		//空间ID计数器
+KSpace* 	FirstSpace = NULL;		//初始地址空间
+KSpace* 	CurrentSpace = NULL;		//当前地址空间
+static ushort 	spaceId = 0;		//空间ID计数器
 
 // 产生一个地址空间的ID
 static int GenerateSpaceId()
@@ -44,9 +44,8 @@ void MmInitializeSpaceBasicInformation( KSpace* space )
 	//当前地址空间中用户态内存
 	mem_info->UserMemoryCapacity = 1<<30;		//1GB !!!
 	//当前地址空间中内核态内存
-	mem_info->KernelMemoryCapacity = 0x1000000;		//16MB !!!
-	//用户态空间内存初始化。
-	MmInitializeUserMemoryPool( space );
+	mem_info->KernelMemoryCapacity = 0x01000000;		//16MB !!!
+	MmInitializeVirtualMemory( &space->VirtualMemory, MB(1), KERNEL_BASE );
 }
 
 //第一个地址空间初始化
@@ -88,13 +87,19 @@ KSpace* MmCreateSpace( KSpace* parent )
 	// 标识
 	space->Magic = SPACE_MAGIC;
 	// allocate a PageDirectory
-	if( (space->PageDirectory.VirtualAddressInSpace0 = 
-		(size_t)MmAllocateUserMemory( FirstSpace, PAGE_SIZE, PAGE_ATTR_WRITE, 0) )==0 ){
+	if( (space->PageDirectory.VirtualAddress = (size_t)MmAllocateVirtualMemory( &KernelVirtualMemory, 
+		0, PAGE_SIZE, PAGE_ATTR_WRITE, ALLOC_RANDOM) )==0 ){
+		MmFreeKernelMemory( space );
+		return NULL;
+	}
+	if( MmAcquireMultiplePhysicalPages( MmGetCurrentSpace(), space->PageDirectory.VirtualAddress, 
+		PAGE_SIZE, PAGE_ATTR_WRITE, MAP_ATTRIBUTE ) < 0 ){
+		MmFreeVirtualMemory( &KernelVirtualMemory, (void*)space->PageDirectory.VirtualAddress );
 		MmFreeKernelMemory( space );
 		return NULL;
 	}
 	if( ArQueryPageInformation( &FirstSpace->PageDirectory, 
-		space->PageDirectory.VirtualAddressInSpace0, &space->PageDirectory.PhysicalAddress, NULL )!=0 )
+		space->PageDirectory.VirtualAddress, &space->PageDirectory.PhysicalAddress, NULL )!=0 )
 	{
 		PERROR("ArQueryPageInformation failed. no physical page.");
 	}
@@ -102,6 +107,7 @@ KSpace* MmCreateSpace( KSpace* parent )
 	ArInitializePageDirectory( &space->PageDirectory ); //arch/*/page.c
 	// restore basic information
 	MmInitializeSpaceBasicInformation( space );
+	PERROR("space Id:%x pdir: %x", space->SpaceId, space->PageDirectory.VirtualAddress );
 	// 设置用户
 	space->UserId = parent->UserId;
 	// 设置链表

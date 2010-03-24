@@ -149,6 +149,7 @@ int main()
 	memset( si, 0, SM_INFORMATION_SIZE );
 	//Add Me
 	AddService( 1, 0, SysGetCurrentThreadId(), "ServiceManager" );
+	result = readOnlyAddress[1].ServiceId;
 	//Do Service Loop
 	ServiceMessageLoop();
 	return 0;

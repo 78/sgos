@@ -60,8 +60,6 @@ void KeStartOs( size_t boot_info )
 	TmInitializeThreadManagement();
 	//set running thread
 	TmInitializeScheduler();
-	// restore basic information
-	MmInitializeSpaceBasicInformation( MmGetCurrentSpace() );
 	//init global memory pool
 	MmInitializeGlobalMemoryPool();
 	// create an init thread for the init process

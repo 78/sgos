@@ -91,7 +91,7 @@ void ffree(file_t* f)
 	if( !f )
 		return;
 	if( f->reference == 0 ){
-		printf("[vfs]## trying to free free file %s.\n", f->name);
+		printf("[vfs]## trying to free free file %d:%s.\n", fgetid(f), f->name);
 		SysExitThread(0);
 	}
 	-- f->reference;
@@ -116,27 +116,32 @@ static int try_open( file_t* cur, file_t** next, const char* name, uint flag )
 		return -ERR_NOPATH;
 	if( !cur->device->fs || !cur->device->fs->open )
 		return -ERR_NOPATH;
-	//Check if already open!
-	for( f=cur->child; f; f=f->next )
-		if( strncmp( f->name, name, FILE_NAME_LEN ) == 0 ){
-			f->reference ++;
-			*next = f;
-			return 0;
-		}
-	if( *next )
+	if( *next ){ 
+		//已经达到目标文件
 		f = *next;
-	else
+	}else{
+		//Check if already open!
+		for( f=cur->child; f; f=f->next )
+			if( strncmp( f->name, name, FILE_NAME_LEN ) == 0 ){
+				f->reference ++;
+				*next = f;
+				return 0;
+			}
 		f = falloc();
+	}
 	f->device = cur->device;
 	f->flag = flag;
+	f->parent = cur;
 	strncpy( f->name, name, FILE_NAME_LEN-1 );
 	//调用文件系统操作
 	int ret = cur->device->fs->open( f, name );
 	if( ret < 0 ){
+		f->parent = 0;
 		ffree(f);
 		return ret;
 	}
 	flinkto( f, cur );
+	*next = f;
 	return 0;
 }
 
@@ -146,7 +151,7 @@ static int name_file( file_t* f, const char* path )
 	char name[FILE_NAME_LEN];
 	int i, j, ret;
 	//file_t cur, next;
-	printf("name_file %s\n", path );
+//	printf("name_file %s \n", path );
 	file_t *parent = root;
 	file_t *next;
 	for( i=0, j=0; path[i]!='\0'; i++ ){
@@ -164,7 +169,6 @@ static int name_file( file_t* f, const char* path )
 					ffree( parent );
 					return ret;
 				}
-				printf("open %s ok\n", name );
 				parent = next;
 			}
 			++ parent->reference;
@@ -182,7 +186,7 @@ static int name_file( file_t* f, const char* path )
 	return 0;
 }
 
-int vfs_open( const char* path, uint mode, uint flag )
+int vfs_open( const char* path, uint mode, uint flag, file_t **retf )
 {
 	file_t* f;
 	int ret;
@@ -196,8 +200,9 @@ int vfs_open( const char* path, uint mode, uint flag )
 		ffree(f);
 		return ret;
 	}
+	*retf = f;
 	//没有可用的描述符
-	return fgetid(f);
+	return 0;
 }
 
 
@@ -319,10 +324,11 @@ static void vfs_service()
 		printf("[vfs] failed to notify service. ret=%d\n", ret);
 		SysExitThread(ret);
 	}
-	char* bufferPages = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), BUFFER_PAGES_SIZE, 0, 0 );
+	char* bufferPages = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), BUFFER_PAGES_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
 	Message msg;
 	printf("[vfs]vfs_service started.\n");
 	for(;;){
+		file_t *fp;
 		ret = WaitMessage( &msg );
 		if( ret<0 ){
 			printf("[vfs]vfs_service recv error.\n");;
@@ -331,9 +337,15 @@ static void vfs_service()
 		msg.Code = 0;
 		switch( msg.Command ){
 		case File_Open: //open("", mode, flag )
-			bufferPages[0] = '\0';
 			SysSwapMemory( SPACEID(msg.ThreadId), msg.Large[0], (size_t)bufferPages, KB(4), MAP_ADDRESS );
-			msg.Code = vfs_open( bufferPages, msg.Arguments[0], msg.Arguments[1] );
+			msg.Code = vfs_open( bufferPages, msg.Arguments[0], msg.Arguments[1], &fp );
+			if( msg.Code==0 ){
+				msg.Arguments[0] = fgetid(fp); //fd
+				msg.Arguments[1] = fp->size;
+				msg.Arguments[2] = fp->attribute;
+				msg.Arguments[3] = fp->ctime;
+				msg.Arguments[4] = fp->mtime;
+			}
 			break;
 		case File_Close:
 			msg.Code = vfs_close( msg.Arguments[0] );
@@ -349,7 +361,7 @@ static void vfs_service()
 			break;
 		case File_Read: //read( id, count, buf, bufsiz )
 		{
-			size_t siz = msg.Arguments[3];
+			size_t siz = msg.Arguments[2]; //buffer size
 			if( siz > BUFFER_PAGES_SIZE )
 				siz = BUFFER_PAGES_SIZE;
 			if( siz % PAGE_SIZE )
@@ -363,11 +375,13 @@ static void vfs_service()
 		}
 		case File_Write: //write( id, count, buf )
 		{
-			size_t siz = msg.Arguments[1];
+			size_t siz = msg.Arguments[2]; //buffer size
 			if( siz > BUFFER_PAGES_SIZE )
 				siz = BUFFER_PAGES_SIZE;
 			if( siz % PAGE_SIZE )
-				siz = PAGE_ALIGN(siz); //对齐，扩大
+				siz -= (siz%PAGE_SIZE); //对齐，去掉余数
+			if( msg.Arguments[1] > siz )
+				msg.Arguments[1] = siz;
 			SysSwapMemory( SPACEID(msg.ThreadId), msg.Large[0], (size_t)bufferPages, siz, MAP_ADDRESS );
 			msg.Code = vfs_write( msg.Arguments[0], msg.Arguments[1], (uchar*)bufferPages );
 			break;
@@ -394,7 +408,7 @@ int vfs_init()
 	memset( fileList, 0, sizeof( file_t ) * MAX_FILE );
 	fileCount = 0;
 	//创建服务线程
-	vfsThread = SysCreateThread( SysGetCurrentSpaceId(), (size_t)&vfs_service );
+	vfsThread = SysCreateThread( SysGetCurrentSpaceId(), (size_t)&vfs_service, 0, 0, 0 );
 	SysResumeThread( vfsThread );
 	// 安装必要文件系统
 	fs_register( &fs_rootfs );

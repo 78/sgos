@@ -19,22 +19,24 @@ static int CopyPeSegments( KSpace *space, FILEHDR* coffhdr, SECHDR* sechdr, size
 		if( virt_size == 0 )//bss size could be zero!
 			virt_size = PAGE_SIZE;
 		uint attr = PAGE_ATTR_WRITE;
-		void* ptr = MmAllocateUserMemoryAddress(space, load_addr, virt_size, attr, ALLOC_ZERO );
+		if( sechdr[i].ulFlags&STYP_TEXT) 
+			attr &= ~PAGE_ATTR_WRITE;
+		void* ptr = MmAllocateUserMemoryAddress(space, load_addr, virt_size, attr, ALLOC_ZERO|ALLOC_SWAP );
+		void* ptrHere = MmAllocateUserMemory(MmGetCurrentSpace(), virt_size, PAGE_ATTR_WRITE, ALLOC_ZERO|ALLOC_SWAP );
 		if( ptr == NULL ){
 			PERROR("Failed to allocate memory at 0x%X. SpaceId:%X", load_addr, space->SpaceId );
 			return -5;
 		}
 		if( sechdr[i].ulSize > 0 ){
-			if( MmWriteUserMemory(space, load_addr, (void*)(addr+sechdr[i].ulSecOffset), 
-				sechdr[i].ulSize ) != sechdr[i].ulSize ){
+			RtlCopyMemory( ptrHere, (void*)(addr+sechdr[i].ulSecOffset), sechdr[i].ulSize );
+			if( MmSwapMultiplePhysicalPages(space, load_addr, MmGetCurrentSpace(), 
+				(size_t)ptrHere, virt_size, MAP_ADDRESS ) != virt_size ){
 				PERROR("Failed to write allocated mem at 0x%X.", load_addr );
+				MmFreeUserMemory(MmGetCurrentSpace(), ptrHere);
 				return -6;
 			}
-			if( sechdr[i].ulFlags&STYP_TEXT) {
-				attr &= ~PAGE_ATTR_WRITE;
-				MmSetUserMemoryAttribute( space, load_addr, virt_size, PAGE_ATTR_PRESENT|attr );
-			}
 		}
+		MmFreeUserMemory(MmGetCurrentSpace(), ptrHere);
 	}
 	return 0;
 }

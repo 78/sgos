@@ -202,13 +202,13 @@ void* 	realloc(void* p, size_t siz)
 //获取可用内存空间
 void __allocation_init()
 {
-	size_t size = 2*1024*1024;
+	size_t size = 256*1024*1024;
 	memset( free_table, 0, sizeof(free_table ) );
-	void* p = SysAllocateMemory( SysGetCurrentSpaceId(), size, MEMORY_ATTR_WRITE, 0 );
+	void* p = SysAllocateMemory( SysGetCurrentSpaceId(), size, MEMORY_ATTR_WRITE, ALLOC_LAZY );
 	if( p == NULL ){
 		printf("Memory is not enough.\n");
 		//should do something here....
-		return;
+		SysExitSpace(-ERR_NOMEM);
 	}
 	//make a node
 	node_t* nod = (node_t*)p;
