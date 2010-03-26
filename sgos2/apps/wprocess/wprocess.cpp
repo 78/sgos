@@ -5,6 +5,37 @@
 #include "module.h"
 #include "wprocess.h"
 
+static Process* firstProcess = 0;
+
+Process* Process::EnumProcessTree( Process* p, uint id )
+{
+	Process* ret;
+	for( Process * t=p; t; t=t->next ){
+		if( t->spaceId == id )
+			return t;
+		if( t->child ){
+			 ret = EnumProcessTree( t->child, id );
+			 if( ret )
+				return ret;
+		}
+	}
+	return 0;
+}
+
+Process* Process::GetProcessById( uint id )
+{
+	return EnumProcessTree( firstProcess, id );
+}
+
+void Process::KillProcessChildren( Process* p )
+{
+	for(Process *t=p->child; t; t=t->next ){
+		KillProcessChildren( t );
+		t->child = 0;
+		t->Dispose();
+	}
+}
+
 static int MapAddress( uint fromSpace, uint toSpace, size_t remote_addr, size_t * ret_addr )
 {
 	size_t addr;
@@ -34,7 +65,7 @@ Thread::Thread( Process * ps, size_t entry )
 	memset( (void*)ti, 0, sizeof(ThreadInformation) );
 	ti->StackLimit = MB(2);
 	ti->StackBase = (size_t)SysAllocateMemory( sid, ti->StackLimit, MEMORY_ATTR_WRITE, ALLOC_LAZY );
-	ti->ProcessInformation = ps->GetInformation();
+	ti->ProcessInformation = ps->GetInformation()->Self;
 	ti->Self = (ThreadInformation*)remote_addr;
 	ti->Environment = 0;
 	ti->ProcessId = ps->ProcessId();
@@ -48,6 +79,17 @@ Thread::Thread( Process * ps, size_t entry )
 	ti->ThreadId = tid;
 	if( tid < 0 )
 		goto bed;
+	this->process = ps;
+	if( ps->mainThread ){
+		Thread* t;
+		for( t=ps->mainThread; t->next; t=t->next );
+		t->next = this;
+		this->next = 0;
+		this->prev = t;
+	}else{
+		this->prev = this->next = 0;
+		ps->mainThread = this;
+	}
 	return;
 bed:
 	Dispose();
@@ -72,6 +114,12 @@ void Thread::Dispose()
 	if( ti )
 		SysFreeMemory( SysGetCurrentSpaceId(), this->ti );
 	tid = 0;
+	if( this->prev )
+		this->prev->next = this->next;
+	else
+		process->mainThread = this->next;
+	if( this->next )
+		this->next->prev = this->prev;
 }
 
 int Thread::Terminate( int code )
@@ -92,14 +140,15 @@ void Thread::Resume()
 		SysResumeThread( this->threadId );
 }
 
-Process::Process( char* cmdline, char* env )
+Process::Process( uint pid, char* cmdline, char* env )
 {
 	this->disposed = false;
 	this->spaceId = 0;
 	this->module = 0;
 	this->pi = 0;
 	this->commandLine = this->environment = 0;
-	if( Initialize( cmdline, env ) < 0 )
+	this->prev = this->next = this->parent = this->child = 0;
+	if( Initialize( pid, cmdline, env ) < 0 )
 		Dispose();
 }
 	
@@ -135,24 +184,53 @@ void Process::Dispose()
 		SysFreeMemory( SysGetCurrentSpaceId(), this->environment );
 	this->commandLine = 0;
 	this->environment = 0;
+	//remove from tree
+	if( this==firstProcess ){
+		firstProcess = this->next;
+	}else if( this->parent || this->prev ){
+		if( this->prev )
+			this->prev->next = this->next;
+		if( this->next )
+			this->next->prev = this->prev;
+	}
+	KillProcessChildren( this );
 }
-	
-// How to initialize a process ?
-int Process::Initialize( char* cmdline, char* env )
+
+static void CopyCommandName( char* to, char* src )
 {
-	int tid, result;
+	char* i = strchr( src, ' ' );
+	if( i ){
+		*i=0;
+		strncpy( to, src, PATH_LEN-1 );
+		*i= ' ';
+	}else{
+		strncpy( to, src, PATH_LEN-1 );
+	}
+}
+
+// How to initialize a process ?
+int Process::Initialize( uint pid, char* cmdline, char* env )
+{
+	Process* p = (Process*)0;
+	uint tid;
+	int result;
 	size_t entry, remote_pi;
 	if( this->disposed )
 		return -ERR_DISPOSED;
 	//1. create a space for the process
-	int sid = SysCreateSpace( 0 );
+	uint sid = SysCreateSpace( 0 );
 	if( sid < 0 )
 		goto bed;
 	this->spaceId = sid;
 	//3. load executable file to the space!
-	if( (result = PeLoadLibrary( sid, cmdline ) ) < 0 )
+	CopyCommandName( this->modulePath, cmdline );
+	if( (result = PeLoadLibrary( sid, this->modulePath ) ) < 0 )
 		goto bed;
 	this->module = GetModuleById( result );
+	if( !this->module ){
+		printf("## get module by id failed.\n");
+		goto bed;
+	}
 	//4. setup process information block  Pib
 	remote_pi = (size_t)SysAllocateMemory( sid, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_HIGHMEM );
 	if( remote_pi == 0 )
@@ -166,13 +244,14 @@ int Process::Initialize( char* cmdline, char* env )
 	pi->ModuleId = this->module->ModuleId;
 	pi->ParentProcessId = 0;
 	pi->EntryAddress = this->module->EntryAddress;
+	pi->Self = (ProcessInformation*)remote_pi;
 	if( cmdline && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)cmdline, (size_t*)&pi->CommandLine )) < 0 )
 		goto bed;
 	if( env && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)env, (size_t*)&pi->EnvironmentVariables )) < 0 )
 		goto bed;
 	//5. create a main thread
-	printf("[wprocess]sp: %d entry: %x\n", sid, this->module->EntryAddress ); 
-	this->mainThread = new Thread( this, this->module->EntryAddress );
+	printf("[wprocess]sp: %x entry: %x\n", sid, this->module->EntryAddress ); 
+	CreateThread( this->module->EntryAddress );
 	if( this->mainThread==0 )
 		goto bed;
 	pi->MainThreadId = this->mainThread->ThreadId();
@@ -181,6 +260,22 @@ int Process::Initialize( char* cmdline, char* env )
 	this->environment = env;
 	//8. start main thread to start the process
 	this->mainThread->Resume();
+	//9. add to tree
+	if( pid )
+		p = GetProcessById( pid );
+	if( !p )
+		p = firstProcess;
+	if( !p ){
+		firstProcess = this;
+		this->prev = this->next = this->child = this->parent = 0;
+	}else{
+		while( p->next )
+			p = p->next;
+		p->next = this;
+		this->prev = p;
+		this->child = 0;
+		this->parent = p->parent;
+	}
 	return 0;
 bed:
 	printf("[wprocess] failed. result=%d\n", result );
@@ -188,14 +283,18 @@ bed:
 	return -ERR_UNKNOWN;
 }
 
-int Process::CreateThread( size_t entry )
+Thread* Process::CreateThread( size_t entry )
 {
-	int tid;
 	Thread* t = new Thread( this, entry );
-	if( t == 0 ){
-		return -ERR_NOMEM;
-	}
-	return t->ThreadId();
+	return t;
+}
+
+Thread* Process::GetThreadById( uint tid )
+{
+	for( Thread* t=this->mainThread; t; t=t->NextThread() )
+		if( t->ThreadId() == tid )
+			return t;
+	return 0;
 }
 
 void Process::Terminate( int code )
@@ -214,20 +313,5 @@ void Process::Resume()
 {
 	for( Thread* t=this->mainThread; t; t=t->NextThread() )
 		t->Resume();
-}
-
-void ProcessTest()
-{
-	for(;;){
-		char* cmdline = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), PAGE_SIZE, MEMORY_ATTR_WRITE, 0 );
-		strcpy( cmdline, "/c:/sgos/hello.exe" );
-		Process *p=0;
-		p = new Process( cmdline, 0 );
-		if( p->ProcessId()>0 )
-			break;
-		delete p;
-		SysSleepThread(200);
-		printf("destroyed.\n");
-	}
 }
 

@@ -13,6 +13,7 @@ private:
 	uint exitCode;
 	Thread* next, *prev;
 	bool disposed;
+	Process* process;
 public:
 	Thread( Process * ps, size_t entry );
 	~Thread();
@@ -39,15 +40,21 @@ private:
 	int exitCode;
 	ProcessInformation* pi;
 	int threadCount;
-	Thread* mainThread;
+	char modulePath[PATH_LEN];
+	Process *prev, *next, *parent, *child;
+	static Process* EnumProcessTree( Process* p, uint id );
+	static void KillProcessChildren( Process* p );
 public:
-	Process( char* cmdline, char* env );
+	Thread* mainThread;
+	static Process* GetProcessById( uint id );
+	Thread* GetThreadById( uint tid );
+	Process( uint pid, char* cmdline, char* env );
 	~Process();
-	int Initialize( char* cmdline, char* env );
+	int Initialize( uint pid, char* cmdline, char* env );
 	void Terminate( int code );
 	void Resume();
 	void Suspend();
-	int CreateThread( size_t entry );
+	Thread* CreateThread( size_t entry );
 	void Dispose();
 	uint SpaceId(){
 		return spaceId;
@@ -62,6 +69,5 @@ public:
 		return pi;
 	}
 };
-
 
 #endif

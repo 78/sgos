@@ -36,12 +36,12 @@ int SendMessage( uint dest, uint cmd, uint *arg1, uint *arg2, uint *arg3, uint *
 		msg.Arguments[3] = *arg4;
 	result = Api_Send( &msg, 0 );
 	if( result < 0 ){
-		printf("[servicemanager]Failed to Send Message %x result=%d\n", cmd, result );
+		printf("[api]Failed to Send Message %x result=%d\n", cmd, result );
 		return result;
 	}
 	result = Api_Receive( &msg, 3*1000 ); //3 seconds.
 	if( result == ERR_TIMEOUT ){
-		printf("[servicemanager]Receive timeout. cmd:%x\n", cmd );
+		printf("[api]Receive timeout. cmd:%x\n", cmd );
 	}
 	if( arg1 )
 		*arg1 = msg.Arguments[0];
@@ -152,6 +152,10 @@ uint SysGetCurrentThreadId()
 {
 	int result;
 	uint code;
+	ThreadInformation* ti = (ThreadInformation*)GetCurrentThreadInformation();
+	if( ti ){
+		return ti->ThreadId;
+	}
 	result = SendMessage( SystemId, System_GetCurrentThreadId, NULL, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
@@ -231,9 +235,17 @@ uint SysGetCurrentSpaceId( )
 {
 	int result;
 	uint code;
+	static uint sid = 0;
+	ThreadInformation* ti = (ThreadInformation*)GetCurrentThreadInformation();
+	if( ti ){
+		return ti->SpaceId;
+	}
+	if( sid )
+		return sid;
 	result = SendMessage( SystemId, System_GetCurrentSpaceId, NULL, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
+	sid = code;
 	return code;
 }
 

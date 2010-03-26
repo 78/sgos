@@ -6,7 +6,7 @@ ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = servicemanager
-LDFLAGS +=  ../../crt/crt.a ../../libc/libc.a ../../api/api.a
+LDFLAGS +=  ../../crt/crt.a ../../api/api.a
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)

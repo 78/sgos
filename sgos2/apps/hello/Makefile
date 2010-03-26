@@ -1,7 +1,7 @@
 #sgos apps
 
 CXXFLAGS = -g -Werror -I../../include/c++ -I../../include -nostdlib -fleading-underscore --no-exceptions
-LDFLAGS = 
+LDFLAGS = ../../api/api.dll
 ODFLAGS = -S
 
 #here defines the program information
@@ -15,7 +15,7 @@ WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
 OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp)) \
-	 ../../api/api.a ../../libc/libc.a ../../crt/crt.a
+	 ../../crt/crt.a
 
 all: $(PROGRAM).exe
 

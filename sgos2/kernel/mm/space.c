@@ -107,7 +107,6 @@ KSpace* MmCreateSpace( KSpace* parent )
 	ArInitializePageDirectory( &space->PageDirectory ); //arch/*/page.c
 	// restore basic information
 	MmInitializeSpaceBasicInformation( space );
-	PERROR("space Id:%x pdir: %x", space->SpaceId, space->PageDirectory.VirtualAddress );
 	// 设置用户
 	space->UserId = parent->UserId;
 	// 设置链表

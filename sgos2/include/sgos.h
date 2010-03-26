@@ -115,6 +115,7 @@ typedef struct ProcessInformation{
 	void*			GlobalStorage;			//进程变量存储地址
 	char*			CommandLine;			//命令行
 	char*			EnvironmentVariables;		//环境变量
+	struct ProcessInformation*Self;
 }ProcessInformation;
 
 //Space
@@ -207,11 +208,14 @@ typedef struct ServiceInformation{
 }ServiceInformation;
 
 //wProcess Service
+#define ENVIRONMENT_STRING_SIZE	KB(64)
 #define wProcessId		2
 #define wProcess_Create		0x0001
 #define wProcess_Terminate	0x0002
 #define wProcess_Suspend	0x0003
 #define wProcess_Resume		0x0004
+#define wProcess_CreateThread		0x0005
+#define wProcess_TerminateThread	0x0006
 
 //Harddisk Service
 #define HarddiskId		3

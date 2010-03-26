@@ -7,6 +7,31 @@
 #include "pe.h"
 
 #define MIN(a,b) (a>b?b:a)
+#define SYSTEM_PATH "/c:/sgos/system"
+#define SGOS_PATH "/c:/sgos"
+
+static FILEBUF* SearchAndOpenFile( const char* path )
+{
+	char p[PATH_LEN];
+	FILEBUF* fb;
+	if( path[0] == '/' ){
+		fb = FsOpenFile(path, FILE_READ, 0);
+		if( fb>=0 )
+			return fb;
+		return 0;
+	}
+	sprintf( p, "%s/%s", SGOS_PATH, path );
+	printf("[pe]:trying %s\n", p );
+	fb = FsOpenFile(p, FILE_READ, 0);
+	if( fb>=0 )
+		return fb;
+	sprintf( p, "%s/%s", SYSTEM_PATH, path );
+	printf("[pe]:trying %s\n", p );
+	fb = FsOpenFile(p, FILE_READ, 0);
+	if( fb>=0 )
+		return fb;
+	return 0;
+}
 
 int PeLoadLibrary( uint spaceId, const char * path )
 {
@@ -23,14 +48,15 @@ int PeLoadLibrary( uint spaceId, const char * path )
 	mo = GetModuleByPath( path );
 	if( mo ){
 		if( GetLoadedInformation( mo, spaceId ) ){
-			return 0; //Already loaded into the requied space.
+			return mo->ModuleId; //Already loaded into the requied space.
 		}else{
 			result = LinkModuleToSpace( mo, spaceId );
-			return result;
+			if( result < 0 )
+				return result;
+			return mo->ModuleId;
 		}
 	}
-	printf("[pe]Load %s\n", path );
-	fb= FsOpenFile(path, FILE_READ, 0);
+	fb= SearchAndOpenFile( path );
 	if( !fb ){ 
 		result = -ERR_WRONGARG; //Should be file not found
 		goto bed;
@@ -58,7 +84,7 @@ int PeLoadLibrary( uint spaceId, const char * path )
 		goto bed;
 	}
 	imgsize = PAGE_ALIGN(opthdr.SizeOfImage);
-	addr = (size_t)SysAllocateMemory( SysGetCurrentSpaceId(), imgsize, MEMORY_ATTR_WRITE, ALLOC_SWAP ); //ALLOC_VIRTUAL
+	addr = (size_t)SysAllocateMemory( SysGetCurrentSpaceId(), imgsize, MEMORY_ATTR_WRITE, ALLOC_SWAP|ALLOC_ZERO ); //ALLOC_VIRTUAL
 	if( addr == 0 ){
 		result = -ERR_NOMEM;
 		goto bed;
@@ -100,7 +126,7 @@ int PeLoadLibrary( uint spaceId, const char * path )
 		return result;
 	}
 	//Success :)
-	return 0;
+	return mo->ModuleId;
 bed:
 	printf("[pe]Failed in load : result=%d\n", result);
 	if( fb )
