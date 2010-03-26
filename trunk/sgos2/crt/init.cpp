@@ -6,10 +6,6 @@ extern "C" unsigned * get_dtors();
 extern "C" void __main()
 {
 }
-extern "C" void _alloca()
-{
-}
-
 extern "C" int main();
 extern "C" void __run_exit_func();
 extern "C" void __allocation_init();

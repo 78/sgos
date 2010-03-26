@@ -727,7 +727,6 @@ int fat32_open( file_t* f, const char *name )
 		strncpy( f->name, name, FILE_NAME_LEN );
 		return 0;
 	}
-	while(1);
 	//找不到文件
 	if( f->flag & FILE_FLAG_CREATE ) //创建
 	{

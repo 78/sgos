@@ -20,8 +20,8 @@
 #include "../kernel/include/apidef.h"
 
 //init.c
-ThreadInformation* GetThreadInformation();
-ProcessInformation* GetProcessInformation();
+EXTERN ThreadInformation* GetCurrentThreadInformation();
+EXTERN ProcessInformation* GetCurrentProcessInformation();
 
 //api.c
 EXTERN int SendMessage( uint dest, uint cmd, uint *arg1, uint *arg2, uint *arg3, uint *arg4, uint *ret );
@@ -81,6 +81,14 @@ EXTERN int FsControlFile( FILEBUF* fb, uint cmd, uint arg );
 EXTERN int FsReadDirectory( FILEBUF* fb, DIRENTRY* buf, int count );
 
 //process.c
-
+EXTERN uint PsGetCurrentProcessId();
+EXTERN int PsCreateProcess( const char* cmdline, const char* env, uint * pid );
+EXTERN int PsTerminateProcess( int pid, int code );
+EXTERN int PsSuspendProcess( int pid );
+EXTERN int PsResumeProcess( int pid );
+EXTERN int PsCreateThread( size_t addr );
+EXTERN int PsTerminateThread( int tid, int code );
+EXTERN int PsSuspendThread( int tid );
+EXTERN int PsResumeThread( int tid );
 
 #endif

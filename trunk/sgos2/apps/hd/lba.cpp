@@ -71,7 +71,7 @@ static void registerDevice( uint part )
 	msg.Arguments[0] = DEV_TYPE_HD;
 	msg.Arguments[1] = SysGetCurrentThreadId();
 	msg.Arguments[2] = part;
-	strcpy( (char*)&msg.Arguments[3], "HDPartition" );
+	strcpy( (char*)&msg.Arguments[3], "Partition" );
 	Api_Send( &msg, 0 );
 	Api_Receive( &msg, 3000 ); //wait for reply.
 }

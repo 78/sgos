@@ -266,6 +266,7 @@ int	MmHandleReadOnlyPageFault( KSpace* space, size_t addr )
 	else	
 		vma = MmGetVmaByAddress( &space->VirtualMemory, addr );
 	if( vma && vma->AllocationFlag & PAGE_ATTR_COPYONWRITE ){
+//		PERROR("Copy On Write at 0x%x", addr );
 		addr = (addr>>PAGE_SIZE_BITS)<<PAGE_SIZE_BITS;
 		if( ArQueryPageInformation( &space->PageDirectory, addr, &phys_addr, &attr ) < 0 )
 			return 0;

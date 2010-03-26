@@ -1,9 +1,16 @@
+// Bugfix : 2010 03 25
+// Allocating a vma may cause a nonpresent page fault.
+// The kernel would check the vma then we don't need to 
+// acquire for teh access lock cuz we already have it.
+// Better solution: Allocate the vma memory at first so 
+// pagefault won't happen during the allocation.
+
 #include <sgos.h>
 #include <kd.h>
 #include <mm.h>
 #include <ipc.h>
 
-// 
+
 void MmInitializeVirtualMemory( KVirtualMemory *vm, size_t beg, size_t end )
 {
 	vm->LowerLimit = beg;
@@ -13,12 +20,8 @@ void MmInitializeVirtualMemory( KVirtualMemory *vm, size_t beg, size_t end )
 	IpcInitializeSemaphore( &vm->AccessLock );
 }
 
-static KVirtualMemoryAllocation* InsertPreviousVma( KVirtualMemory* vm, KVirtualMemoryAllocation* next )
+static KVirtualMemoryAllocation* InsertPreviousVma( KVirtualMemory* vm, KVirtualMemoryAllocation* vma, KVirtualMemoryAllocation* next )
 {
-	KVirtualMemoryAllocation* vma = (KVirtualMemoryAllocation*)
-		MmAllocateKernelMemory( sizeof(KVirtualMemoryAllocation) );
-	if( !vma )
-		return vma;
 	vma->next = next;
 	if( next ){
 		if( next->prev ){
@@ -51,8 +54,11 @@ void DumpVirtualMemory( KVirtualMemory* vm )
 
 void* MmAllocateVirtualMemory( KVirtualMemory* vm, size_t addr, size_t size, uint attr, uint flag )
 {
-	KVirtualMemoryAllocation* vma;
 	if( size < PAGE_SIZE || size%PAGE_SIZE != 0 )
+		return NULL;
+	KVirtualMemoryAllocation * vma=NULL,
+		* vmabuf = (KVirtualMemoryAllocation*) MmAllocateKernelMemory( sizeof(KVirtualMemoryAllocation) );
+	if( vmabuf == NULL )
 		return NULL;
 	down( &vm->AccessLock );
 	if( flag & ALLOC_RANDOM ){
@@ -60,16 +66,14 @@ void* MmAllocateVirtualMemory( KVirtualMemory* vm, size_t addr, size_t size, uin
 			addr = vm->UpperLimit - size;
 			for( vma=vm->LastAllocation; vma; vma=vma->prev ){
 				if( vma->VirtualAddress+vma->VirtualSize <= addr ){
-					vma = InsertPreviousVma( vm, vma->next );
+					vma = InsertPreviousVma( vm, vmabuf, vma->next );
 					goto GOOD;
 				}
 				addr = vma->VirtualAddress - size;
 			}
 			if( addr < vm->LowerLimit )
 				goto BAD;
-			vma = (KVirtualMemoryAllocation*) MmAllocateKernelMemory( sizeof(KVirtualMemoryAllocation) );
-			if( !vma )
-				goto BAD;
+			vma = vmabuf;
 			vma->next = vm->FirstAllocation;
 			if( vm->FirstAllocation )
 				vm->FirstAllocation->prev = vma;
@@ -78,14 +82,14 @@ void* MmAllocateVirtualMemory( KVirtualMemory* vm, size_t addr, size_t size, uin
 			addr = vm->LowerLimit;
 			for( vma=vm->FirstAllocation; vma; vma=vma->next ){
 				if( vma->VirtualAddress >= addr + size ){
-					vma = InsertPreviousVma( vm, vma );
+					vma = InsertPreviousVma( vm, vmabuf, vma );
 					goto GOOD;
 				}
 				addr = vma->VirtualAddress + vma->VirtualSize;
 			}
 			if( addr + size > vm->UpperLimit )
 				goto BAD;
-			vma = InsertPreviousVma( vm, NULL );
+			vma = InsertPreviousVma( vm, vmabuf, NULL );
 		}
 	}else{
 		if( addr < vm->LowerLimit || addr+size > vm->UpperLimit )
@@ -94,7 +98,7 @@ void* MmAllocateVirtualMemory( KVirtualMemory* vm, size_t addr, size_t size, uin
 			;
 		if( vma && addr+size > vma->VirtualAddress )
 			goto BAD;
-		vma = InsertPreviousVma( vm, vma );
+		vma = InsertPreviousVma( vm, vmabuf, vma );
 	}
 GOOD:
 	if( vma == NULL )
@@ -107,6 +111,7 @@ GOOD:
 	return (void*)addr;
 BAD:
 	up( &vm->AccessLock );
+	MmFreeKernelMemory( vmabuf );
 	return NULL;
 }
 

@@ -22,7 +22,7 @@ FILEBUF* FsOpenFile( const char* fname, uint mode, uint flag )
 	msg.Command = File_Open;
 	msg.Arguments[0] = mode;
 	msg.Arguments[1] = flag;
-	msg.Large[0] = (size_t)SysAllocateMemory( sid, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
+	msg.Large[0] = (size_t)SysAllocateMemory( sid, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP|ALLOC_HIGHMEM );
 	strncpy( (char*)msg.Large[0], fname, PATH_LEN );
 	int ret;
 	ret = Api_Send(&msg, 0);
@@ -93,7 +93,7 @@ int FsReadFile( FILEBUF* fb, uchar* buf, int count )
 				read = PAGE_SIZE;
 			ret = ReadWriteBuffer( fb, read, File_Read );
 			if( ret <= 0 )
-				return bytesRead;
+				break;
 			memcpy( buf, (void*)fb->bufptr, ret );
 			buf += ret;
 			fb->curpos += ret;

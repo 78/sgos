@@ -3,6 +3,8 @@
 
 #include "pe.h"
 
+#define MAX_IMPORT_MODULES 64
+
 typedef struct ModuleInSpace{
 	struct ModuleInSpace*	prev, *next;
 	uint		SpaceId;

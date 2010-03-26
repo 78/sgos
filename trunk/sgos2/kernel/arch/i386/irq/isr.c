@@ -161,7 +161,7 @@ void ArHandleIsr(const I386_REGISTERS *r)
 				"%s\tCode: %d\tcr3:%x\n", 
 				exception_msg[ r->int_no ], r->err_code, MmGetCurrentSpace()->PageDirectory.PhysicalAddress );
 			ArDumpRegisters( r );
-			KERROR("Termiating %s[%d:%d]", "Thread", MmGetCurrentSpace()->SpaceId, TmGetCurrentThread()->ThreadId );
+			KERROR("Termiating %s[%x:%x]", "Thread", MmGetCurrentSpace()->SpaceId, TmGetCurrentThread()->ThreadId );
 		}
 	}
 }

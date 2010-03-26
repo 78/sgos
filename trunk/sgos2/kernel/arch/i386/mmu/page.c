@@ -53,7 +53,7 @@ int ArInitializePaging(uint mem_size)
 	for( i=768+1; i<1024; i++ ){
 		dir_entry[i].v = MmGetPhysicalPage();
 		void* p = (void*)ArMapTemporaryPage( dir_entry[i].v );
-		RtlZeroMemory32( p, PAGE_SIZE );
+		RtlZeroMemory32( p, 1024 );
 		dir_entry[i].a.write = 
 		dir_entry[i].a.user = 
 		dir_entry[i].a.present = 1;

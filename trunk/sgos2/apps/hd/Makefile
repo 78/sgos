@@ -7,7 +7,7 @@ ODFLAGS = -S
 #here defines the program information
 PROGRAM = harddisk
 LDFLAGS += ../../crt/crt.a
-LDFLAGS += ../../libc/libc.a ../../api/api.a
+LDFLAGS += ../../api/api.a
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)

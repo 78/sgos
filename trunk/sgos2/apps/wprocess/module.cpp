@@ -15,8 +15,7 @@ PeModule* GetModuleByPath( const char* path )
 {
 	for( int i=0; i<moduleCount; i++ )
 		if( strnicmp( (char*)path, moduleList[i]->Path, PATH_LEN ) == 0 ){
-			printf("Found %s\n", path );
-			while(1);
+			printf("[pe]Found %s\n", path );
 			return moduleList[i];
 		}
 	return 0;
@@ -53,11 +52,14 @@ PeModule* AllocateModule( const char* path )
 	strncpy( mo->Path, path, PATH_LEN-1 );
 	mo->ModuleId = moduleId;
 	moduleId ++;
+	mo->ImportModuleCount = MAX_IMPORT_MODULES;
+	mo->ImportModules = (PeModule**)malloc(sizeof(PeModule*)*mo->ImportModuleCount );
 	return mo;
 }
 
 void FreeModule( PeModule* mo, uint spaceId )
 {
+	printf("[pe]FreeModule %s\n", mo->Path );
 	if( spaceId ){
 		ModuleInSpace *mi = GetLoadedInformation( mo, spaceId );
 		if( mi ){
@@ -83,6 +85,7 @@ void FreeModule( PeModule* mo, uint spaceId )
 				-- moduleCount;
 				break;
 			}
+		free( mo->ImportModules );
 		free( mo );
 	}
 }
@@ -100,8 +103,9 @@ size_t GetProcedureAddress( PeModule* mo, ModuleInSpace* mi, const char* procedu
 		size_t* ExpAddress = (size_t*)(addr + exp->ExportAddressTable);
 		for( int i=0; i<exp->NumberOfNamePointers; i++ )
 		{
-			if( strcmp( (ExpName[i]+addr), procedureName ) == 0 )
+			if( strcmp( (ExpName[i]+addr), procedureName ) == 0 ){
 				return mi->VirtualAddress + ExpAddress[ExpOrdinal[i]];
+			}
 		}
 	}
 	return 0;
@@ -144,15 +148,10 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 // * Load Import Modules
 // * Fixup Import Addresses
 	if( opthdr->NumberOfRvaAndSizes>0 ){
-		mo->ImportModuleCount = opthdr->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size / 
-			sizeof(IMPORT_DIRECTORY_TABLE) - 1;
-		printf("import module count : %d\n", mo->ImportModuleCount );
-		if( !mo->ImportModules )
-			mo->ImportModules = (PeModule**)malloc(sizeof(PeModule*)*mo->ImportModuleCount );
 		if( mo->ImportModuleCount > 0 ){
 			IMPORT_DIRECTORY_TABLE* imp=(IMPORT_DIRECTORY_TABLE*)
 				(addr + opthdr->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].RVA);
-			for( int i=0; i<mo->ImportModuleCount; i ++ ){
+			for( int i=0; imp[i].Name && i<MAX_IMPORT_MODULES; i ++ ){
 				uint mo2Id;
 				const char* libName = (char*)(addr + imp[i].Name);
 				printf("[pe]Need %s  for %s\n", libName, mo->Path );
@@ -175,12 +174,11 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 					}else{
 						HINT_NAME_TABLE* hint = (HINT_NAME_TABLE*)
 							( addr + (*lookupEntry & 0x7FFFFFFF) );
-						printf("hint-Name=0x%x\n", hint->Name );
 						size_t fixup = GetProcedureAddress( mo2, mi2, (char*)hint->Name );
 						if( fixup ){
 							*addressEntry = fixup;
 						}else{
-							printf("[pe] not found %s in %s\n", hint->Name, mo2->Path );
+							printf("[pe] not found %s in %s ", hint->Name, mo2->Path );
 							*addressEntry = 0x66666666;
 						}
 					}
@@ -194,6 +192,11 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 	result = SysSwapMemory( spaceId, mi->VirtualAddress, addr, mo->ImageSize, MAP_ADDRESS );
 	if( result != mo->ImageSize )
 		printf("[pe]##Not all the memory are swapped result=0x%x.\n", result);
+// * Add mi to mo
+	mi->SpaceId = spaceId;
+	mi->prev = 0;
+	mi->next = mo->LoadedInformation;
+	mo->LoadedInformation = mi;
 	return 0;
 bed:
 	printf("[pe]LinkModuleToSpace result = %d\n", result );

@@ -1,26 +1,28 @@
 #sgos api
 
 CCFLAGS = -g -Werror -I../include -I../../include -fno-builtin -ffreestanding -fleading-underscore
-LDFLAGS = -r
+LDFLAGS =
 ODFLAGS = -S
 
 #here defines the program information
 PROGRAM = api
 
 CC = gcc $(CCFLAGS)
-LD = ld $(LDFLAGS)
+LDLIB = ld  -r $(LDFLAGS)
+LD = ld --image-base 0x7FF00000 -shared $(LDFLAGS)
 OD = objdump $(ODFLAGS)
-LD2 = ../../tools/ld2/ld2
-WF = ../../tools/wf/wf
-IMAGE = ../../sgos2.img
+WF = ../tools/wf/wf
+IMAGE = ../sgos2.img
 
-OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c))
+OBJECTS = $(patsubst %.c,%.o,  $(wildcard *.c)) 
 
-all: $(PROGRAM).a
+all: $(PROGRAM).dll
 
-$(PROGRAM).a: $(OBJECTS)
-	$(LD) $(OBJECTS) -o$(PROGRAM).a
-	$(OD) $(PROGRAM).a > $(PROGRAM).dmp
+$(PROGRAM).dll: $(OBJECTS)
+	$(LDLIB) $(OBJECTS) -o$(PROGRAM).a
+	$(LD) $(OBJECTS) -o$(PROGRAM).dll
+	$(OD) $(PROGRAM).dll > $(PROGRAM).dmp
+	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
 
 # Standard Procedures
 .c.o:

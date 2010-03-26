@@ -29,7 +29,7 @@ all: check grub
 
 grub: scripts/menu.lst
 	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
-	tools/wf/wf sgos2.img -src scripts/startup.xml -dest sgos2/startup.xml
+	tools/wf/wf sgos2.img -src scripts/startup.txt -dest sgos2/startup.txt
 	tools/wf/wf sgos2.img -src tools/vm86/vm86.com -dest sgos2/vm86.com
 
 check:
@@ -46,6 +46,10 @@ bochs:
 
 windbg:
 	start insight kernel/kernel &
+	start qemu -no-kqemu -m 64 -s -S -L ./qemu sgos2.img &
+
+startup:
+	start insight apps/hello/hello.exe &
 	start qemu -no-kqemu -m 64 -s -S -L ./qemu sgos2.img &
 
 debug:
