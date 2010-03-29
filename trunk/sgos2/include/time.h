@@ -4,6 +4,23 @@
 
 #include <sgos.h>
 
+struct tms {
+	clock_t tms_utime; /* user time */
+	clock_t tms_stime; /* system time */
+	clock_t tms_cutime; /* user time of children */
+	clock_t tms_cstime; /* system time of children */
+};
+
+struct timeval{
+	long tv_sec; /*秒*/
+	long tv_usec; /*微秒*/
+};
+
+struct timezone{
+	int tz_minuteswest; 	/*和Greenwich 时间差了多少分钟*/
+	int tz_dsttime; 	/*日光节约时间的状态*/
+};
+
 //! the old time struct
 #ifndef _TM_DEFINED
 typedef struct tm

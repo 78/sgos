@@ -760,14 +760,14 @@ static int fat32_get_clu_by_order( file_t* f, int clu, int no )
 }
 
 //读文件数据
-int fat32_read( file_t* f, uchar* buf, t_32 count )
+int fat32_read( file_t* f, uchar* buf, size_t count )
 {
 	if( count>f->size-f->pos )
 		count = f->size-f->pos;
 	FAT32DEV* fat = (FAT32DEV*)f->device->devFSInfo;
-	t_32 *fpos = &(f->pos), clu = fat32_get_clu_by_order( f, f->data, *fpos / fat->bytPerClu );
+	size_t *fpos = (size_t*)&(f->pos), clu = fat32_get_clu_by_order( f, f->data, *fpos / fat->bytPerClu );
 	char* clu_data;
-	t_32 pos = *fpos%fat->bytPerClu, read;
+	size_t pos = *fpos%fat->bytPerClu, read;
 	t_32 read_no = 0;
 	//一个簇一个簇地读，直到读完
 	while( count>0 )
@@ -813,7 +813,7 @@ static int fat32_readdir_enumerator( char* fname, int size, time_t* ctime,
 }
 
 //读目录
-int fat32_readdir( file_t* f, void* buf, t_32 size )
+int fat32_readdir( file_t* f, void* buf, size_t size )
 {
 	FAT32DEV* fat = (FAT32DEV*)f->device->devFSInfo;
 	int ret, remain = size;
@@ -822,10 +822,10 @@ int fat32_readdir( file_t* f, void* buf, t_32 size )
 }
 
 //写文件数据
-int fat32_write( file_t* f, const uchar* buf, t_32 count )
+int fat32_write( file_t* f, const uchar* buf, size_t count )
 {
 	FAT32DEV* fat = (FAT32DEV*)f->device->devFSInfo;
-	t_32 *fpos = &(f->pos), clu = fat32_get_clu_by_order( f, f->data, *fpos / fat->bytPerClu );
+	t_32 *fpos = (t_32*)&(f->pos), clu = fat32_get_clu_by_order( f, f->data, *fpos / fat->bytPerClu );
 	char* clu_data;
 	t_32 pos = *fpos % fat->bytPerClu, write;
 	t_32 written = 0;
@@ -969,7 +969,7 @@ int fat32_close( file_t* f )
 }
 
 //截断或增长文件
-static int fat32_setsize( file_t* f, t_32 new_size )
+static int fat32_setsize( file_t* f, size_t new_size )
 {
 	FAT32DEV* fat = (FAT32DEV*)f->device->devFSInfo;
 	int old_no, new_no, clu;

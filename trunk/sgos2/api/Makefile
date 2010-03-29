@@ -22,7 +22,7 @@ $(PROGRAM).dll: $(OBJECTS)
 	$(LDLIB) $(OBJECTS) -o$(PROGRAM).a
 	$(LD) $(OBJECTS) -o$(PROGRAM).dll
 	$(OD) $(PROGRAM).dll > $(PROGRAM).dmp
-	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
+	$(WF) $(IMAGE) -src $@ -dest sgos/$@
 
 # Standard Procedures
 .c.o:

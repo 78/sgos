@@ -22,7 +22,7 @@ all: $(PROGRAM).exe
 $(PROGRAM).exe: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$(PROGRAM).exe
 	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
-	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
+	$(WF) $(IMAGE) -src $@ -dest sgos/$@
 
 # Standard Procedures
 .c.o:

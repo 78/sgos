@@ -7,8 +7,9 @@ typedef unsigned short		ushort;
 typedef unsigned int		uint;
 typedef unsigned char		byte;
 
-typedef unsigned int		size_t;
-typedef unsigned int		time_t;
+typedef unsigned long		size_t;
+typedef unsigned long		time_t;
+typedef unsigned long		clock_t;
 
 typedef unsigned char		t_8;
 typedef unsigned short		t_16;

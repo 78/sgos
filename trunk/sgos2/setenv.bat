@@ -1,0 +1,1 @@
+path Z:\osdev\bin

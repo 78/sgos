@@ -29,8 +29,8 @@ all: check grub
 
 grub: scripts/menu.lst
 	tools/wf/wf sgos2.img -src scripts/menu.lst -dest boot/grub/menu.lst
-	tools/wf/wf sgos2.img -src scripts/startup.txt -dest sgos2/startup.txt
-	tools/wf/wf sgos2.img -src tools/vm86/vm86.com -dest sgos2/vm86.com
+	tools/wf/wf sgos2.img -src scripts/startup.txt -dest sgos/startup.txt
+	tools/wf/wf sgos2.img -src tools/vm86/vm86.com -dest sgos/vm86.com
 
 check:
 	$(call wf-if-not-exist, tools/wf/wf$(EXE_SUFFIX))
@@ -48,8 +48,8 @@ windbg:
 	start insight kernel/kernel &
 	start qemu -no-kqemu -m 64 -s -S -L ./qemu sgos2.img &
 
-startup:
-	start insight apps/hello/hello.exe &
+kernel32:
+	start insight apps/wkernel/kernel32.dll &
 	start qemu -no-kqemu -m 64 -s -S -L ./qemu sgos2.img &
 
 debug:

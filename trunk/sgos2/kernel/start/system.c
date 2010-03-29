@@ -188,6 +188,14 @@ static void DoMmMessage(Message* msg )
 			result = MmSwapMultiplePhysicalPages( space, msg->Arguments[1], MmGetSpaceById(SPACEID(msg->ThreadId)),
 				msg->Arguments[2], msg->Arguments[3], msg->Arguments[4] );
 		break;
+	case System_QueryAddress:
+		space = MmGetSpaceById( msg->Arguments[0] );
+		if( space == NULL )
+			result = -ERR_WRONGARG;
+		else
+			result = MmQueryVirtualAddressInformation( &space->VirtualMemory, msg->Arguments[1], &msg->Arguments[2],
+				&msg->Arguments[3], &msg->Arguments[4], &msg->Arguments[5] );
+		break;
 	default:
 		PERROR("## What? command = 0x%x", msg->Command );
 	}

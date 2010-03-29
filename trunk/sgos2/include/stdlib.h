@@ -4,6 +4,7 @@
 #include <sgos.h>
 #include <stdarg.h>
 
+
 EXTERN void*	malloc(size_t);
 EXTERN void	free(void*);
 EXTERN void*	calloc(size_t, size_t);
