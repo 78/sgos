@@ -1,5 +1,5 @@
 #include <sgos.h>
-#include <error.h>
+#include <errno.h>
 #include "debug.h"
 
 #define errno (*__errno())
