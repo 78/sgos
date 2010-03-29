@@ -14,5 +14,8 @@ ThreadInformation* GetCurrentThreadInformation()
 
 ProcessInformation* GetCurrentProcessInformation()
 {
-	return GetCurrentThreadInformation()->ProcessInformation;
+	ThreadInformation* ti = GetCurrentThreadInformation();
+	if( ti )
+		return ti->ProcessInformation;
+	return 0;
 }

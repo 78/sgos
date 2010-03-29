@@ -1,6 +1,6 @@
-#include <system.h>
-
-using namespace System::Service;
+#include <sgos.h>
+#include <api.h>
+#include "port.h"
 
 static void startSound(unsigned int freq)
 {
@@ -24,7 +24,7 @@ static void stopSound()
 void play(double freq, unsigned int delay)
 {
 	startSound((unsigned int)freq);
-	System::Thread::Sleep(delay);
+	SysSleepThread(delay);
 	stopSound();
 }
 

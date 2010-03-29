@@ -135,7 +135,7 @@ int main()
 		SysExitSpace(result);
 	}
 	//Get physical page of readOnlyAddress
-	result = SysQueryMemory( sid, (size_t)si, &phys_addr, &attr );
+	result = SysQueryMemory( sid, (size_t)si, (size_t*)&phys_addr, &attr );
 	if( result <0 ){
 		printf("[servicemanager]Failed to get physical page of readOnlyAddress: result=%d\n", result);
 		SysExitSpace(result);

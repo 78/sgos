@@ -14,13 +14,12 @@ color light-green/black blink-red/black
 # SGOS2
 title SGOS2
 	root (hd0,0)
-	kernel /sgos2/kernel.bin root=c:
-	module /sgos2/vm86.com
-	module /sgos2/servicemanager.exe
-	module /sgos2/filesystem.exe
-	module /sgos2/harddisk.exe
-#	module /sgos2/hello.exe
-	module /sgos2/wprocess.exe
+	kernel /sgos/kernel.bin root=c:
+	module /sgos/vm86.com
+	module /sgos/servicemanager.exe
+	module /sgos/filesystem.exe
+	module /sgos/harddisk.exe
+	module /sgos/wprocess.exe
 
 # Halt the machine
 title Turn off power!

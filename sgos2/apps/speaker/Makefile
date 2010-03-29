@@ -7,24 +7,22 @@ ODFLAGS = -S
 #here defines the program information
 PROGRAM = speaker
 LDFLAGS += ../../crt/crt.a
-LDFLAGS += ../libc/libc.dll ../system/system.dll
+LDFLAGS += ../../api/api.dll
 
 CXX = g++ $(CXXFLAGS)
 LD = ld $(LDFLAGS)
 OD = objdump $(ODFLAGS)
-LD2 = ../../tools/ld2/ld2
 WF = ../../tools/wf/wf
 IMAGE = ../../sgos2.img
 
 OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp))
 
-all: $(PROGRAM).run
+all: $(PROGRAM).exe
 
-$(PROGRAM).run: $(OBJECTS)
+$(PROGRAM).exe: $(OBJECTS)
 	$(LD) $(OBJECTS) -o$(PROGRAM).exe
 	$(OD) $(PROGRAM).exe > $(PROGRAM).dmp
-	$(LD2) $(PROGRAM).exe $@
-	$(WF) $(IMAGE) -src $@ -dest sgos2/$@
+	$(WF) $(IMAGE) -src $@ -dest sgos/$@
 
 # Standard Procedures
 .cpp.o:
@@ -32,6 +30,5 @@ $(PROGRAM).run: $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
-	$(RM) $(PROGRAM).run
 	$(RM) $(PROGRAM).dmp
 	$(RM) $(PROGRAM).exe

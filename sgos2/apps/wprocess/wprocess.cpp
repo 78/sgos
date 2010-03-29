@@ -43,7 +43,7 @@ static int MapAddress( uint fromSpace, uint toSpace, size_t remote_addr, size_t 
 	addr = (size_t)SysAllocateMemory( toSpace, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_VIRTUAL );
 	if( addr == 0 )
 		return -1;
-	if( SysQueryMemory( fromSpace, remote_addr, &phys_addr, &attr ) <0 )
+	if( SysQueryMemory( fromSpace, remote_addr, (size_t*)&phys_addr, (uint*)&attr ) <0 )
 		return -2;
 	if( SysMapMemory( toSpace, addr, PAGE_SIZE, phys_addr, 0, MAP_ADDRESS ) <0 )
 		return -3;
@@ -81,7 +81,7 @@ Thread::Thread( Process * ps, size_t entry )
 		goto bed;
 	this->process = ps;
 	if( ps->mainThread ){
-		Thread* t;
+		Thread* t; 
 		for( t=ps->mainThread; t->next; t=t->next );
 		t->next = this;
 		this->next = 0;

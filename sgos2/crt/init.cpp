@@ -1,3 +1,4 @@
+#include <sgos.h>
 //overload the operator "new"
 extern "C" unsigned * get_ctors();
 extern "C" unsigned * get_dtors();
@@ -9,7 +10,8 @@ extern "C" void __main()
 extern "C" int main();
 extern "C" void __run_exit_func();
 extern "C" void __allocation_init();
-extern "C" void SysExitThread(int );
+extern "C" void SysExitThread(uint );
+extern "C" ProcessInformation* GetCurrentProcessInformation();
 extern "C" int mainCRTStartup()
 {
 	int ret;
@@ -27,7 +29,7 @@ extern "C" int mainCRTStartup()
 	p = get_dtors();
 	for( p=&p[1]; *p; p++ )
 		((void(*)())(*p))();
-	SysExitThread(ret);
+	SysExitThread((uint)ret);
 	// return
 	return ret;
 }

@@ -78,6 +78,47 @@ static void ServiceMessageLoop()
 					t->Terminate( msg.Arguments[1] );
 				break;
 			}
+			case wProcess_LoadModule:
+			{
+				uint sid = SPACEID( msg.ThreadId );
+				char* filepath = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
+				SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)filepath, PAGE_SIZE, MAP_ADDRESS );
+				int ret = PeLoadLibrary( sid, filepath );
+				SysFreeMemory( SysGetCurrentSpaceId(), filepath );
+				msg.Code = ret;
+				break;
+			}
+			case wProcess_GetModule:
+			{
+				uint sid = SPACEID( msg.ThreadId );
+				char* name = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
+				SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)name, PAGE_SIZE, MAP_ADDRESS );
+				PeModule* mo = GetModuleByName( name );
+				if( !mo )
+					msg.Code = -ERR_NONE;
+				else{
+					msg.Code = mo->ModuleId;
+					strncpy( name, mo->Path, PAGE_SIZE );
+					SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)name, PAGE_SIZE, MAP_ADDRESS );
+				}
+				SysFreeMemory( SysGetCurrentSpaceId(), name );
+				break;
+			}
+			case wProcess_GetProcedure:
+			{
+				uint sid = SPACEID( msg.ThreadId );
+				char* name = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_SWAP );
+				SysSwapMemory( SPACEID(msg.ThreadId), (size_t)msg.Large[0], (size_t)name, PAGE_SIZE, MAP_ADDRESS );
+				msg.Code = (int)PeGetProcedureAddress( sid, msg.Arguments[0], name );
+				SysFreeMemory( SysGetCurrentSpaceId(), name );
+				break;
+			}
+			case wProcess_FreeModule:
+			{
+				uint sid = SPACEID( msg.ThreadId );
+				msg.Code = PeUnloadLibrary( sid, msg.Arguments[0] );
+				break;
+			}
 		}
 		ReplyMessage( &msg );
 	}

@@ -61,8 +61,7 @@ kernel: $(OBJECTS)
 	$(NM) $@ > $@.sym
 	$(OD) $@ > $@.dmp
 	$(OC) $@ $@.bin
-	$(WF) $(IMAGE) -src $@.bin -dest sgos2/$@.bin
-	$(WF) $(IMAGE) -src $@.sym -dest sgos2/$@.sym
+	$(WF) $(IMAGE) -src $@.bin -dest sgos/$@.bin
 
 clean:
 	$(RM) $(OBJECTS) \

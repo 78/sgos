@@ -76,7 +76,7 @@ static int ReadWriteBuffer( FILEBUF* fb, int count, uint cmd )
 	msg.Arguments[2] = fb->bufsize;
 	msg.Large[0] = (size_t)fb->bufptr;
 	ret = Api_Send( &msg, 0 );
-	ret = Api_Receive( &msg, 3000 );
+	ret = Api_Receive( &msg, INFINITE );
 	if( ret < 0 )
 		return ret;
 	return msg.Code; 
@@ -143,7 +143,7 @@ int FsSetFileSize( FILEBUF* fb, size_t newsize )
 	Message msg;
 	int ret = 0, id = fb->fd;
 	SendMessage( SmGetServiceThreadById(FileSystemId), 
-		File_SetSize, &id, &newsize, NULL, NULL, &ret );
+		File_SetSize, (void*)&id, (void*)&newsize, NULL, NULL, &ret );
 	return ret;
 }
 

@@ -122,7 +122,7 @@ void SysExitThread(uint code)
 void* SysAllocateGlobalMemory( size_t siz, uint attr, uint flag )
 {
 	void* ptr;
-	uint result = SendMessage( SystemId, System_AllocateGlobalMemory, &siz, &attr, 
+	uint result = SendMessage( SystemId, System_AllocateGlobalMemory, (void*)&siz, &attr, 
 		&flag, NULL, (void*)&ptr );
 	if( result < 0 )
 		return NULL;
@@ -166,8 +166,8 @@ int SysCreateThread( uint sid, size_t proc_addr, size_t stack_limit, size_t stac
 {
 	int result;
 	uint code;
-	result = SendMessageEx( SystemId, System_CreateThread, &sid, &proc_addr, &stack_limit, 
-		&stack_base, (void*)&ti, NULL, NULL, NULL, &code );
+	result = SendMessageEx( SystemId, System_CreateThread, &sid, (void*)&proc_addr, (void*)&stack_limit, 
+		(void*)&stack_base, (void*)&ti, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -215,7 +215,7 @@ int SysJoinThread( uint tid, time_t timeout )
 {
 	int result;
 	int code;
-	result = SendMessage( SystemId, System_JoinThread, &tid, &timeout, NULL, NULL, &code );
+	result = SendMessage( SystemId, System_JoinThread, (void*)&tid, (void*)&timeout, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -282,7 +282,7 @@ void* SysAllocateMemoryAddress( uint sp, size_t addr, uint siz, uint attr, uint 
 {
 	int result;
 	void* ptr;
-	result = SendMessageEx( SystemId, System_AllocateAddress, &sp, &addr, &siz, &attr, &flag, 
+	result = SendMessageEx( SystemId, System_AllocateAddress, (void*)&sp, (void*)&addr, (void*)&siz, (void*)&attr, (void*)&flag, 
 		NULL, NULL, NULL, (void*)&ptr );
 	if( result < 0 )
 		return NULL;
@@ -308,7 +308,7 @@ int SysAcquirePhysicalPages( uint sp, size_t addr, size_t siz )
 {
 	int result;
 	int code;
-	result = SendMessage( SystemId, System_AcquirePhysicalPages, &siz, &addr, &siz, NULL, &code );
+	result = SendMessage( SystemId, System_AcquirePhysicalPages, (void*)&siz, (void*)&addr, (void*)&siz, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -318,7 +318,7 @@ int SysReleasePhysicalPages( uint sp, size_t addr, size_t siz )
 {
 	int result;
 	int code;
-	result = SendMessage( SystemId, System_ReleasePhysicalPages, &siz, &addr, &siz, NULL, &code );
+	result = SendMessage( SystemId, System_ReleasePhysicalPages, (void*)&siz, (void*)&addr, (void*)&siz, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -328,8 +328,8 @@ int SysMapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr,
 {
 	int result;
 	int code;
-	result = SendMessageEx( SystemId, System_MapMemory, &sp, &addr, &siz, &phys_addr, &attr, 
-		&flag, NULL, NULL, &code );
+	result = SendMessageEx( SystemId, System_MapMemory, (void*)&sp, (void*)&addr, (void*)&siz, (void*)&phys_addr, (void*)&attr, 
+		(void*)&flag, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
@@ -339,21 +339,33 @@ int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, 
 {
 	int result;
 	int code;
-	result = SendMessageEx( SystemId, System_SwapMemory, &dest_sp, &dest_addr, &src_addr, 
-		&siz, &flag, NULL, NULL, NULL, &code );
+	result = SendMessageEx( SystemId, System_SwapMemory, (void*)&dest_sp, (void*)&dest_addr, (void*)&src_addr, 
+		(void*)&siz, (void*)&flag, NULL, NULL, NULL, &code );
 	if( result < 0 )
 		return result;
 	return code;
 }
+
 
 int SysDuplicateMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz )
 {
 	int result;
 	int code;
-	result = SendMessage( SystemId, System_DuplicateMemory, &dest_sp, &dest_addr, &src_addr, 
-		&siz, &code );
+	result = SendMessage( SystemId, System_DuplicateMemory, (void*)&dest_sp, (void*)&dest_addr, (void*)&src_addr, 
+		(void*)&siz, (void*)&code );
 	if( result < 0 )
 		return result;
 	return code;
 }
 
+
+int SysQueryAddress( uint dest_sp, size_t dest_addr, size_t *rbeg, size_t*rend, uint *attr, uint* flag )
+{
+	int result;
+	int code;
+	result = SendMessageEx( SystemId, System_QueryAddress, (void*)&dest_sp, (void*)&dest_addr, (void*)rbeg, 
+		(void*)rend, (void*)attr, (void*)flag, NULL, NULL, &code );
+	if( result < 0 )
+		return result;
+	return code;
+}

@@ -5,8 +5,8 @@ typedef struct FUNC_LIST{
 
 static FUNC_LIST* first;
 
-extern void* malloc(unsigned int );
-extern void free(void*p);
+extern "C" void* malloc(unsigned int );
+extern "C" void free(void*p);
 //Not support multithreading yet.
 extern "C" void atexit(void* p)
 {

@@ -1,3 +1,4 @@
+/c:/sgos/speaker.exe
 /c:/sgos/hello.exe
 #
 每行表示一个要启动的程序。

@@ -14,6 +14,7 @@
 #else
 #define EXTERN extern
 #endif
+#define  WINAPI __stdcall
 
 // 系统账号
 #define ADMIN_USER		0
@@ -102,6 +103,7 @@ typedef struct _DIRECTORY_ENTRY{
 typedef unsigned int ThreadId_t;
 typedef unsigned int SpaceId_t;
 
+
 //进程信息块
 typedef struct ProcessInformation{
 	char			ProcessName[PROCESS_NAME_LEN];	//进程名称
@@ -116,6 +118,7 @@ typedef struct ProcessInformation{
 	char*			CommandLine;			//命令行
 	char*			EnvironmentVariables;		//环境变量
 	struct ProcessInformation*Self;
+	void*			HandleSet;
 }ProcessInformation;
 
 //Space
@@ -186,6 +189,7 @@ typedef struct Message{
 #define System_SwapMemory		0x00002011
 #define System_AllocateAddress		0x00002012
 #define System_DuplicateMemory		0x00002013
+#define System_QueryAddress		0x00002014
 
 // Service Manager
 #define SM_INFORMATION_SIZE	KB(4)
@@ -216,6 +220,10 @@ typedef struct ServiceInformation{
 #define wProcess_Resume		0x0004
 #define wProcess_CreateThread		0x0005
 #define wProcess_TerminateThread	0x0006
+#define wProcess_LoadModule	0x1001
+#define wProcess_GetModule	0x1002
+#define wProcess_GetProcedure	0x1003
+#define wProcess_FreeModule	0x1004
 
 //Harddisk Service
 #define HarddiskId		3

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <api.h>
 #include "module.h"
+#include "wprocess.h"
 #include "pe.h"
 
 #define 	MAX_MODULE	128
@@ -18,6 +19,22 @@ PeModule* GetModuleByPath( const char* path )
 			printf("[pe]Found %s\n", path );
 			return moduleList[i];
 		}
+	return 0;
+}
+
+PeModule* GetModuleByName( const char* name )
+{
+	const char *p, *q;
+	p = strrchr( name, '/' );
+	if( !p ) p = name;
+	for( int i=0; i<moduleCount; i++ ){
+		q = strrchr( moduleList[i]->Path, '/' );
+		if( !q ) q = moduleList[i]->Path;
+		if( strnicmp( (char*)p, (char*)q, PATH_LEN ) == 0 ){
+			printf("[pe]Got Module %s\n", name );
+			return moduleList[i];
+		}
+	}
 	return 0;
 }
 
@@ -108,6 +125,7 @@ size_t GetProcedureAddress( PeModule* mo, ModuleInSpace* mi, const char* procedu
 			}
 		}
 	}
+	printf("[pe]Failed to get address of %s in %s\n", procedureName, mo->Path );
 	return 0;
 }
 
@@ -178,7 +196,6 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 						if( fixup ){
 							*addressEntry = fixup;
 						}else{
-							printf("[pe] not found %s in %s ", hint->Name, mo2->Path );
 							*addressEntry = 0x66666666;
 						}
 					}

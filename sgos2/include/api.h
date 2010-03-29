@@ -60,6 +60,7 @@ EXTERN int SysReleasePhysicalPages( uint sp, size_t addr, size_t siz );
 EXTERN int SysMapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr, uint flag );
 EXTERN int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, uint flag );
 EXTERN int SysDuplicateMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz );
+EXTERN int SysQueryAddress( uint dest_sp, size_t dest_addr, size_t *rbeg, size_t*rend, uint *attr, uint* flag );
 
 //clock.c
 EXTERN uint _GetTickCount();
@@ -90,5 +91,9 @@ EXTERN int PsCreateThread( size_t addr );
 EXTERN int PsTerminateThread( int tid, int code );
 EXTERN int PsSuspendThread( int tid );
 EXTERN int PsResumeThread( int tid );
+EXTERN int PsLoadModule( const char* path );
+EXTERN void PsFreeModule( int mid );
+EXTERN int PsGetModule( const char* name, char* path, int path_len );
+EXTERN size_t PsGetProcedure( int mid, const char* name );
 
 #endif

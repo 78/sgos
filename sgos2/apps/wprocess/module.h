@@ -33,6 +33,7 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId );
 ModuleInSpace* GetLoadedInformation( PeModule* mo, uint space );
 PeModule* GetModuleById( uint id );
 PeModule* GetModuleByPath( const char* path );
+PeModule* GetModuleByName( const char* name );
 
 int PeLoadLibrary( uint spaceId, const char * path );
 int PeUnloadLibrary( uint spaceId, uint mid );

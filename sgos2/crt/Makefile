@@ -1,13 +1,13 @@
 #sgos api
 
-CCFLAGS = -g -fno-builtin -nostdlib -fleading-underscore
+CCFLAGS = -g -fno-builtin -nostdlib -fleading-underscore -I../include
 ODFLAGS = -S
 LDFLAGS = -r
 
 #here defines the program information
 PROGRAM = crt
 
-CC = gcc $(CCFLAGS)
+CC = g++ $(CCFLAGS)
 LD = ld $(LDFLAGS)
 
 OBJECTS = $(patsubst %.cpp,%.o,  $(wildcard *.cpp)) \
@@ -19,7 +19,7 @@ $(PROGRAM).a: $(OBJECTS)
 	$(LD) -o $(PROGRAM).a $(OBJECTS) 
 
 # Standard Procedures
-.c.o:
+.cpp.o:
 	$(CC) -c -o $@ $<
 
 clean:
