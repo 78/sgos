@@ -20,14 +20,22 @@ typedef struct _MEMORY_BASIC_INFORMATION {
 size_t WINAPI VirtualAlloc( void* addr, size_t siz, uint type, uint protect )
 {
 	uint flag=0;
+	size_t ret;
+	if( siz % PAGE_SIZE ) {
+		siz = PAGE_ALIGN(siz);
+	}
 	if( protect&MEM_TOP_DOWN )
 		flag |= ALLOC_HIGHMEM;
 	if( protect&MEM_PHYSICAL )
 		flag |= ALLOC_VIRTUAL;
-	if( addr == NULL )
-		return (size_t)SysAllocateMemory( SysGetCurrentSpaceId(), siz, MEMORY_ATTR_WRITE, flag );
 	else
-		return (size_t)SysAllocateMemoryAddress( SysGetCurrentSpaceId(), (size_t)addr, siz, MEMORY_ATTR_WRITE, flag );
+		flag |= ALLOC_LAZY;
+	if( addr == NULL )
+		ret = (size_t)SysAllocateMemory( SysGetCurrentSpaceId(), siz, MEMORY_ATTR_WRITE, flag );
+	else
+		ret = (size_t)addr;
+	DBG("addr: %x  ret: %x  size: %x", addr, ret, siz );
+	return ret;
 }
 
 size_t WINAPI LocalAlloc( uint flag, size_t siz )

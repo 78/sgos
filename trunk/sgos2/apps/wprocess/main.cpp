@@ -128,7 +128,7 @@ void CreateStartupProcess()
 {
 	for(;;){
 		char* cmdline = (char*)SysAllocateMemory( SysGetCurrentSpaceId(), PAGE_SIZE, MEMORY_ATTR_WRITE, 0 );
-		strcpy( cmdline, "/c:/sgos/startup.exe" );
+		strcpy( cmdline, "/diskc/sgos/startup.exe" );
 		Process *p=0;
 		p = new Process( 0, cmdline, 0 );
 		if( p->ProcessId()>0 )

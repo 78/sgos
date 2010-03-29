@@ -1,5 +1,6 @@
-/c:/sgos/speaker.exe
-/c:/sgos/hello.exe
+/diskc/sgos/speaker.exe
+/diskc/sgos/hello.exe
+/diskc/sgos/env.exe
 #
 每行表示一个要启动的程序。
 遇到#结束。

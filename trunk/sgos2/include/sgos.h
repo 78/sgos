@@ -75,8 +75,8 @@
 #define ROOTFS_FLAG_READ		4	//可读
 #define ROOTFS_FLAG_WRITE		8	//可写
 
-#define SEEK_CUR		0
-#define SEEK_SET		1
+#define SEEK_SET		0
+#define SEEK_CUR		1
 #define SEEK_END		2
 
 //标准输出输入3个
@@ -283,6 +283,7 @@ typedef struct ThreadContext{
 #define ALLOC_HIGHMEM		16
 #define ALLOC_LOWMEM		32
 #define ALLOC_LAZY		64
+#define ALLOC_TEST		128
 
 #define MEMORY_ATTR_WRITE	(1<<1)	//页面可写
 #define MEMORY_ATTR_USER	(1<<2)	//页面为用户级

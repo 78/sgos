@@ -4,7 +4,6 @@
 
 void _exit()
 {
-	DBG("exit()");
-	SysExitThread(13);
+	SysExitThread(0);
 }
 

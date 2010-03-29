@@ -23,6 +23,8 @@ int open( const char* path, int oflag, int mode )
 
 int write(int fd, void *buf, int nbyte)
 {
+	if( fd==STDOUT )
+		return Api_Print( buf );
 	return FsWriteFile( (FILEBUF*)fd, buf, nbyte );
 }
 

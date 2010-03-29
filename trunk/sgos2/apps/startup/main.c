@@ -34,7 +34,7 @@ int main()
 	FILEBUF* fb=0; 
 	char buf[4096];
 	int ret; 
-	char *path = "/c:/sgos2/startup.txt";
+	char *path = "/diskc/sgos2/startup.txt";
 	fb = FsOpenFile( path, FILE_READ, 0);
 	if( fb == NULL ){
 		printf("[startup] Cannot open file %s\n", path );
