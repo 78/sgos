@@ -76,14 +76,17 @@ device_t* device_register( uint type, uint thread, uint part, char* name )
 		}else{
 			// 如果文件系统没有为设备分配设备名，则随机分配
 			if( !f->name[0] ){
-				f->name[0]='c';
-				f->name[1]=':';
-				for(;f->name[0]<='z';f->name[0]++ ){
+				f->name[0]='d';
+				f->name[1]='i';
+				f->name[2]='s';
+				f->name[3]='k';
+				f->name[4]='c';
+				for(;f->name[4]<='z';f->name[4]++ ){
 					if( device_find( f->name )==0 )
 						break;
 				}
 				// 如果得不到设备名怎么办？
-				if( f->name[0]>'z'){
+				if( f->name[4]>'z'){
 					sprintf(f->name, "%s:%d", name, part);
 				}
 				printf("[vfs]Registered dev %s for %s:%d\n", f->name, name, part );

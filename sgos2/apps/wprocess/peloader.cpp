@@ -7,8 +7,8 @@
 #include "pe.h"
 
 #define MIN(a,b) (a>b?b:a)
-#define SYSTEM_PATH "/c:/sgos/system"
-#define SGOS_PATH "/c:/sgos"
+#define SYSTEM_PATH "/diskc/sgos/system"
+#define SGOS_PATH "/diskc/sgos"
 
 static FILEBUF* SearchAndOpenFile( const char* path )
 {

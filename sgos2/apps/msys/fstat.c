@@ -1,8 +1,10 @@
 #include <sgos.h>
+#include <stdio.h>
 #include <api.h>
 #include "debug.h"
 
-void fstat( int fd )
+int fstat(int fd, struct _stat *buf)
 {
-	NOT_IMPLEMENTED();
+	DBG("fd=%d", fd );
+	return 0;
 }

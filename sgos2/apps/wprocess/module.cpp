@@ -16,7 +16,6 @@ PeModule* GetModuleByPath( const char* path )
 {
 	for( int i=0; i<moduleCount; i++ )
 		if( strnicmp( (char*)path, moduleList[i]->Path, PATH_LEN ) == 0 ){
-			printf("[pe]Found %s\n", path );
 			return moduleList[i];
 		}
 	return 0;
@@ -172,7 +171,6 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 			for( int i=0; imp[i].Name && i<MAX_IMPORT_MODULES; i ++ ){
 				uint mo2Id;
 				const char* libName = (char*)(addr + imp[i].Name);
-				printf("[pe]Need %s  for %s\n", libName, mo->Path );
 				mo2Id = PeLoadLibrary( spaceId, libName );
 				if( mo2Id < 0 ){
 					result = -ERR_UNKNOWN;
