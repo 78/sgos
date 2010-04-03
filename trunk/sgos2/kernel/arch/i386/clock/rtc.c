@@ -4,6 +4,7 @@
 #include <time.h>
 #include <kd.h>
 #include <tm.h>
+#include <ke.h>
 
 #define BCD_TO_HEX(bcd)	(bcd&0xf)+((bcd>>4)&0xf)*10
 
@@ -75,7 +76,8 @@ void ArStartRealTimeClock()
 	t.tm_mon --;
 	/* calculate to time calculated in ms from 1970-01-01 */
 	rtc_second = mktime( &t );
-	rtc_time = rtc_second * 1000;
+	rtc_time = 0;
+	rtc_millisecond = rtc_second * 1000;
 	// Show time
 	strtime( &rtc_second, timestr );
 	KdPrintf("System start time: %s\n", timestr );

@@ -73,6 +73,8 @@ void KeStartOs( size_t boot_info )
 	ThreadingBox.running = MmGetCurrentSpace()->FirstThread;
 	//启动线程
 	KdPrintf("Starting Multi-threading Mode ...\n");
+	//init system information
+	KeInitializeSystemInformation();
 	ArStartThreading();
 	//never return here
 	KERROR("##Warning: kernel not ready.");

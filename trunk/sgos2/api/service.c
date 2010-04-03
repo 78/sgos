@@ -3,7 +3,17 @@
 #include <api.h>
 
 
-static ServiceInformation* siList = (ServiceInformation*)0xE0000000; 
+static ServiceInformation* siList = (ServiceInformation*)0; 
+
+static void GetServiceListPtr()
+{
+	SystemInformation* si = (SystemInformation*)SysGetSystemInformation();
+	if( !si ){
+		printf("[Service]Failed to get system information.\n");
+		return;
+	}
+	siList = si->ServiceList;
+}
 
 int SmNotifyService( uint serviceId, uint eventFlag, const char* name )
 {
@@ -37,6 +47,8 @@ int SmRemoveService( uint serviceId )
 
 uint SmGetServiceThreadById( uint serviceId )
 {
+	if( !siList )
+		GetServiceListPtr();
 	if( serviceId< SI_MAX && siList[serviceId].ServiceId )
 			return siList[serviceId].ThreadId;
 	return 0;
@@ -45,6 +57,8 @@ uint SmGetServiceThreadById( uint serviceId )
 uint SmGetServiceThreadByName( const char* name )
 {
 	int i;
+	if( !siList )
+		GetServiceListPtr();
 	for( i=0; i<SI_MAX; i++ )
 		if( strncmp(siList[i].ServiceName, name, SERVICE_NAME_LENGTH) == 0 ){
 			return siList[i].ThreadId;

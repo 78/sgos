@@ -10,6 +10,7 @@
 void ArSaveMultibootInformation( size_t info_addr )
 {
 	//
+	ArLocalDisableIrq();
 	//call KeStartOs, never return
 	KeStartOs( info_addr );
 }

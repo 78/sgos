@@ -41,11 +41,11 @@ int WINAPI WriteFile(uint h, const void*p, uint c, uint* w,  void* overlapped)
 		NOT_IMPLEMENTED();
 		return;
 	case STD_OUTPUT_HANDLE:
-		Api_Print( p );
+		Api_Print( p, c );
 		*w = c;
 		return 1;
 	case STD_ERROR_HANDLE:
-		Api_Print( p );
+		Api_Print( p, c );
 		*w = c;
 		return 1;
 	}

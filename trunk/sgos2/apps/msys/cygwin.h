@@ -19,7 +19,6 @@ typedef enum
 	CW_GET_CYGDRIVE_INFO
 } cygwin_getinfo_types;
 
-
 struct per_process
 {
   char *initial_sp;
@@ -81,3 +80,7 @@ struct per_process
   struct _reent *impure_ptr;
 };
 #define per_process_overwrite ((unsigned) &(((struct per_process *) NULL)->resourcelocks))
+
+
+void build_argv (char *cmd, char ***argv_ptr, int *argc, char sep);
+

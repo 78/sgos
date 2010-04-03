@@ -109,6 +109,19 @@ int SendMessageEx( uint dest, uint cmd, uint *arg1, uint *arg2, uint *arg3, uint
 	return result;
 }
 
+void* SysGetSystemInformation()
+{
+	void* ptr=NULL;
+	ProcessInformation* pi = (ProcessInformation*)GetCurrentProcessInformation();
+	if( pi ){
+		return pi->SystemInformation;
+	}
+	if( SendMessage( SystemId, System_GetSystemInformation, NULL, NULL, NULL, NULL, (void*)&ptr ) < 0 )
+		return NULL;
+	return ptr;
+}
+
+
 void SysExitSpace(uint code)
 {
 	SendMessage( SystemId, System_ExitSpace, &code, NULL, NULL, NULL, NULL );
@@ -134,10 +147,6 @@ void SysFreeGlobalMemory( void* p )
 	SendMessage( SystemId, System_FreeGlobalMemory, (void*)&p, NULL, NULL, NULL, NULL );
 }
 
-int SysGetSystemInformation( void* p )
-{
-	//System_GetSystemInformation
-}
 
 int SysTerminateThread( uint tid, uint code )
 {

@@ -7,7 +7,7 @@ void run( const char* p )
 	if( !*p )
 		return;
 	printf("[startup] running %s\n", p );
-	int ret = PsCreateProcess( p, "", &pid );
+	int ret = PsCreateProcess( p, "OS=SGOS2", &pid );
 	if( ret < 0 )
 		printf("[startup] Failed to run %s\n", p );
 }

@@ -138,7 +138,7 @@ NEXT:
 	pos = read_addr%BLOCK_SIZE;	//偏移
 	if( pos > 1020 )
 	{
-		printf("[fat32]warning: Boundary Out!");
+		printf("[fat32]fat32_freeclu warning: Boundary Out!");
 		return -1;
 	}
 	if( buf==NULL || lastone!=block ){	//|| buf->block!=block

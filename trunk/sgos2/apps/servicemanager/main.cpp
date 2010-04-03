@@ -122,31 +122,20 @@ int main()
 	uint phys_addr, attr;
 	uint sid = SysGetCurrentSpaceId();
 	printf("[servicemanager]SpaceId:%X\n", sid );
+	si = (ServiceInformation*)SysAllocateMemory( SysGetCurrentSpaceId(), SM_INFORMATION_SIZE, MEMORY_ATTR_WRITE, ALLOC_VIRTUAL );
 	//Allocate two read-only pages. 
-	readOnlyAddress = (ServiceInformation*)SysAllocateGlobalMemory( SM_INFORMATION_SIZE, 0, ALLOC_VIRTUAL );
-	if( readOnlyAddress==NULL ){
-		printf("[servicemanager]Failed to allocate global memory\n");
-		SysExitSpace(result);
-	}
-	//Allocate virtual memory in current address space
-	si = (ServiceInformation*)SysAllocateMemory( sid, SM_INFORMATION_SIZE, MEMORY_ATTR_WRITE, 0 );
-	if( si == NULL ){
-		printf("[servicemanager]Failed to allocate virtual memory\n");
-		SysExitSpace(result);
-	}
+	readOnlyAddress = ((SystemInformation*)SysGetSystemInformation())->ServiceList;
 	//Get physical page of readOnlyAddress
-	result = SysQueryMemory( sid, (size_t)si, (size_t*)&phys_addr, &attr );
+	result = SysQueryMemory( sid, (size_t)readOnlyAddress, (size_t*)&phys_addr, &attr );
 	if( result <0 ){
 		printf("[servicemanager]Failed to get physical page of readOnlyAddress: result=%d\n", result);
 		SysExitSpace(result);
 	}
-	result = SysMapMemory( sid, (size_t)readOnlyAddress, SM_INFORMATION_SIZE, phys_addr, 0, MAP_ADDRESS );
+	result = SysMapMemory( sid, (size_t)si, SM_INFORMATION_SIZE, phys_addr, 0, MAP_ADDRESS );
 	if( result <0 ){
-		printf("[servicemanager]Failed to map the physical page of readOnlyAddress\n");
+		printf("[servicemanager]Failed to map the physical page\n");
 		SysExitSpace(result);
 	}
-	//Initialize si to zeros
-	memset( si, 0, SM_INFORMATION_SIZE );
 	//Add Me
 	AddService( 1, 0, SysGetCurrentThreadId(), "ServiceManager" );
 	result = readOnlyAddress[1].ServiceId;

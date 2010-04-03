@@ -2,6 +2,7 @@
 #include <ipc.h>
 #include <tm.h>
 #include <mm.h>
+#include <ke.h>
 #include <kd.h>
 
 //Static variables
@@ -205,10 +206,13 @@ static void DoMmMessage(Message* msg )
 //System Information Message
 static void DoSystemInformationMessage(Message* msg )
 {
+	int result = 0;
 	switch( msg->Command ){
 	case System_GetSystemInformation:
-		;
+		result = (int)KeGetSystemInforamtion();
+		break;
 	}
+	Reply( msg, result );
 }
 
 //System Message Handler
