@@ -31,11 +31,12 @@ EXTERN int ReplyMessage( Message* msg );
 EXTERN int ReceiveMessage( Message* msg, time_t timeout );
 EXTERN int WaitMessage( Message* msg );
 
+//system api
+EXTERN void* SysGetSystemInformation();
 EXTERN void SysExitSpace(uint code);
 EXTERN void SysExitThread(uint code);
 EXTERN void* SysAllocateGlobalMemory( size_t siz, uint attr, uint flag );
 EXTERN void SysFreeGlobalMemory( void* p );
-EXTERN int SysGetSystemInformation( void* p );
 EXTERN int SysTerminateThread( uint tid, uint code );
 EXTERN uint SysGetCurrentThreadId();
 EXTERN int SysCreateThread( uint sid, size_t proc_addr, size_t stack_limit, size_t stack_base, void* ti );

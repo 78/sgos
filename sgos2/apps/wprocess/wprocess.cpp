@@ -53,7 +53,8 @@ static int MapAddress( uint fromSpace, uint toSpace, size_t remote_addr, size_t 
 
 Thread::Thread( Process * ps, size_t entry )
 {
-	int sid = ps->SpaceId(), tid;
+	int sid = ps->SpaceId(), tid=0;
+	this->prev = this->next = 0;
 	this->disposed = false;
 	ti = 0;
 	//setup thread information block Tib
@@ -146,6 +147,7 @@ Process::Process( uint pid, char* cmdline, char* env )
 	this->spaceId = 0;
 	this->module = 0;
 	this->pi = 0;
+	this->mainThread = 0;
 	this->commandLine = this->environment = 0;
 	this->prev = this->next = this->parent = this->child = 0;
 	if( Initialize( pid, cmdline, env ) < 0 )
@@ -244,6 +246,7 @@ int Process::Initialize( uint pid, char* cmdline, char* env )
 	pi->ModuleId = this->module->ModuleId;
 	pi->ParentProcessId = 0;
 	pi->EntryAddress = this->module->EntryAddress;
+	pi->SystemInformation = (SystemInformation*)SysGetSystemInformation();
 	pi->Self = (ProcessInformation*)remote_pi;
 	if( cmdline && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)cmdline, (size_t*)&pi->CommandLine )) < 0 )
 		goto bed;

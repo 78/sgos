@@ -34,9 +34,12 @@ uint Api_Test()
 }
 
 //输出调试信息
-int Api_Print( const char* buf )
+int Api_Print( const char* buf, int nbytes )
 {
-	return KdPrint( (char*)buf );
+	int i;
+	for( i=0; i<nbytes && buf[i]; i++ )
+		 KdPrintf("%c", buf[i] );
+	return nbytes;
 }
 
 //Send a message

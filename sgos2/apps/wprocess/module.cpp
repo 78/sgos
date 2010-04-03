@@ -195,6 +195,8 @@ int LinkModuleToSpace( PeModule* mo, uint spaceId )
 							*addressEntry = fixup;
 						}else{
 							*addressEntry = 0x66666666;
+							result = -66;
+							goto bed;
 						}
 					}
 				}

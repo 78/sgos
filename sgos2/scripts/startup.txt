@@ -1,6 +1,6 @@
 /diskc/sgos/speaker.exe
 /diskc/sgos/hello.exe
-/diskc/sgos/env.exe
+/diskc/sgos/cat.exe /diskc/sgos/startup.txt
 #
 每行表示一个要启动的程序。
 遇到#结束。

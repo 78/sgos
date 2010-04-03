@@ -4,6 +4,10 @@
 #include "debug.h"
 #include "unistd.h"
 
+size_t getpagesize()
+{
+	return PAGE_SIZE;
+}
 
 /* sysconf: POSIX 4.8.1.1 */
 /* Allows a portable app to determine quantities of resources or

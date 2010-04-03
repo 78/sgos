@@ -13,5 +13,9 @@ void KeStartOs( size_t boot_info );
 void KeBugCheck(const char *s );
 void KeResumeStart();
 
+void KeInitializeSystemInformation();
+void KeUpdateTickCount(uint ticks);
+SystemInformation* KeGetSystemInforamtion();
+
 #endif
 

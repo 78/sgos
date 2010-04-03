@@ -10,7 +10,7 @@ int printf(const char *fmt, ...)
 	char buffer[1024];
 	va_start(args, fmt);
 	i=vsprintf(buffer,fmt,args);
-	Api_Print(buffer);
+	Api_Print(buffer, i);
 	va_end(args);
 	return i;
 }

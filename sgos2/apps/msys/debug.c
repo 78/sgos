@@ -23,18 +23,18 @@ void print_error(char* file, char* function, int line, const char *fmt, ...)
 	i=vsprintf( printbuf, fmt, args );
 	printbuf[i] = 0;
 	va_end(args);
-	Api_Print( "[");
-	Api_Print( file );
-	Api_Print( "]");
-	Api_Print( function );
-	Api_Print( ": ");
-	Api_Print( printbuf );
-	Api_Print( "\n");
+	Api_Print( "[", 1);
+	Api_Print( file, strlen(file) );
+	Api_Print( "]", 1);
+	Api_Print( function, strlen(function) );
+	Api_Print( ": ", 2);
+	Api_Print( printbuf, i );
+	Api_Print( "\n", 1);
 }
 
 void ASSERT(int a)
 {
 	if( !a ){
-		Api_Print("Assertion failed at somewhere.\n");
+		Api_Print("Assertion failed at somewhere.\n", 100);
 	}
 }

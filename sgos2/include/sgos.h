@@ -8,6 +8,7 @@
 #define __SGOS__H__
 
 #include <types.h>
+#include <sgos_version.h>
 
 #ifdef __cplusplus 
 #define EXTERN extern "C" 
@@ -104,6 +105,18 @@ typedef unsigned int ThreadId_t;
 typedef unsigned int SpaceId_t;
 
 
+//系统信息块
+struct ServiceInformation;
+typedef struct SystemInformation{
+	char			SystemDirectory[PATH_LEN];	//系统路径
+	uint			SystemVersion;			//系统版本
+	struct ServiceInformation* ServiceList;		//系统服务信息
+	size_t			PageSize;			//页面大小
+	uint			ProcessorType;			//处理器类型
+	uint			TickCount;			//实时计数
+	uint			TimeSlice;			//时间片大小
+}SystemInformation;
+
 //进程信息块
 typedef struct ProcessInformation{
 	char			ProcessName[PROCESS_NAME_LEN];	//进程名称
@@ -117,8 +130,10 @@ typedef struct ProcessInformation{
 	void*			GlobalStorage;			//进程变量存储地址
 	char*			CommandLine;			//命令行
 	char*			EnvironmentVariables;		//环境变量
-	struct ProcessInformation*Self;
+	struct ProcessInformation*Self;				//指向自己的指针
 	void*			HandleSet;
+	struct SystemInformation* SystemInformation;		//系统信息
+	char*			CurrentDirectory;		//当前目录，可以改变
 }ProcessInformation;
 
 //Space

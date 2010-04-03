@@ -157,6 +157,9 @@ void ArHandleIsr(const I386_REGISTERS *r)
 		handler = isr_routines[r->int_no];
 		if (!handler ||
 			!handler(r->err_code, r) ){
+			KThread* cur = TmGetCurrentThread();
+			if( cur && !cur->IsKernelThread )
+				TmSleepThread( cur, 1000 );
 			KdPrintf("## Unhandled Exception ##\t"
 				"%s\tCode: %d\tcr3:%x\n", 
 				exception_msg[ r->int_no ], r->err_code, MmGetCurrentSpace()->PageDirectory.PhysicalAddress );
