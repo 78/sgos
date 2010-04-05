@@ -11,6 +11,9 @@ all:
 	make -Cwprocess
 	make -Cstartup
 	make -Cspeaker
+	make -Cacpi
+	make -Ckeyboard
+	make -Cvesa
 	make -Cwkernel
 	make -Cwadvapi
 	make -Cmsys
@@ -24,6 +27,9 @@ clean:
 	make -Cwprocess clean
 	make -Cstartup clean
 	make -Cspeaker clean
+	make -Cacpi clean
+	make -Ckeyboard clean
+	make -Cvesa clean
 	make -Cwkernel clean
 	make -Cwadvapi clean
 	make -Cmsys clean

@@ -26,7 +26,9 @@ ServiceInformation* AddService( uint id, uint event, uint tid, const char* name 
 	if( id >= SI_MAX )	
 		return 0;
 	if( id==0 || si[id].ServiceId ){
-		for( id=0; id<SI_MAX; id++ )
+		if( id!=0 && si[id].ServiceId )
+			printf("Error: Service ID %d is already occupied by somebody.\n", id);
+		for( id=10; id<SI_MAX; id++ )
 			if( si[id].ServiceId == 0 )
 				break;
 		if( id == SI_MAX )

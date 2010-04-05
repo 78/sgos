@@ -160,7 +160,7 @@ int TmTerminateThread( KThread* thr, uint code )
 		PERROR("thr == NULL");
 		return -ERR_WRONGARG;
 	}
-	KdPrintf("Thread %x exited with code: %d\n", thr->ThreadId, code );
+//	KdPrintf("Thread %x exited with code: %d\n", thr->ThreadId, code );
 	space = thr->Space;
 	//如果线程睡眠了，怎么办？
 	down( &thr->Semaphore );
@@ -178,7 +178,7 @@ int TmTerminateThread( KThread* thr, uint code )
 	//回收资源
 	ArReleaseThreadResources( thr );
 	//回收堆栈
-	if( !thr->IsKernelThread )//用户态线程？？
+	if( !thr->IsKernelThread && !thr->InBiosMode )//用户态线程？？
 		MmFreeUserMemory( space, (void*)thr->StackBase );
 	//Wakeup all related sleeping threads
 	IpcDestroySemaphore( &thr->Semaphore );

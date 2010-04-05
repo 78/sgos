@@ -1,4 +1,8 @@
+/diskc/sgos/acpi.exe
+/diskc/sgos/time.exe
 /diskc/sgos/speaker.exe
+/diskc/sgos/keyboard.exe
+/diskc/sgos/vesa.exe
 /diskc/sgos/hello.exe
 /diskc/sgos/cat.exe /diskc/sgos/startup.txt
 #

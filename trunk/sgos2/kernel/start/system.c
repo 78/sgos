@@ -204,12 +204,21 @@ static void DoMmMessage(Message* msg )
 }
 
 //System Information Message
-static void DoSystemInformationMessage(Message* msg )
+static void DoSysMessage(Message* msg )
 {
 	int result = 0;
 	switch( msg->Command ){
 	case System_GetSystemInformation:
 		result = (int)KeGetSystemInforamtion();
+		break;
+	case System_EnableInterrupt:
+		KeEnableHardwareInterrupt( msg->Arguments[0], msg->Arguments[1] );
+		break;
+	case System_AddInterruptHandler:
+		result = KeAddHardwareInterruptHandler( msg->Arguments[0], msg->Arguments[1] );
+		break;
+	case System_DelInterruptHandler:
+		KeDeleteHardwareInterruptHandler( msg->Arguments[0], msg->Arguments[1] );
 		break;
 	}
 	Reply( msg, result );
@@ -222,6 +231,7 @@ static void SystemMessageLoop()
 	KdPrintf("System thread started.\n");
 	for(;;){
 		msg.ThreadId = ANY_THREAD;
+		msg.Command = 0;
 		int result = IpcReceive( &msg, 0, INFINITE );
 		uint cmd = msg.Command;
 		if( result<0 ){
@@ -230,7 +240,7 @@ static void SystemMessageLoop()
 		}
 //		KdPrintf("System Cmd: 0x%X\n", cmd );
 		if( cmd < 0x1000 ){ //System Information
-			DoSystemInformationMessage(&msg);
+			DoSysMessage(&msg);
 		}else if( cmd < 0x2000 ){
 			DoTmMessage(&msg);
 		}else if( cmd < 0x3000 ){

@@ -223,7 +223,7 @@ void ArInitializeFastcall();
 void ArPrepareForNextThread();
 void ArAsmSwapContext( struct KThread*, uint*, uint* );	//switch.S
 void ArInitializeVm86();	//vm86.c
-int ArCallBiosService( int interrupt, void* context, size_t siz );	//vm86.c
+int ArInvokeBiosService( int interrupt, void* context, size_t siz );	//vm86.c
 //fpu
 void ArCheckAndSaveFpu( struct KThread* thr );
 void ArInitializeMathProcessor();

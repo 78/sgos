@@ -5,6 +5,7 @@
 #include <kd.h>
 #include <tm.h>
 #include <rtl.h>
+#include <ke.h>
 
 //中断捕获函数
 extern void irq0();
@@ -158,8 +159,14 @@ int ArHandleIrq(const I386_REGISTERS *r)
 	//调用特定处理函数。
 	if( handler )
 		handler(r);
+	//Call kernel to handle it.
+	KeHardwareInterruptMessage( r->int_no - 32 );
 	//清irq模式
 	TmGetCurrentThread()->IsInterrupted = 0;
+	//处理完毕! 发送EOI
+	if (r->int_no >= 40)
+		ArOutByte( 0xA0, 0x20 );
+	ArOutByte( 0x20, 0x20 );
 	//是否线程切换
 	if( ThreadingBox.next ){
 		//更新线程环境，如是否需要重装页目录

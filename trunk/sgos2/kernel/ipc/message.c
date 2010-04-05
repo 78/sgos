@@ -15,9 +15,24 @@ static void MessageEraser(const void * p)
 }
 
 // 给出source线程查找一个消息
-static int MessageSearcher(const void * p, const void *q )
+static int MessageSearcher1(const void * p, const void *q )
 {
-	if( ((KMessage*)p)->Source == q )
+	if( ((KMessage*)p)->Source->ThreadId == ((Message*)q)->ThreadId )
+		return 1;
+	return 0;	//search next
+}
+// 给出command查找一个消息
+static int MessageSearcher2(const void * p, const void *q )
+{
+	if( ((KMessage*)p)->UserMessage.Command == ((Message*)q)->Command )
+		return 1;
+	return 0;	//search next
+}
+// 给出source线程和command查找一个消息
+static int MessageSearcher3(const void * p, const void *q )
+{
+	if( ((KMessage*)p)->Source->ThreadId == ((Message*)q)->ThreadId &&
+		((KMessage*)p)->UserMessage.Command == ((Message*)q)->Command )
 		return 1;
 	return 0;	//search next
 }
@@ -127,22 +142,27 @@ int	IpcReceive(
 	uint		flag,		//接收参数
 	int		timeout		//超时值
 ){
-	KThread* thr_src, * thr_cur;
+	KThread* thr_src = NULL, * thr_cur;
 	KMessage* kmsg;
 	KQueueNode* nod;
 	uint flags;
 	int ret;
 	uint startSleepTime = ArGetMilliSecond();
-	thr_src = NULL;
 	if( usermsg->ThreadId != ANY_THREAD )
 		thr_src = (KThread*)TmGetThreadById( usermsg->ThreadId );
 	thr_cur = TmGetCurrentThread();
 _recv_search:
 	//锁定线程，避免在睡眠前切换了线程得到了消息
 	down( &thr_cur->Semaphore );
-	if( thr_src ){	//specify the thread
-		kmsg = RtlSearchQueue( &thr_cur->MessageQueue, thr_src,
-			MessageSearcher, &nod );
+	if( thr_src && usermsg->Command ){
+		kmsg = RtlSearchQueue( &thr_cur->MessageQueue, usermsg,
+			MessageSearcher3, &nod );
+	}else if( thr_src ){
+		kmsg = RtlSearchQueue( &thr_cur->MessageQueue, usermsg,
+			MessageSearcher1, &nod );
+	}else if( usermsg->Command ){
+		kmsg = RtlSearchQueue( &thr_cur->MessageQueue, usermsg,
+			MessageSearcher2, &nod );
 	}else{	//receive any message
 		kmsg = RtlPopBackQueue( &thr_cur->MessageQueue );
 	}
