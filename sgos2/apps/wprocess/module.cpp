@@ -64,7 +64,7 @@ PeModule* AllocateModule( const char* path )
 		return 0;
 	moduleList[moduleCount] = (PeModule*) malloc( sizeof(PeModule) );
 	mo = moduleList[moduleCount++];
-	memset( mo, 0, sizeof(mo));
+	memset( mo, 0, sizeof(*mo));
 	strncpy( mo->Path, path, PATH_LEN-1 );
 	mo->ModuleId = moduleId;
 	moduleId ++;
@@ -93,7 +93,8 @@ void FreeModule( PeModule* mo, uint spaceId )
 		}
 	}
 	if( -- mo->Reference == 0 ){
-		SysFreeMemory( SysGetCurrentSpaceId(), (void*)mo->LoadAddress );
+		if( mo->LoadAddress )
+			SysFreeMemory( SysGetCurrentSpaceId(), (void*)mo->LoadAddress );
 		for( int i=0; i<moduleCount; i++ )
 			if( moduleList[i] == mo ){
 				if( i!=moduleCount-1 )

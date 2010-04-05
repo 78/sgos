@@ -42,11 +42,11 @@ static int MapAddress( uint fromSpace, uint toSpace, size_t remote_addr, size_t 
 	uint phys_addr, attr;
 	addr = (size_t)SysAllocateMemory( toSpace, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_VIRTUAL );
 	if( addr == 0 )
-		return -1;
+		return -11;
 	if( SysQueryMemory( fromSpace, remote_addr, (size_t*)&phys_addr, (uint*)&attr ) <0 )
-		return -2;
+		return -22;
 	if( SysMapMemory( toSpace, addr, PAGE_SIZE, phys_addr, 0, MAP_ADDRESS ) <0 )
-		return -3;
+		return -33;
 	*ret_addr = addr;
 	return 0;
 }
@@ -235,10 +235,14 @@ int Process::Initialize( uint pid, char* cmdline, char* env )
 	}
 	//4. setup process information block  Pib
 	remote_pi = (size_t)SysAllocateMemory( sid, PAGE_SIZE, MEMORY_ATTR_WRITE, ALLOC_HIGHMEM );
-	if( remote_pi == 0 )
+	if( remote_pi == 0 ){
+		printf("Failed in allocating memory.\n");
 		goto bed;
-	if( (result=MapAddress( sid, SysGetCurrentSpaceId(), remote_pi, (size_t*)&this->pi )) < 0 )
+	}
+	if( (result=MapAddress( sid, SysGetCurrentSpaceId(), remote_pi, (size_t*)&this->pi )) < 0 ){
+		printf("Failed in mapping memory.\n");
 		goto bed;
+	}
 	memset( (void*)pi, 0, sizeof(ProcessInformation) );
 	pi->ProcessId = sid;
 	pi->UserId = 
@@ -248,10 +252,12 @@ int Process::Initialize( uint pid, char* cmdline, char* env )
 	pi->EntryAddress = this->module->EntryAddress;
 	pi->SystemInformation = (SystemInformation*)SysGetSystemInformation();
 	pi->Self = (ProcessInformation*)remote_pi;
-	if( cmdline && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)cmdline, (size_t*)&pi->CommandLine )) < 0 )
+	if( cmdline && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)cmdline, (size_t*)&pi->CommandLine )) < 0 ){
 		goto bed;
-	if( env && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)env, (size_t*)&pi->EnvironmentVariables )) < 0 )
+	}
+	if( env && (result=MapAddress(SysGetCurrentSpaceId(), sid, (size_t)env, (size_t*)&pi->EnvironmentVariables )) < 0 ){
 		goto bed;
+	}
 	//5. create a main thread
 	printf("[wprocess]sp: %x entry: %x\n", sid, this->module->EntryAddress ); 
 	CreateThread( this->module->EntryAddress );

@@ -106,8 +106,8 @@ uint	MmGetPhysicalPage();
 void	MmInitializePhysicalMemoryManagement( size_t bitmap_start, size_t bitmap_end, size_t mem_size );
 int 	MmSwapPhysicalPage( KSpace* destSp, size_t dest_addr, KSpace* srcSp, size_t src_addr, uint flag );
 int 	MmSwapMultiplePhysicalPages( KSpace* destSp, size_t dest_addr, KSpace* srcSp, size_t src_addr, size_t siz, uint flag );
-int	MmHandleNonPresentPageFault( KSpace* space, size_t addr );
-int	MmHandleReadOnlyPageFault( KSpace* space, size_t addr );
+int		MmHandleNonPresentPageFault( KSpace* space, size_t addr );
+int		MmHandleReadOnlyPageFault( KSpace* space, size_t addr );
 int 	MmMapMemory( KSpace* space, uint virt_addr, uint phys_addr, uint size, uint attr, uint flag );
 int 	MmDuplicateMultiplePhysicalPages( KSpace* destSp, size_t dest_addr, KSpace* srcSp, size_t src_addr, size_t siz );
 

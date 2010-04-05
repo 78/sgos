@@ -26,15 +26,17 @@ static uint GenerateThreadId(KSpace* space)
 }
 
 //初始化用户态线程信息块
-/*
 static void InitializeThreadInformation( KThread* thr )
 {
-	thr->UserModeThreadInformation = MmAllocateUserMemory(thr->Space, 
-		PAGE_ALIGN(sizeof(ThreadInformation)), 0, 0);
+	thr->UserModeThreadInformation = MmAllocateUserMemory( thr->Space, PAGE_SIZE, 
+		PAGE_ATTR_WRITE|PAGE_ATTR_USER, ALLOC_HIGHMEM|ALLOC_SWAP );
 	if( thr->UserModeThreadInformation ){
-		ThreadInformation* ti = thr->UserModeThreadInformation;
+		ThreadInformation* ti = MmAllocateUserMemory( MmGetCurrentSpace(), PAGE_SIZE, PAGE_ATTR_WRITE, ALLOC_ZERO|ALLOC_SWAP );
+		if( ti == NULL ){
+			MmFreeUserMemory( thr->Space, thr->UserModeThreadInformation );
+		}
 		//清0操作，以免用户获得错误信息
-		RtlZeroMemory( ti, PAGE_ALIGN(sizeof(ThreadInformation)) );
+		RtlZeroMemory( ti, PAGE_SIZE );
 		//线程堆栈地址
 		ti->StackBase = thr->StackBase;
 		//线程堆栈大小
@@ -42,13 +44,15 @@ static void InitializeThreadInformation( KThread* thr )
 		//地址空间信息指针
 		ti->SpaceInformation = thr->Space->UserModeSpaceInformation;
 		//指向自己
-		ti->Self = ti;
+		ti->Self = thr->UserModeThreadInformation;
 		//地址空间id
 		ti->SpaceId = thr->Space->SpaceId;
 		ti->ThreadId = thr->ThreadId;
+		MmSwapMultiplePhysicalPages( thr->Space, (size_t)thr->UserModeThreadInformation, MmGetCurrentSpace(), 
+			(size_t)ti, PAGE_SIZE, MAP_ADDRESS );
+		MmFreeUserMemory( MmGetCurrentSpace(), ti );
 	}
 }
-*/
 
 //由线程ID获得线程结构指针
 KThread* TmGetThreadById( uint tid )
@@ -124,8 +128,7 @@ KThread* TmCreateAdvancedThread( KSpace* space, size_t entry_addr, size_t stack_
 				thr->StackBase = (uint)MmAllocateUserMemory( space, thr->StackLimit, 
 					PAGE_ATTR_WRITE, 0);
 			if( ti == NULL )
-				thr->UserModeThreadInformation = (ThreadInformation*)MmAllocateUserMemory( space, PAGE_SIZE, 
-					PAGE_ATTR_WRITE, ALLOC_ZERO|ALLOC_HIGHMEM );
+				InitializeThreadInformation( thr );
 		}
 	}
 	//初始化寄存器

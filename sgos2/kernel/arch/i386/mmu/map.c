@@ -103,7 +103,7 @@ void ArMapOnePage( struct KPageDirectory* dir, uint virt_addr, uint phys_addr, u
 	}
 	if( flag&MAP_ZERO ){
 		void* p = (void*)ArMapTemporaryPage( phys_addr );
-		if( p==NULL )
+		if( p!=NULL )
 			RtlZeroMemory( p, PAGE_SIZE );
 	}
 	ArLocalRestoreIrq( eflags );
