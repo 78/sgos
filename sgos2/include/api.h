@@ -33,6 +33,9 @@ EXTERN int WaitMessage( Message* msg );
 
 //system api
 EXTERN void* SysGetSystemInformation();
+EXTERN void SysEnableInterrupt(int no, int b);
+EXTERN int SysAddInterruptHandler(int no, uint tid);
+EXTERN void SysDelInterruptHandler(int no, uint tid);
 EXTERN void SysExitSpace(uint code);
 EXTERN void SysExitThread(uint code);
 EXTERN void* SysAllocateGlobalMemory( size_t siz, uint attr, uint flag );
@@ -56,8 +59,6 @@ EXTERN int SysWriteMemory( uint sp, size_t addr, void* ptr, size_t count );
 EXTERN int SysReadMemory( uint sp, size_t addr, void* ptr, size_t count );
 EXTERN int SysQueryMemory( uint sp, uint addr, size_t *phys_addr, uint* attr );
 EXTERN int SysSetMemoryAttribute( uint sp, size_t addr, size_t siz, uint attr );
-EXTERN int SysAcquirePhysicalPages( uint sp, size_t addr, size_t siz );
-EXTERN int SysReleasePhysicalPages( uint sp, size_t addr, size_t siz );
 EXTERN int SysMapMemory( uint sp, size_t addr, size_t siz, size_t phys_addr, uint attr, uint flag );
 EXTERN int SysSwapMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz, uint flag );
 EXTERN int SysDuplicateMemory( uint dest_sp, size_t dest_addr, size_t src_addr, size_t siz );

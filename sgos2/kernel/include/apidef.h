@@ -11,6 +11,6 @@ SYSCALL2( 1, int, Print, const char*, buf, int, nbytes );
 //消息处理
 SYSCALL2( 2, int, Send, Message*, msg, time_t, timeout );
 SYSCALL2( 3, int, Receive, Message*, msg, time_t, timeout );
-SYSCALL1( 4, int, Reply, Message*, msg );
+SYSCALL3( 4, int, InvokeBiosService, int, int_no, void*, context, size_t, context_size );
 
 #endif //_APIDEF_H_

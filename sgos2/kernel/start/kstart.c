@@ -62,6 +62,8 @@ void KeStartOs( size_t boot_info )
 	TmInitializeScheduler();
 	//init global memory pool
 	MmInitializeGlobalMemoryPool();
+	//init hardware interrupt handlers
+	KeInitializeHardwareIntterupt();
 	// create an init thread for the init process
 	init_thr = TmCreateThread( MmGetCurrentSpace(), (size_t)KeStartOs, KERNEL_THREAD ); //用process_init来标记是内核线程
 	// set run time because no scheduler can be used at the present

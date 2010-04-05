@@ -14,6 +14,7 @@ unsigned rtc_millisecond; //unit: ms
 unsigned rtc_second;    //unit: s
 
 //设置时钟频率
+//Set PIT Interrupt Frequency
 void ArSetRealTimeClockFrequency(unsigned freq)
 {
 	unsigned div = 1193180/freq;
@@ -34,8 +35,6 @@ static void rtc_interrupt(const I386_REGISTERS* r)
 	rtc_millisecond += 1000/RTC_FREQUENCY ;
 	//屏蔽时钟中断
 	ArSetIrqMask( RTC_INTERRUPT, 0 );
-	//EOI
-	ArOutByte( 0x20, 0x20);
 	//开启中断 
 	ArLocalEnableIrq();
 	//更新时间

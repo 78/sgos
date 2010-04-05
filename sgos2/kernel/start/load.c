@@ -8,55 +8,6 @@
 #include <mm.h>
 #include <ke.h>
 
-//加载系统服务
-/*
-static void start_service()
-{
-	KSpace* space;
-	MODULE* mod, *mod_api;
-	KThread* main;
-	//当前
-	space = MmGetCurrentSpace();	
-	if( space->environment ){
-		//根据环境信息加载程序。
-	}else if( space->module_addr ){
-		//根据内存地址加载
-		if( loader_process( space, space->name, (t_8*)space->module_addr, 
-			0, &mod ) < 0 ){
-			PERROR("##failed to load module %s", space->name );
-		}
-	}
-	
-	// 设置用户态信息
-	// umalloc是最小分配8KB的
-	space->process_info = MmAllocateUserMemory( space, PAGE_ALIGN(sizeof(PROCESS_INFO)) );
-	//设置信息
-	if( space->process_info ){ //复制数据到用户态
-		PROCESS_INFO* pi = space->process_info;
-		RtlZeroMemory( pi, 0, PAGE_ALIGN(sizeof(PROCESS_INFO)) );
-		//复制进程名
-		strcpy( pi->name, space->name );
-		//进程id
-		pi->pid = space->pid;
-		pi->UserId = space->UserId;
-		pi->parent = space->parent->pid;
-		//主线程
-		//程序入口
-		space->process_info->entry_address = mod->entry_address;
-	}
-	//获得api接口库
-	mod_api = module_get_by_name( space, "api.bxm");
-	//创建进程主线程
-	main = thread_create( space, module_get_export_addr( mod_api, "__start_process" ), 0 );
-	//设置主线程
-	space->main_thread = main;
-	if( space->process_info )
-		space->process_info->main_thread = (uint)main;
-	thread_resume( main );
-	TmTerminateThread(TmGetCurrentThread(), 0);
-}
-*/
-
 // 内核下创建一个服务
 int KeCreateBaseService(const char* srvName, size_t addr, size_t siz )
 {

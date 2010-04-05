@@ -12,6 +12,7 @@ int ReplyMessage( Message* msg )
 int WaitMessage( Message* msg )
 {
 	msg->ThreadId = ANY_THREAD;
+	msg->Command = 0;
 	return ReceiveMessage( msg, INFINITE );
 }
 
@@ -119,6 +120,27 @@ void* SysGetSystemInformation()
 	if( SendMessage( SystemId, System_GetSystemInformation, NULL, NULL, NULL, NULL, (void*)&ptr ) < 0 )
 		return NULL;
 	return ptr;
+}
+
+void SysEnableInterrupt(int no, int b)
+{
+	if( SendMessage( SystemId, System_EnableInterrupt, &no, &b, NULL, NULL, NULL ) < 0 )
+		printf("[api]failed to send message.\n");
+}
+
+int SysAddInterruptHandler(int no, uint tid)
+{
+	int code;
+	uint result = SendMessage( SystemId, System_AddInterruptHandler, (void*)&no, &tid, 
+		NULL, NULL, (void*)&code );
+	if( result < 0 )
+		return result;
+	return code;
+}
+
+void SysDelInterruptHandler(int no, uint tid)
+{
+	SendMessage( SystemId, System_DelInterruptHandler, &no, &tid, NULL, NULL, NULL );
 }
 
 

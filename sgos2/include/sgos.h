@@ -175,7 +175,11 @@ typedef struct Message{
 #define ANY_THREAD			((uint)(-1))
 //System Message
 #define	SystemId			0
+#define System_Interrupt		0x00000101
 #define System_GetSystemInformation	0x00000001
+#define System_EnableInterrupt		0x00000002
+#define System_AddInterruptHandler	0x00000003
+#define System_DelInterruptHandler	0x00000004
 #define System_ExitThread		0x00001001
 #define System_TerminateThread		0x00001002
 #define System_GetCurrentThreadId	0x00001003
@@ -278,6 +282,19 @@ typedef struct FILEBUF{
 #define DEV_TYPE_FLOPPY		0x0001
 #define DEV_TYPE_HD		0x0002
 
+//Keyboard Service
+#define Keyboard_SetHandler	0x1000
+#define Keyboard_Configure	0x4000
+#define KeyboardEvent_All	0x0000
+#define KeyboardEvent_Character	0x0001
+
+//Vesa Service
+#define Video_SetGraphicalMode	0x5001
+#define Video_SetCharacterMode	0x5002
+#define Video_SetVideoMode	0x5003
+#define Video_GetVideoMode	0x5004
+#define Video_GetVideoAddress	0x5005
+
 // Intel x86 Cpu Registers
 typedef struct ThreadContext{
 	t_32			gs, fs, es, ds;
@@ -331,5 +348,6 @@ typedef struct ThreadContext{
 #define SEMOP_TRYDOWN		3
 
 #define SEMCTL_FREE		1	//释放信号灯
+
 
 #endif //__SGOS__H__

@@ -61,12 +61,10 @@ static int gpf_handler( int err_code, I386_REGISTERS* r)
 			switch( ip[1] ){
 			case 0xFB:
 			case 0x03: //breakpoint
-//				PERROR("[%d]VM86 thread exit with code:0x%X", thr->tid, r->eax);
 				TmTerminateThread( thr, r->eax );
 				return 0;
-				//never return here
 			case 0xFC: //delay 5 seconds
-				//KeDelay(r->eax);
+				TmSleepThread( thr, r->eax );
 				r->eip = (t_16) (r->eip + 1);
 				return 1;
 			default:
@@ -167,6 +165,10 @@ int ArInvokeBiosService( int interrupt, void* context_ptr, size_t siz )
 	int i;
 	if( siz < sizeof(I386_CONTEXT) )
 		return -ERR_WRONGARG;
+	// 映射物理内存前1MB
+	ArMapMultiplePages( &MmGetCurrentSpace()->PageDirectory, 0, 
+		0, MB(1), PAGE_ATTR_PRESENT|PAGE_ATTR_WRITE|PAGE_ATTR_USER, MAP_ADDRESS|MAP_ATTRIBUTE );
+	
 	context = (I386_CONTEXT*)context_ptr;
 	stack = (t_16*)0x0001FFE0;
 	// 因为bios调用不支持多线程，因此同一时刻只能一个线程使用。
@@ -208,6 +210,7 @@ int ArInvokeBiosService( int interrupt, void* context_ptr, size_t siz )
 	context->eax = stack[i++];
 	//
 	IpcUnlockSemaphore( &sem_bioscall );
+	ArUnmapMultiplePages( &MmGetCurrentSpace()->PageDirectory, 0, MB(1) );
 	return 0;
 }
 

@@ -14,8 +14,13 @@ void KeBugCheck(const char *s );
 void KeResumeStart();
 
 void KeInitializeSystemInformation();
-void KeUpdateTickCount(uint ticks);
 SystemInformation* KeGetSystemInforamtion();
+
+int KeHardwareInterruptMessage( int no );
+void KeDeleteHardwareInterruptHandler( int no, uint threadId );
+int KeAddHardwareInterruptHandler( int no, uint threadId );
+void KeEnableHardwareInterrupt( int no, int b );
+void KeInitializeHardwareIntterupt();
 
 #endif
 
