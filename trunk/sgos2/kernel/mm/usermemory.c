@@ -28,7 +28,6 @@ void*	MmAllocateUserMemoryAddress(KSpace* space, size_t addr, size_t siz, uint p
 	pattr |= PAGE_ATTR_USER|PAGE_ATTR_PRESENT;
 	ptr = MmAllocateVirtualMemory( &space->VirtualMemory, addr, siz, pattr, flag );
 	if( ptr==NULL ){
-		//no memory?? 分配失败就撤销增加
 		info->UserMemoryAllocated -= siz;
 		return NULL;
 	}

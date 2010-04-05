@@ -9,15 +9,18 @@
 #include <rtl.h>
 #include "pe.h"
 
+#define MAX(a,b) (a>b?a:b)
+
 // COpy Pe Segments
 static int CopyPeSegments( KSpace *space, FILEHDR* coffhdr, SECHDR* sechdr, size_t base, size_t addr )
 {
 	//加载段数据
 	int i;
 	for( i=0; i<coffhdr->usNumSec; i++ ){
-		size_t load_addr = sechdr[i].ulVAddr + base, virt_size = PAGE_ALIGN(sechdr[i].ulSize);
-		if( virt_size == 0 )//bss size could be zero!
+		size_t load_addr = sechdr[i].ulVAddr + base, virt_size = PAGE_ALIGN(MAX(sechdr[i].ulSize, sechdr[i].ulVSize) );
+		if( virt_size == 0 ){//bss size could be zero!
 			virt_size = PAGE_SIZE;
+		}
 		uint attr = PAGE_ATTR_WRITE;
 		if( sechdr[i].ulFlags&STYP_TEXT) 
 			attr &= ~PAGE_ATTR_WRITE;

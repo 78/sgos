@@ -120,9 +120,10 @@ static void DoMmMessage(Message* msg )
 		break;
 	case System_AllocateMemory:
 		space = MmGetSpaceById( msg->Arguments[0] );
-		if( space == NULL )
-			result = -ERR_WRONGARG;
-		else
+		if( space == NULL ){
+			PERROR("Incorrect sid: 0x%x", msg->Arguments[0] );
+			result = 0;
+		}else
 			result = (uint)MmAllocateUserMemory( space, msg->Arguments[1], 
 				msg->Arguments[2], msg->Arguments[3] );
 		break;
@@ -184,7 +185,7 @@ static void DoMmMessage(Message* msg )
 	case System_SwapMemory:
 		space = MmGetSpaceById( msg->Arguments[0] );
 		if( space == NULL )
-			result = -ERR_WRONGARG;
+			result = 0;
 		else
 			result = MmSwapMultiplePhysicalPages( space, msg->Arguments[1], MmGetSpaceById(SPACEID(msg->ThreadId)),
 				msg->Arguments[2], msg->Arguments[3], msg->Arguments[4] );

@@ -14,6 +14,7 @@ all:
 	make -Cacpi
 	make -Ckeyboard
 	make -Cvesa
+	make -Ctime
 	make -Cwkernel
 	make -Cwadvapi
 	make -Cmsys
@@ -30,6 +31,7 @@ clean:
 	make -Cacpi clean
 	make -Ckeyboard clean
 	make -Cvesa clean
+	make -Ctime clean
 	make -Cwkernel clean
 	make -Cwadvapi clean
 	make -Cmsys clean
